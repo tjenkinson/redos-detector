@@ -42,6 +42,9 @@
     "url": "https://github.com/tjenkinson/redos-detector/issues"
   },
   "homepage": "https://github.com/tjenkinson/redos-detector#readme",
+  "dependencies": {
+    "regjsparser": "tjenkinson/regjsparser#048ae200d1d64c339d7d3cca8d82931f0072c8dd"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.1.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -58,7 +61,6 @@
     "micromatch": "^4.0.4",
     "jest": "^26.6.3",
     "prettier": "^2.2.1",
-    "regjsparser": "tjenkinson/regjsparser#048ae200d1d64c339d7d3cca8d82931f0072c8dd",
     "rollup": "^2.39.0",
     "rollup-plugin-typescript2": "^0.31.1",
     "ts-jest": "^26.5.1",
