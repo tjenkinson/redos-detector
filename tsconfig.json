@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES5",
+    "lib": ["dom", "es2019"],
+    "types": ["node"],
+    "rootDir": "src",
+    "strict": true,
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "downlevelIteration": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

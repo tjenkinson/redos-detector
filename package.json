@@ -1,0 +1,68 @@
+{
+  "name": "redos-detector",
+  "version": "0.0.1",
+  "description": "A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks.",
+  "main": "dist/redos-detector.js",
+  "bin": "bin.js",
+  "module": "dist/redos-detector.es.js",
+  "types": "dist/redos-detector.d.ts",
+  "files": [
+    "dist",
+    "bin.js"
+  ],
+  "keywords": [
+    "regex",
+    "redos",
+    "pattern",
+    "parser"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && rollup --config rollup.config.js",
+    "watch": "rollup --config rollup.config.js --watch",
+    "lint": "eslint --ext .ts --max-warnings 0 src",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
+    "prepublishOnly": "npm run build && npm test",
+    "preversion": "npm run build && npm test",
+    "test": "jest",
+    "test:ci": "jest --coverage",
+    "prepare": "husky install",
+    "lint-staged": "lint-staged"
+  },
+  "hooks": {
+    "pre-commit": "npm run prettier"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tjenkinson/redos-detector.git"
+  },
+  "author": "Tom Jenkinson <tom@tjenkinson.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tjenkinson/redos-detector/issues"
+  },
+  "homepage": "https://github.com/tjenkinson/redos-detector#readme",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@types/jest": "^26.0.20",
+    "@types/node": "^17.0.5",
+    "@typescript-eslint/eslint-plugin": "5.8.1",
+    "@typescript-eslint/parser": "^5.8.1",
+    "commander": "^8.3.0",
+    "eslint": "^8.5.0",
+    "eslint-config-prettier": "^8.1.0",
+    "husky": "^7.0.4",
+    "lint-staged": "12.2.2",
+    "micromatch": "^4.0.4",
+    "jest": "^26.6.3",
+    "prettier": "^2.2.1",
+    "regjsparser": "tjenkinson/regjsparser#048ae200d1d64c339d7d3cca8d82931f0072c8dd",
+    "rollup": "^2.39.0",
+    "rollup-plugin-typescript2": "^0.31.1",
+    "ts-jest": "^26.5.1",
+    "tslib": "^2.3.1",
+    "typescript": "^4.4.4"
+  }
+}

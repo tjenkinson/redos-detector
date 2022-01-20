@@ -1,0 +1,48 @@
+module.exports = {
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    'prettier',
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2019,
+    sourceType: 'module',
+    tsconfigRootDir: __dirname,
+    project: ['./tsconfig.test.json'],
+  },
+  rules: {
+    'no-console': ['error'],
+    'no-shadow': ['error', { builtinGlobals: true }],
+    'sort-imports': ['error', { ignoreCase: true }],
+    'sort-keys': ['error'],
+    'sort-vars': ['error'],
+    'prefer-const': ['error'],
+    'no-var': ['error'],
+    'no-var': ['error'],
+    'no-use-before-define': ['error'],
+    '@typescript-eslint/member-ordering': [
+      'error',
+      {
+        default: {
+          order: 'alphabetically',
+        },
+      },
+    ],
+    '@typescript-eslint/no-unused-vars': ['error'],
+    '@typescript-eslint/no-unsafe-assignment': ['error'],
+    '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+    '@typescript-eslint/explicit-function-return-type': ['error'],
+    '@typescript-eslint/naming-convention': ['error'],
+    '@typescript-eslint/no-explicit-any': ['error'],
+    '@typescript-eslint/no-unnecessary-boolean-literal-compare': ['error'],
+    '@typescript-eslint/no-unnecessary-condition': ['error'],
+    '@typescript-eslint/promise-function-async': ['error'],
+    '@typescript-eslint/sort-type-union-intersection-members': ['error'],
+    '@typescript-eslint/switch-exhaustiveness-check': ['error'],
+    '@typescript-eslint/no-loss-of-precision': ['error'],
+    '@typescript-eslint/no-throw-literal': ['error'],
+    '@typescript-eslint/no-unused-expressions': ['error'],
+  },
+};
