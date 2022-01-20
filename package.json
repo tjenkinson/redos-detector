@@ -1,6 +1,6 @@
 {
   "name": "redos-detector",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks.",
   "main": "dist/redos-detector.js",
   "bin": "bin.js",
