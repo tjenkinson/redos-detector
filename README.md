@@ -2,6 +2,10 @@
 
 A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks. Supported in the browser, Node and Deno.
 
+## Demo
+
+[https://redosdetector.com/](https://redosdetector.com/)
+
 ## Examples
 
 ### Good
@@ -10,6 +14,8 @@ A CLI and library which tests with certainty if a regex pattern is safe from ReD
 isSafe(/^([a-c]?)d([a-c]?)$/).safe === true;
 ```
 
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D%3F%29d%28%5Ba-c%5D%3F%29%24)
+
 because for any given input string this can only match in one way, or not match.
 
 ### Bad
@@ -17,6 +23,8 @@ because for any given input string this can only match in one way, or not match.
 ```ts
 isSafe(/^([a-b]?)([a-c]?)$/).safe === false;
 ```
+
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-b%5D%3F%29%28%5Ba-c%5D%3F%29%24)
 
 because the input `a` could match in both places. The input `ax` could result in both being tried.
 
@@ -30,11 +38,13 @@ Regex is not safe. The following trail shows how the same input can be matched m
 
 which means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
 
-_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pettern like `^(?=([a-b]?))\1([a-c]?)$`._
+_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pettern like `^(?=([a-b]?))\1([a-c]?)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D%3F%29%29%5C1%28%5Ba-c%5D%3F%29%24))._
 
 ```ts
 isSafe(/^(a|a)+$/).safe === false;
 ```
+
+[Demo](https://redosdetector.com/?pattern=%5E%28a%7Ca%29%2B)
 
 is bad because in the group `a` could match on both sides. The input `aaaaaax` could result in many combinations being tried.
 
