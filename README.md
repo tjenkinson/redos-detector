@@ -2,6 +2,8 @@
 
 A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks. Supported in the browser, Node and Deno.
 
+There are some cases where it may report a pattern as unsafe when in reality it's safe, but it should never report a pattern as safe when it is not.
+
 ## Demo
 
 [https://redosdetector.com/](https://redosdetector.com/)
