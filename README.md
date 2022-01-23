@@ -50,6 +50,10 @@ isSafe(/^(a|a)+$/).safe === false;
 
 is bad because in the group `a` could match on both sides. The input `aaaaaax` could result in many combinations being tried.
 
+## How does it work?
+
+This tool will generate all the combinations of input strings that would match the pattern, and will output any input string that could match the pattern in multiple ways.
+
 ## Usage
 
 This can be used via the CLI, or as a library.
