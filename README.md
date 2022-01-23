@@ -6,7 +6,7 @@ There are some cases where it may report a pattern as unsafe when in reality it'
 
 ## Demo
 
-[https://redosdetector.com/](https://redosdetector.com/)
+[https://redosdetector.com/](https://redosdetector.com/) [[Source](https://github.com/tjenkinson/redos-detector-demo)]
 
 ## Examples
 
