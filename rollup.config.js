@@ -31,7 +31,11 @@ function buildConfig({ input, output, declaration = false }) {
           }
           const matches = /^package-json:([^]*)$/.exec(id);
           if (matches) {
-            const value = packageJson[matches[1]];
+            const name = matches[1];
+            let value = packageJson[matches[1]];
+            if (name === 'version' && !value) {
+              value = 'dev';
+            }
             if (value) {
               return `export default ${JSON.stringify(`${value}`)};`;
             }
