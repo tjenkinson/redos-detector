@@ -21,7 +21,6 @@
     "lint": "eslint --ext .ts --max-warnings 0 src",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "prepublishOnly": "npm run build && npm test",
     "test": "jest",
     "test:ci": "jest --coverage",
     "prepare": "husky install",
