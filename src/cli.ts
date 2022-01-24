@@ -12,6 +12,7 @@ const coerceInfinity = (value: number | undefined): number | undefined =>
 
 program
   .description(description)
+  .version(version)
   .command('check')
   .argument('<regex pattern>', 'the regex pattern')
   .option('--unicode', 'enable unicode mode', false)
@@ -29,7 +30,6 @@ program
     'output the result as JSON. Unsafe regex will exit with code 0. Check the `safe` property',
     false
   )
-  .version(version)
   .action(
     (
       pattern: string,
