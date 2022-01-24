@@ -1,6 +1,5 @@
 {
   "name": "redos-detector",
-  "version": "0.0.3",
   "description": "A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks.",
   "main": "dist/redos-detector.js",
   "bin": "bin.js",
@@ -23,7 +22,6 @@
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
     "prepublishOnly": "npm run build && npm test",
-    "preversion": "npm run build && npm test",
     "test": "jest",
     "test:ci": "jest --coverage",
     "prepare": "husky install",
