@@ -56,7 +56,7 @@ This tool will generate all the combinations of input strings that would match t
 
 ## Usage
 
-This can be used via the CLI, or as a library.
+This can be used via the CLI, or as a library. It's [on npm](https://www.npmjs.com/package/redos-detector).
 
 ### Result Structure
 
