@@ -20,7 +20,6 @@ module.exports = {
     'sort-vars': ['error'],
     'prefer-const': ['error'],
     'no-var': ['error'],
-    'no-var': ['error'],
     'no-use-before-define': ['error'],
     '@typescript-eslint/member-ordering': [
       'error',
