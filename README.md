@@ -40,7 +40,7 @@ Regex is not safe. The following trail shows how the same input can be matched m
 
 which means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
 
-_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pettern like `^(?=([a-b]?))\1([a-c]?)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D%3F%29%29%5C1%28%5Ba-c%5D%3F%29%24))._
+_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pattern like `^(?=([a-b]?))\1([a-c]?)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D%3F%29%29%5C1%28%5Ba-c%5D%3F%29%24))._
 
 ```ts
 isSafe(/^(a|a)+$/).safe === false;
