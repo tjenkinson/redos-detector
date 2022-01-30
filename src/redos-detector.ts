@@ -339,9 +339,11 @@ export function isSafePattern(
 }
 
 /**
- * Check if the provided regular expression object is not susceptible to ReDoS attacks.
+ * Check if the provided `RegExp` object is not susceptible to ReDoS attacks.
  *
  * Can be configured with various options in the second argument.
+ *
+ * Use `getSupportedFlags` to see which flags are supported.
  */
 export function isSafe(
   regexp: RegExp,
@@ -357,4 +359,11 @@ export function isSafe(
   }
 
   return isSafePattern(regexp.source, { ...config, unicode });
+}
+
+/**
+ * Returns the JS `RegExp` flags that are supported in `isSafe`.
+ */
+export function getSupportedFlags(): ReadonlySet<string> {
+  return new Set(['u']);
 }

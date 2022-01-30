@@ -1,6 +1,7 @@
 /* eslint-disable no-control-regex, no-useless-backreference */
 import {
   downgradePattern,
+  getSupportedFlags,
   isSafe,
   isSafePattern,
   toFriendly,
@@ -555,6 +556,12 @@ describe('RedosDetector', () => {
   describe('downgradePattern', () => {
     it('is exported', () => {
       expect(downgradePattern).toBeTruthy();
+    });
+  });
+
+  describe('getSupportedFlags', () => {
+    it('returns the correct flags', () => {
+      expect([...getSupportedFlags()]).toStrictEqual(['u']);
     });
   });
 });
