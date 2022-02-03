@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/tjenkinson/redos-detector#readme",
   "dependencies": {
-    "regjsparser": "tjenkinson/regjsparser#9c98fc374c14c7ae808c1fd129f8f4a6bd0247e3"
+    "regjsparser": "0.8.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.1.0",
