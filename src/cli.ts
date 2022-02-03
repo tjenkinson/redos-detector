@@ -9,6 +9,15 @@ const program = new Command();
 const toInt = (value: string): number => parseInt(value, 10);
 const coerceInfinity = (value: number | undefined): number | undefined =>
   value === -1 ? Infinity : value;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const errorToMessage = (error: any): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!error || typeof error !== 'object' || !error.message) {
+    return 'Unexpected error';
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+  return error.message;
+};
 
 program
   .description(description)
@@ -67,8 +76,7 @@ program
           process.exit(result.safe ? 0 : 1);
         }
       } catch (e) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-        console.error((e as any).message || 'Unexpected error');
+        console.error(errorToMessage(e));
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
         process.exit(1);
       }
