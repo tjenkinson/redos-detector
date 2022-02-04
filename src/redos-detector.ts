@@ -351,7 +351,7 @@ export function isSafe(
   for (const flag of regexp.flags.split('')) {
     if (flag === 'u') {
       unicode = true;
-    } else {
+    } else if (flag !== 'g') {
       throw new Error(`Unsupported flag: ${flag}`);
     }
   }
