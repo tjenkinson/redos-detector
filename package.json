@@ -26,9 +26,6 @@
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },
-  "hooks": {
-    "pre-commit": "npm run prettier"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tjenkinson/redos-detector.git"
