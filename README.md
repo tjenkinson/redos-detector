@@ -58,6 +58,8 @@ This tool will generate all the combinations of input strings that would match t
 
 This can be used via the CLI, or as a library. It's [on npm](https://www.npmjs.com/package/redos-detector).
 
+There's also an ESLint plugin "[eslint-plugin-redos-detector](https://github.com/tjenkinson/eslint-plugin-redos-detector)".
+
 ### Result Structure
 
 The following is the structure of the result you will get from both `isSafe`, `isSafePattern` and the CLI with the `--json` flag.
