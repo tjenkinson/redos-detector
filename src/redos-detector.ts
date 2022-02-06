@@ -208,6 +208,7 @@ export const defaultTimeout = Infinity;
 export const defaultMaxResults = 1;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
+const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -349,10 +350,11 @@ export function isSafe(
 ): RedosDetectorResult {
   let unicode = false;
   for (const flag of regexp.flags.split('')) {
+    if (!supportedJSFlags.has(flag)) {
+      throw new Error(`Unsupported flag: ${flag}`);
+    }
     if (flag === 'u') {
       unicode = true;
-    } else if (flag !== 'g') {
-      throw new Error(`Unsupported flag: ${flag}`);
     }
   }
 

@@ -526,8 +526,10 @@ describe('RedosDetector', () => {
       expect(() => isSafe(/a/i)).toThrowError('Unsupported flag: i');
     });
 
-    it('supports the "g" flag', () => {
-      expect(() => isSafe(/a/g)).not.toThrowError();
+    ['u', 'g', 's', 'y'].forEach((flag) => {
+      it(`supports the "${flag}" flag`, () => {
+        expect(() => isSafe(new RegExp('a', flag))).not.toThrowError();
+      });
     });
 
     it('throws if the number of loops is above max safe integer', () => {
