@@ -75,8 +75,26 @@ export type TrailEntry = Readonly<{
 
 export type Trail = readonly TrailEntry[];
 
+export const checkerReaderTypeTrail: unique symbol = Symbol(
+  'checkerReaderTypeTrail'
+);
+export const checkerReaderTypeInfiniteResults: unique symbol = Symbol(
+  'checkerReaderTypeInfiniteResults'
+);
+
+export type CheckerReaderValueTrail = Readonly<{
+  trail: Trail;
+  type: typeof checkerReaderTypeTrail;
+}>;
+export type CheckerReaderValueInfiniteResults = Readonly<{
+  type: typeof checkerReaderTypeInfiniteResults;
+}>;
+export type CheckerReaderValue =
+  | CheckerReaderValueInfiniteResults
+  | CheckerReaderValueTrail;
+
 // eslint-disable-next-line no-use-before-define
-export type CheckerReader = Reader<Trail, CheckerReaderReturn>;
+export type CheckerReader = Reader<CheckerReaderValue, CheckerReaderReturn>;
 export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
 }>;
@@ -137,6 +155,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
   let stackOverflow = false;
+  let infiniteResults = false;
 
   const startThread = function* ({
     leftStreamReader,
@@ -150,7 +169,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     // was not atomic
     atomicGroupsInSync,
     level,
-  }: StartThreadInput): Reader<Trail> {
+  }: StartThreadInput): Reader<CheckerReaderValue> {
     const dispose = (): void => {
       leftStreamReader.dispose();
       rightStreamReader.dispose();
@@ -186,7 +205,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           trail,
         });
 
-        let next: ReaderResult<Trail>;
+        let next: ReaderResult<CheckerReaderValue>;
         while (!(next = reader.next()).done) {
           yield next.value;
         }
@@ -211,7 +230,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           trail,
         });
 
-        let next: ReaderResult<Trail>;
+        let next: ReaderResult<CheckerReaderValue>;
         while (!(next = reader.next()).done) {
           yield next.value;
         }
@@ -259,7 +278,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
             if (!alreadyExists) {
               trails.add(trail);
-              yield trail;
+              yield { trail, type: checkerReaderTypeTrail };
             }
           }
         }
@@ -340,6 +359,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (infiniteLoopTracker.isLooping()) {
+        if (!infiniteResults) {
+          infiniteResults = true;
+          yield { type: checkerReaderTypeInfiniteResults };
+        }
         dispose();
         return;
       }
@@ -407,7 +430,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     trail: [],
   });
 
-  let next: ReaderResult<Trail>;
+  let next: ReaderResult<CheckerReaderValue>;
   while (!(next = reader.next()).done) {
     yield next.value;
   }

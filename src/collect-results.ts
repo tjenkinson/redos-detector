@@ -1,6 +1,9 @@
 import {
   buildCheckerReader,
   CheckerReaderReturn,
+  checkerReaderTypeInfiniteResults,
+  checkerReaderTypeTrail,
+  CheckerReaderValue,
   Trail,
 } from './checker-reader';
 import { buildCharacterReaderWithReferences } from './character-reader-with-references';
@@ -41,13 +44,21 @@ export function collectResults({
   });
 
   const trails: Trail[] = [];
-  let next: ReaderResult<Trail, CheckerReaderReturn>;
+  let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
   let i = 0;
-  while (!(next = reader.next()).done) {
-    if (i++ >= maxResults) {
-      break;
+  outer: while (!(next = reader.next()).done) {
+    switch (next.value.type) {
+      case checkerReaderTypeInfiniteResults: {
+        break;
+      }
+      case checkerReaderTypeTrail: {
+        if (i++ >= maxResults) {
+          break outer;
+        }
+        trails.push(next.value.trail);
+        break;
+      }
     }
-    trails.push(next.value);
   }
 
   return {
