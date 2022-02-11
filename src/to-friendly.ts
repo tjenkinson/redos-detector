@@ -65,8 +65,6 @@ export function toFriendly(result: RedosDetectorResult): string {
     });
 
     const errorToMessage: Record<RedosDetectorError, string> = {
-      hitMaxResults:
-        'Hit max results limit, so there are more results than shown here.',
       hitMaxSteps:
         'Hit maximum number of steps so there may be more results than shown here.',
       stackOverflow:

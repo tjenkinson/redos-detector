@@ -95,13 +95,6 @@ export type RedosDetectorTrail = {
 
 export type IsSafeConfig = {
   /**
-   * The maximum number of results to return. If this limit is hit `error`
-   * will be `hitMaxResults`.
-   *
-   * Note it's possible for there to be a infinite number of results.
-   */
-  readonly maxResults?: number;
-  /**
    * The maximum number of steps to make. Every time a new node is read
    * from the pattern this counts as one step. If this limit is hit `error`
    * will be `hitMaxSteps`.
@@ -149,11 +142,7 @@ export type IsSafeConfig = {
     }
 );
 
-export type RedosDetectorError =
-  | 'hitMaxResults'
-  | 'hitMaxSteps'
-  | 'stackOverflow'
-  | 'timedOut';
+export type RedosDetectorError = 'hitMaxSteps' | 'stackOverflow' | 'timedOut';
 
 export type RedosDetectorResult = {
   /**
@@ -205,7 +194,6 @@ export type IsSafePatternConfig = IsSafeConfig & {
 };
 
 export const defaultTimeout = Infinity;
-export const defaultMaxResults = 1;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
 const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
@@ -254,7 +242,6 @@ export function isSafePattern(
   inputPattern: string,
   {
     atomicGroupOffsets: atomicGroupOffsetsInput,
-    maxResults = defaultMaxResults,
     maxSteps = defaultMaxSteps,
     timeout = defaultTimeout,
     unicode = defaultUnicode,
@@ -265,9 +252,6 @@ export function isSafePattern(
     throw new Error(
       '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.'
     );
-  }
-  if (maxResults <= 0) {
-    throw new Error('`maxResults` must be a positive number.');
   }
   if (timeout <= 0) {
     throw new Error('`timeout` must be a positive number.');
@@ -287,7 +271,6 @@ export function isSafePattern(
 
   const result = collectResults({
     atomicGroupOffsets,
-    maxResults,
     maxSteps,
     node: ast,
     timeout,

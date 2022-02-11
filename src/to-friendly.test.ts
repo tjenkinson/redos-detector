@@ -89,15 +89,6 @@ describe('toFriendly', () => {
     ).toMatchSnapshot();
     expect(
       toFriendly({
-        error: 'hitMaxResults',
-        pattern: 'pattern',
-        patternDowngraded: false,
-        safe: false,
-        trails: mockTrails,
-      })
-    ).toMatchSnapshot();
-    expect(
-      toFriendly({
         error: 'hitMaxSteps',
         pattern: 'pattern',
         patternDowngraded: false,

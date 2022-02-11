@@ -25,7 +25,6 @@ program
   .command('check')
   .argument('<regex pattern>', 'the regex pattern')
   .option('--unicode', 'enable unicode mode', false)
-  .option('--maxResults <number>', 'max number of results to emit', toInt, 1)
   .option(
     '--maxSteps <number>',
     'max number of steps to take',
@@ -45,14 +44,12 @@ program
       {
         disableDowngrade,
         json,
-        maxResults,
         maxSteps,
         timeout,
         unicode,
       }: {
         disableDowngrade: boolean;
         json: boolean;
-        maxResults?: number;
         maxSteps?: number;
         timeout?: number;
         unicode: boolean;
@@ -61,7 +58,6 @@ program
       try {
         const result = isSafePattern(pattern, {
           downgradePattern: !disableDowngrade,
-          maxResults: coerceInfinity(maxResults),
           maxSteps: coerceInfinity(maxSteps),
           timeout: coerceInfinity(timeout),
           unicode,

@@ -69,7 +69,7 @@ The following is the structure of the result you will get from both `isSafe`, `i
 ```ts
 type Root = {
   safe: boolean;
-  error: null | 'hitMaxResults' | 'hitMaxSteps' | 'stackOverflow' | 'timedOut';
+  error: null | 'hitMaxSteps' | 'stackOverflow' | 'timedOut';
   trails: Trail[];
 };
 ```
@@ -124,7 +124,6 @@ type Location = {
 The following options exist for both the library and CLI:
 
 - `unicode`: Enable unicode mode. _(Default: `false`)_
-- `maxResults`: The maximum number of results to return. If this limit is hit `error` will be `hitMaxResults`. _(Default: `1`)_
 - `maxSteps`: The maximum number of steps to make. Every time a new node is read from the pattern this counts as one step. If this limit is hit `error` will be `hitMaxSteps`. _(Default: `20000`)_
 - `timeout`: The maximum amount of time (ms) to spend processing. Once this time is passed the trails found so far will be returned, and the `error` will be `timeout`. _(Default: `Infinity`)_
 - `downgradePattern`: Automatically downgrade the pattern if it's not supported as is. If this happens `patternDowngraded` will be `true` and `pattern` will contain the downgraded version. An exception may be thrown if the pattern needed to be downgraded and it wasn't. _(Default: `true`)_
@@ -134,7 +133,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--unicode) (--maxResults <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--json)
+$ npx redos-detector check "<regex pattern>" (--unicode) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--json)
 ```
 
 to run on the fly or
@@ -157,8 +156,8 @@ $ npm install redos-detector
 
 The following functions are provided:
 
-- `isSafe(regexp: RegExp, options?: { maxResults?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
-- `isSafePattern(pattern: string, options?: { maxResults?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
+- `isSafe(regexp: RegExp, options?: { maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
+- `isSafePattern(pattern: string, options?: { maxSteps?: number, timeout?: number, downgradePattern?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
 
 ## Useful Resources

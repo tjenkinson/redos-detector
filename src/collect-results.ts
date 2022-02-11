@@ -12,13 +12,12 @@ import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 
 export type WalkerResult = Readonly<{
-  error: 'hitMaxResults' | 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
+  error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
   trails: readonly Trail[];
 }>;
 
 export type CollectResultsInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
-  maxResults: number;
   maxSteps: number;
   node: MyRootNode;
   timeout: number;
@@ -27,7 +26,6 @@ export type CollectResultsInput = Readonly<{
 export function collectResults({
   atomicGroupOffsets,
   node,
-  maxResults,
   maxSteps,
   timeout,
 }: CollectResultsInput): WalkerResult {
@@ -45,16 +43,13 @@ export function collectResults({
 
   const trails: Trail[] = [];
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
-  let i = 0;
-  outer: while (!(next = reader.next()).done) {
+
+  while (!(next = reader.next()).done) {
     switch (next.value.type) {
       case checkerReaderTypeInfiniteResults: {
         break;
       }
       case checkerReaderTypeTrail: {
-        if (i++ >= maxResults) {
-          break outer;
-        }
         trails.push(next.value.trail);
         break;
       }
@@ -62,7 +57,7 @@ export function collectResults({
   }
 
   return {
-    error: next.done ? next.value.error : ('hitMaxResults' as const),
+    error: next.value.error,
     trails,
   };
 }
