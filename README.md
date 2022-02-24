@@ -84,7 +84,12 @@ The following is the structure of the result you will get from both `isSafe`, `i
 ```ts
 type Root = {
   safe: boolean;
-  error: null | 'hitMaxSteps' | 'stackOverflow' | 'timedOut';
+  error:
+    | null
+    | 'hitMaxBacktracks'
+    | 'hitMaxSteps'
+    | 'stackOverflow'
+    | 'timedOut';
   trails: Trail[];
   patternDowngraded: boolean;
   pattern: string;
