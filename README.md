@@ -35,7 +35,7 @@ because the input `a` could match in both places. The input `ax` could result in
 The CLI would output the following for this:
 
 ```
-Regex is not safe. There could be infinite backtracks in the worse case. The following trails show how the same input can be matched multiple ways.
+Regex is not safe. There could be infinite backtracks in the worst case. The following trails show how the same input can be matched multiple ways.
 
 2: `[a-b]` | 10: `[a-c]`
 ========================
