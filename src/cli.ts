@@ -1,5 +1,10 @@
 /* eslint-disable no-console */
-import { defaultMaxSteps, isSafePattern, toFriendly } from './redos-detector';
+import {
+  defaultMaxBacktracks,
+  defaultMaxSteps,
+  isSafePattern,
+  toFriendly,
+} from './redos-detector';
 import { Command } from 'commander';
 import description from 'package-json:description';
 import version from 'package-json:version';
@@ -26,6 +31,12 @@ program
   .argument('<regex pattern>', 'the regex pattern')
   .option('--unicode', 'enable unicode mode', false)
   .option(
+    '--maxBacktracks <number>',
+    'max number of backtracks to allow',
+    toInt,
+    defaultMaxBacktracks
+  )
+  .option(
     '--maxSteps <number>',
     'max number of steps to take',
     toInt,
@@ -44,12 +55,14 @@ program
       {
         disableDowngrade,
         json,
+        maxBacktracks,
         maxSteps,
         timeout,
         unicode,
       }: {
         disableDowngrade: boolean;
         json: boolean;
+        maxBacktracks?: number;
         maxSteps?: number;
         timeout?: number;
         unicode: boolean;
@@ -58,6 +71,7 @@ program
       try {
         const result = isSafePattern(pattern, {
           downgradePattern: !disableDowngrade,
+          maxBacktracks: coerceInfinity(maxBacktracks),
           maxSteps: coerceInfinity(maxSteps),
           timeout: coerceInfinity(timeout),
           unicode,

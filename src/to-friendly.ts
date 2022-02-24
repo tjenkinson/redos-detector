@@ -65,24 +65,31 @@ export function toFriendly(result: RedosDetectorResult): string {
     });
 
     const errorToMessage: Record<RedosDetectorError, string> = {
+      hitMaxBacktracks:
+        'Hit maxiumum number of backtracks so there may be more results than shown here.',
       hitMaxSteps:
         'Hit maximum number of steps so there may be more results than shown here.',
       stackOverflow:
         'Stack overflow occurred. Regex may have too much branching.',
       timedOut: 'Timed out so there may be more results than shown here.',
     };
-    const lastLine = result.error ? errorToMessage[result.error] : null;
 
     outputLines.push(
       ...[
-        `Regex is not safe. The following trail${
+        `Regex is not safe. There could be ${
+          result.worstCaseBackTrackCount.infinite
+            ? 'infinite backtracks'
+            : result.worstCaseBackTrackCount.value === 1
+            ? '1 backtrack'
+            : `${result.worstCaseBackTrackCount.value} backtracks`
+        } in the worse case. The following trail${
           result.trails.length > 1 ? 's' : ''
         } show${
           result.trails.length === 1 ? 's' : ''
         } how the same input can be matched multiple ways.`,
         ``,
         ...resultBlocks,
-        ...(lastLine ? [lastLine] : []),
+        errorToMessage[result.error],
         `Note there may be more results than shown here as some infinite loops are detected and removed.`,
       ]
     );

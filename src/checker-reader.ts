@@ -69,6 +69,7 @@ export type TrailEntrySide = Readonly<{
 }>;
 
 export type TrailEntry = Readonly<{
+  intersection: CharacterGroups;
   left: TrailEntrySide;
   right: TrailEntrySide;
 }>;
@@ -101,7 +102,10 @@ export type CheckerReaderReturn = Readonly<{
 
 const stackOverflowLimit = 1500;
 
-function areSidesEqual(left: TrailEntrySide, right: TrailEntrySide): boolean {
+export function areSidesEqual(
+  left: TrailEntrySide,
+  right: TrailEntrySide
+): boolean {
   return (
     left.node === right.node &&
     areArraysEqual(left.backReferenceStack, right.backReferenceStack) &&
@@ -367,14 +371,11 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         return;
       }
 
-      if (
-        isEmptyCharacterGroups(
-          intersectCharacterGroups(
-            leftValue.characterGroups,
-            rightValue.characterGroups
-          )
-        )
-      ) {
+      const intersection = intersectCharacterGroups(
+        leftValue.characterGroups,
+        rightValue.characterGroups
+      );
+      if (isEmptyCharacterGroups(intersection)) {
         dispose();
         return;
       }
@@ -403,6 +404,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       trail = [
         ...trail,
         {
+          intersection,
           left: {
             backReferenceStack: leftValue.backReferenceStack,
             node: leftValue.node,

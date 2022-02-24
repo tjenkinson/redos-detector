@@ -1,31 +1,89 @@
 import {
+  areSidesEqual,
   buildCheckerReader,
   CheckerReaderReturn,
   checkerReaderTypeInfiniteResults,
   checkerReaderTypeTrail,
   CheckerReaderValue,
   Trail,
+  TrailEntrySide,
 } from './checker-reader';
+import {
+  intersectCharacterGroups,
+  isEmptyCharacterGroups,
+} from './character-groups';
 import { buildCharacterReaderWithReferences } from './character-reader-with-references';
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 
 export type WalkerResult = Readonly<{
-  error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
+  error:
+    | 'hitMaxBacktracks'
+    | 'hitMaxSteps'
+    | 'stackOverflow'
+    | 'timedOut'
+    | null;
   trails: readonly Trail[];
+  worstCaseBacktrackCount: number;
 }>;
 
 export type CollectResultsInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
+  maxBacktracks: number;
   maxSteps: number;
   node: MyRootNode;
   timeout: number;
 }>;
 
+function trailsCouldMatchSameInput(a: Trail, b: Trail): boolean {
+  if (a === b) return true;
+  return (
+    a.length === b.length &&
+    a.every(({ intersection: aIntersection }, i) => {
+      const bIntersection = b[i].intersection;
+      return !isEmptyCharacterGroups(
+        intersectCharacterGroups(aIntersection, bIntersection)
+      );
+    })
+  );
+}
+
+function addTrailSidesToGroup(
+  groupSides: Set<readonly TrailEntrySide[]>,
+  trail: Trail
+): void {
+  const leftSide: TrailEntrySide[] = [];
+  const rightSide: TrailEntrySide[] = [];
+  for (const { left, right } of trail) {
+    leftSide.push(left);
+    rightSide.push(right);
+  }
+
+  let hasLeft = false;
+  let hasRight = false;
+  for (const side of groupSides) {
+    if (
+      !hasLeft &&
+      side.every((entry, i) => areSidesEqual(entry, leftSide[i]))
+    ) {
+      hasLeft = true;
+    }
+    if (
+      !hasRight &&
+      side.every((entry, i) => areSidesEqual(entry, rightSide[i]))
+    ) {
+      hasRight = true;
+    }
+  }
+  if (!hasLeft) groupSides.add(leftSide);
+  if (!hasRight) groupSides.add(rightSide);
+}
+
 export function collectResults({
   atomicGroupOffsets,
   node,
+  maxBacktracks,
   maxSteps,
   timeout,
 }: CollectResultsInput): WalkerResult {
@@ -42,22 +100,52 @@ export function collectResults({
   });
 
   const trails: Trail[] = [];
+  // for a given trail, store the sides of any trails that could also match the same input string
+  const trailToMatchingTrailsGroupSides: Map<
+    Trail,
+    Set<readonly TrailEntrySide[]>
+  > = new Map();
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
+  let worstCaseBacktrackCount = 0;
 
-  while (!(next = reader.next()).done) {
+  outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {
       case checkerReaderTypeInfiniteResults: {
+        worstCaseBacktrackCount = Infinity;
         break;
       }
       case checkerReaderTypeTrail: {
         trails.push(next.value.trail);
+        if (worstCaseBacktrackCount === Infinity) {
+          break outer;
+        }
+        trailToMatchingTrailsGroupSides.set(next.value.trail, new Set());
+        for (const [trail, groupSides] of trailToMatchingTrailsGroupSides) {
+          if (trailsCouldMatchSameInput(trail, next.value.trail)) {
+            addTrailSidesToGroup(groupSides, next.value.trail);
+            worstCaseBacktrackCount = Math.max(
+              worstCaseBacktrackCount,
+              groupSides.size - 1
+            );
+            if (worstCaseBacktrackCount >= maxBacktracks) {
+              break outer;
+            }
+          }
+        }
         break;
       }
     }
   }
 
   return {
-    error: next.value.error,
+    error: next.done ? next.value.error : 'hitMaxBacktracks',
     trails,
+    worstCaseBacktrackCount: next.done
+      ? next.value.error
+        ? Infinity
+        : trails.length === 0
+        ? 0
+        : worstCaseBacktrackCount
+      : worstCaseBacktrackCount,
   };
 }
