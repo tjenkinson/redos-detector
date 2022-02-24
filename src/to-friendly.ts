@@ -4,7 +4,7 @@ export type ToFriendlyConfig = {
   resultsLimit?: number;
 };
 
-export const defaultResultsLimit = 100;
+export const defaultResultsLimit = 25;
 
 /**
  * Takes a result and converts it to a text representation.
