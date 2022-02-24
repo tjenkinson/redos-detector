@@ -7,8 +7,21 @@ import { RedosDetectorError, RedosDetectorResult } from './redos-detector';
  * between any version.
  */
 export function toFriendly(result: RedosDetectorResult): string {
+  const backtrackCountString = `There could be ${
+    result.worstCaseBackTrackCount.infinite
+      ? 'infinite backtracks'
+      : result.worstCaseBackTrackCount.value === 1
+      ? '1 backtrack'
+      : `${result.worstCaseBackTrackCount.value} backtracks`
+  } in the worse case.`;
+
   if (result.safe) {
-    return `Regex is safe.`;
+    return `Regex is safe.${
+      result.worstCaseBackTrackCount.infinite ||
+      result.worstCaseBackTrackCount.value > 0
+        ? ` ${backtrackCountString}`
+        : ''
+    }`;
   }
 
   const outputLines: string[] = [];
@@ -76,13 +89,7 @@ export function toFriendly(result: RedosDetectorResult): string {
 
     outputLines.push(
       ...[
-        `Regex is not safe. There could be ${
-          result.worstCaseBackTrackCount.infinite
-            ? 'infinite backtracks'
-            : result.worstCaseBackTrackCount.value === 1
-            ? '1 backtrack'
-            : `${result.worstCaseBackTrackCount.value} backtracks`
-        } in the worse case. The following trail${
+        `Regex is not safe. ${backtrackCountString} The following trail${
           result.trails.length > 1 ? 's' : ''
         } show${
           result.trails.length === 1 ? 's' : ''

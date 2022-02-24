@@ -43,6 +43,26 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: true,
         trails: [],
+        worstCaseBackTrackCount: { infinite: false, value: 1 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: null,
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: true,
+        trails: [],
+        worstCaseBackTrackCount: { infinite: false, value: 2 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: null,
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: true,
+        trails: [],
         worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();

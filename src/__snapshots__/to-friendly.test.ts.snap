@@ -61,4 +61,8 @@ exports[`toFriendly returns the correct string when not safe but no trails 2`] =
 
 exports[`toFriendly returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
 
-exports[`toFriendly returns the correct string when safe 1`] = `"Regex is safe."`;
+exports[`toFriendly returns the correct string when safe 1`] = `"Regex is safe. There could be 1 backtrack in the worse case."`;
+
+exports[`toFriendly returns the correct string when safe 2`] = `"Regex is safe. There could be 2 backtracks in the worse case."`;
+
+exports[`toFriendly returns the correct string when safe 3`] = `"Regex is safe. There could be infinite backtracks in the worse case."`;
