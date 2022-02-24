@@ -16,14 +16,10 @@ import { buildCharacterReaderWithReferences } from './character-reader-with-refe
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
+import { RedosDetectorError } from './redos-detector';
 
 export type WalkerResult = Readonly<{
-  error:
-    | 'hitMaxBacktracks'
-    | 'hitMaxSteps'
-    | 'stackOverflow'
-    | 'timedOut'
-    | null;
+  error: RedosDetectorError | null;
   trails: readonly Trail[];
   worstCaseBacktrackCount: number;
 }>;
@@ -137,15 +133,28 @@ export function collectResults({
     }
   }
 
+  if (next.done) {
+    if (next.value.error) {
+      worstCaseBacktrackCount = Infinity;
+    } else if (!trails.length) {
+      worstCaseBacktrackCount = 0;
+    }
+  }
+
+  let error: RedosDetectorError | null = null;
+  if (next.done) {
+    if (next.value.error) {
+      error = next.value.error;
+    } else if (worstCaseBacktrackCount >= maxBacktracks) {
+      error = 'hitMaxBacktracks';
+    }
+  } else if (worstCaseBacktrackCount >= maxBacktracks) {
+    error = 'hitMaxBacktracks';
+  }
+
   return {
-    error: next.done ? next.value.error : 'hitMaxBacktracks',
+    error,
     trails,
-    worstCaseBacktrackCount: next.done
-      ? next.value.error
-        ? Infinity
-        : trails.length === 0
-        ? 0
-        : worstCaseBacktrackCount
-      : worstCaseBacktrackCount,
+    worstCaseBacktrackCount,
   };
 }
