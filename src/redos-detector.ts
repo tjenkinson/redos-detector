@@ -157,6 +157,10 @@ export type RedosDetectorError =
   | 'stackOverflow'
   | 'timedOut';
 
+export type BacktrackCount =
+  | { infinite: false; value: number }
+  | { infinite: true };
+
 export type RedosDetectorResult = {
   /**
    * The pattern that was checked. If it was downgraded this will be
@@ -183,9 +187,7 @@ export type RedosDetectorResult = {
    * If it's infinite the `infinite` property will be `true`, otherwise the number
    * will be on `value`.
    */
-  readonly worstCaseBackTrackCount:
-    | { infinite: false; value: number }
-    | { infinite: true };
+  readonly worstCaseBackTrackCount: BacktrackCount;
 } & (
   | {
       /**
