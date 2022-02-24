@@ -7,8 +7,7 @@ import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
 import { QuantifierStack } from './nodes/quantifier';
 
 export { downgradePattern, DowngradePatternConfig } from './downgrade-pattern';
-
-export { toFriendly } from './to-friendly';
+export * from './to-friendly';
 
 /**
  * The current version.
@@ -196,7 +195,7 @@ export type RedosDetectorResult = {
       readonly error: null;
       /**
        * `true` means the regex pattern is not susceptible to ReDoS attacks
-       * based on th econfigured `maxBacktracks` option.
+       * based on the configured `maxBacktracks` option.
        */
       readonly safe: true;
     }

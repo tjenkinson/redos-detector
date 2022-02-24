@@ -8,6 +8,7 @@ import {
 import { Command } from 'commander';
 import description from 'package-json:description';
 import version from 'package-json:version';
+import { defaultResultsLimit } from './to-friendly';
 
 const program = new Command();
 
@@ -37,6 +38,12 @@ program
     defaultMaxBacktracks
   )
   .option(
+    '--resultsLimit <number>',
+    'the maximum number of results to print, ignored with --json',
+    toInt,
+    defaultResultsLimit
+  )
+  .option(
     '--maxSteps <number>',
     'max number of steps to take',
     toInt,
@@ -57,14 +64,16 @@ program
         json,
         maxBacktracks,
         maxSteps,
+        resultsLimit,
         timeout,
         unicode,
       }: {
         disableDowngrade: boolean;
         json: boolean;
-        maxBacktracks?: number;
-        maxSteps?: number;
-        timeout?: number;
+        maxBacktracks: number;
+        maxSteps: number;
+        resultsLimit: number;
+        timeout: number;
         unicode: boolean;
       }
     ) => {
@@ -81,7 +90,9 @@ program
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(0);
         } else {
-          console.log(toFriendly(result));
+          console.log(
+            toFriendly(result, { resultsLimit: coerceInfinity(resultsLimit) })
+          );
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(result.safe ? 0 : 1);
         }

@@ -33,6 +33,36 @@ describe('toFriendly', () => {
         },
       ],
     },
+    {
+      trail: [
+        {
+          a: {
+            backReferenceStack: [],
+            node: {
+              end: { offset: 4 },
+              source: 'a',
+              start: {
+                offset: 3,
+              },
+            },
+            quantifierIterations: [],
+          },
+          b: {
+            backReferenceStack: [],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+        },
+      ],
+    },
   ];
 
   it('returns the correct string when safe', () => {
@@ -162,5 +192,47 @@ describe('toFriendly', () => {
         worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
+    expect(
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: 0 }
+      )
+    ).toMatchSnapshot();
+    expect(
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: 1 }
+      )
+    ).toMatchSnapshot();
+  });
+
+  it('throws if `resultsLimit` is < 0', () => {
+    expect(() =>
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: -1 }
+      )
+    ).toThrowError('`resultsLimit` must be > 0.');
   });
 });
