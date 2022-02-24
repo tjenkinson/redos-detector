@@ -115,7 +115,7 @@ export function toFriendly(
         errorToMessage[result.error],
         `Note there may be more results than shown here as some infinite loops are detected and removed.`,
         ...(result.trails.length > resultsLimit
-          ? ['There are more results that but hit results limit.']
+          ? ['There are more results than this but hit results limit.']
           : []),
       ]
     );
