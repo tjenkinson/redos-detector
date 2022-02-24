@@ -15,10 +15,10 @@ There are some cases where it may report a pattern as unsafe when in reality it'
 ### Good
 
 ```ts
-isSafe(/^([a-c]?)d([a-c]?)$/).safe === true;
+isSafe(/^([a-c]*)d([a-c]*)$/).safe === true;
 ```
 
-[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D%3F%29d%28%5Ba-c%5D%3F%29%24)
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D*%29d%28%5Ba-c%5D*%29%24)
 
 because for any given input string this can only match in one way, or not match.
 
