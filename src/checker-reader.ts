@@ -37,6 +37,7 @@ import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { MyFeatures } from './parse';
 import { setsOverlap } from './set';
 import { synchronisationCheck } from './synchronisation-checker';
+import { ResultCache } from './result-cache';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -102,18 +103,24 @@ export type CheckerReaderReturn = Readonly<{
 
 const stackOverflowLimit = 1500;
 
+const sidesEqualCache = new ResultCache<boolean>();
+
 export function areSidesEqual(
   left: TrailEntrySide,
   right: TrailEntrySide
 ): boolean {
-  return (
+  const cached = sidesEqualCache.getResult(left, right);
+  if (cached !== undefined) return cached;
+
+  const equal =
     left.node === right.node &&
     areArraysEqual(left.backReferenceStack, right.backReferenceStack) &&
     areMapsEqual(
       buildQuantifierIterations(left.quantifierStack),
       buildQuantifierIterations(right.quantifierStack)
-    )
-  );
+    );
+  sidesEqualCache.addResult(left, right, equal);
+  return equal;
 }
 
 type NodeWithQuantifierTrail = Readonly<{
