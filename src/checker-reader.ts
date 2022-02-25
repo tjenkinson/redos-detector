@@ -35,9 +35,9 @@ import { areMapsEqual } from './map';
 import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { MyFeatures } from './parse';
+import { ResultCache } from './result-cache';
 import { setsOverlap } from './set';
 import { synchronisationCheck } from './synchronisation-checker';
-import { ResultCache } from './result-cache';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
