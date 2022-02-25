@@ -108,10 +108,12 @@ export function toFriendly(
         `Regex is not safe. ${backtrackCountString}`,
         ...(resultsLimit > 0
           ? [
+              '',
               `The following trail${result.trails.length > 1 ? 's' : ''} show${
                 result.trails.length === 1 ? 's' : ''
               } how the same input can be matched multiple ways.`,
               ...resultBlocks,
+              '',
               errorToMessage[result.error],
               `Note there may be more results than shown here as some infinite loops are detected and removed.`,
               ...(result.trails.length > resultsLimit
