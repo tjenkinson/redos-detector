@@ -4,7 +4,7 @@ export type ToFriendlyConfig = {
   resultsLimit?: number;
 };
 
-export const defaultResultsLimit = 25;
+export const defaultResultsLimit = 15;
 
 /**
  * Takes a result and converts it to a text representation.
@@ -105,17 +105,19 @@ export function toFriendly(
 
     outputLines.push(
       ...[
-        `Regex is not safe. ${backtrackCountString} The following trail${
-          result.trails.length > 1 ? 's' : ''
-        } show${
-          result.trails.length === 1 ? 's' : ''
-        } how the same input can be matched multiple ways.`,
-        ``,
-        ...resultBlocks,
-        errorToMessage[result.error],
-        `Note there may be more results than shown here as some infinite loops are detected and removed.`,
-        ...(result.trails.length > resultsLimit
-          ? ['There are more results than this but hit results limit.']
+        `Regex is not safe. ${backtrackCountString}`,
+        ...(resultsLimit > 0
+          ? [
+              `The following trail${result.trails.length > 1 ? 's' : ''} show${
+                result.trails.length === 1 ? 's' : ''
+              } how the same input can be matched multiple ways.`,
+              ...resultBlocks,
+              errorToMessage[result.error],
+              `Note there may be more results than shown here as some infinite loops are detected and removed.`,
+              ...(result.trails.length > resultsLimit
+                ? ['There are more results than this but hit results limit.']
+                : []),
+            ]
           : []),
       ]
     );
