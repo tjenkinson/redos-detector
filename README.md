@@ -164,7 +164,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--json)
+$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or
@@ -176,6 +176,8 @@ $ npm i -g redos-detector
 to make the command available globally as `redos-detector`.
 
 By default this will output the result in a text format, and the exit status will be `0` if the pattern is safe, otherwise non-`0`. You should not try and parse this text output as it may change between any version.
+
+Only the first 15 results will be shown in the text output, but this can be changed with the `--resultsLimit` option. This option is ignored with `--json`.
 
 The `--json` option will result in JSON being outputted containing more information. The structure of this will follow semantic versioning. When this option is used the exit status will always be `0` (unless an exception occurred), so you should always check the `safe` property to determine if the pattern is safe.
 
