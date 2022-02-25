@@ -6,9 +6,9 @@ import {
   toFriendly,
 } from './redos-detector';
 import { Command } from 'commander';
+import { defaultResultsLimit } from './to-friendly';
 import description from 'package-json:description';
 import version from 'package-json:version';
-import { defaultResultsLimit } from './to-friendly';
 
 const program = new Command();
 
