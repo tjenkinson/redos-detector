@@ -119,7 +119,7 @@ type Trail = {
 
 ```ts
 type Side = {
-  backReferenceStack: {
+  backreferenceStack: {
     index: number;
     node: Node;
   }[];

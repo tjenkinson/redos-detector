@@ -69,7 +69,7 @@ export type RedosDetectorTrailEntrySide = {
   /**
    * If not `null`, this means the current node is part of the back reference.
    */
-  readonly backReferenceStack: RedosDetectorBackReferenceStack;
+  readonly backreferenceStack: RedosDetectorBackReferenceStack;
   /**
    * The node.
    */
@@ -241,9 +241,9 @@ function toRedosDetectorNode(node: AstNode<MyFeatures>): RedosDetectorNode {
 }
 
 function toRedosDetectorBackReferenceStack(
-  backReferenceStack: BackReferenceStack
+  backreferenceStack: BackReferenceStack
 ): RedosDetectorBackReferenceStack {
-  return backReferenceStack.map((reference) => {
+  return backreferenceStack.map((reference) => {
     return {
       index: reference.matchIndex,
       node: toRedosDetectorNode(reference),
@@ -327,8 +327,8 @@ export function isSafePattern(
         trail: trail.map(({ left, right }) => {
           const entry: RedosDetectorTrailEntry = {
             a: {
-              backReferenceStack: toRedosDetectorBackReferenceStack(
-                right.backReferenceStack
+              backreferenceStack: toRedosDetectorBackReferenceStack(
+                right.backreferenceStack
               ),
               node: toRedosDetectorNode(right.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
@@ -336,8 +336,8 @@ export function isSafePattern(
               ),
             },
             b: {
-              backReferenceStack: toRedosDetectorBackReferenceStack(
-                left.backReferenceStack
+              backreferenceStack: toRedosDetectorBackReferenceStack(
+                left.backreferenceStack
               ),
               node: toRedosDetectorNode(left.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(

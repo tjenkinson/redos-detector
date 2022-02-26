@@ -7,7 +7,7 @@ describe('toFriendly', () => {
       trail: [
         {
           a: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: { offset: 4 },
               source: 'a',
@@ -18,7 +18,7 @@ describe('toFriendly', () => {
             quantifierIterations: [],
           },
           b: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: {
                 offset: 2,
@@ -37,7 +37,7 @@ describe('toFriendly', () => {
       trail: [
         {
           a: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: { offset: 4 },
               source: 'a',
@@ -48,7 +48,7 @@ describe('toFriendly', () => {
             quantifierIterations: [],
           },
           b: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: {
                 offset: 2,
