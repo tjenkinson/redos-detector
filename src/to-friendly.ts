@@ -20,17 +20,17 @@ export function toFriendly(
     throw new Error('`resultsLimit` must be > 0.');
   }
   const backtrackCountString = `There could be ${
-    result.worstCaseBackTrackCount.infinite
+    result.worstCaseBacktrackCount.infinite
       ? 'infinite backtracks'
-      : result.worstCaseBackTrackCount.value === 1
+      : result.worstCaseBacktrackCount.value === 1
       ? '1 backtrack'
-      : `${result.worstCaseBackTrackCount.value} backtracks`
+      : `${result.worstCaseBacktrackCount.value} backtracks`
   } in the worst case.`;
 
   if (result.safe) {
     return `Regex is safe.${
-      result.worstCaseBackTrackCount.infinite ||
-      result.worstCaseBackTrackCount.value > 0
+      result.worstCaseBacktrackCount.infinite ||
+      result.worstCaseBacktrackCount.value > 0
         ? ` ${backtrackCountString}`
         : ''
     }`;

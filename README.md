@@ -93,7 +93,7 @@ type Root = {
   trails: Trail[];
   patternDowngraded: boolean;
   pattern: string;
-  worstCaseBackTrackCount:
+  worstCaseBacktrackCount:
     | {
         infinite: true;
       }
@@ -119,7 +119,7 @@ type Trail = {
 
 ```ts
 type Side = {
-  backReferenceStack: {
+  backreferenceStack: {
     index: number;
     node: Node;
   }[];

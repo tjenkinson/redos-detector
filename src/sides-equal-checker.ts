@@ -13,7 +13,7 @@ export class SidesEqualChecker {
 
     const equal =
       left.node === right.node &&
-      areArraysEqual(left.backReferenceStack, right.backReferenceStack) &&
+      areArraysEqual(left.backreferenceStack, right.backreferenceStack) &&
       areMapsEqual(
         buildQuantifierIterations(left.quantifierStack),
         buildQuantifierIterations(right.quantifierStack)

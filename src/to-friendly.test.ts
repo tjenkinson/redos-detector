@@ -7,7 +7,7 @@ describe('toFriendly', () => {
       trail: [
         {
           a: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: { offset: 4 },
               source: 'a',
@@ -18,7 +18,7 @@ describe('toFriendly', () => {
             quantifierIterations: [],
           },
           b: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: {
                 offset: 2,
@@ -37,7 +37,7 @@ describe('toFriendly', () => {
       trail: [
         {
           a: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: { offset: 4 },
               source: 'a',
@@ -48,7 +48,7 @@ describe('toFriendly', () => {
             quantifierIterations: [],
           },
           b: {
-            backReferenceStack: [],
+            backreferenceStack: [],
             node: {
               end: {
                 offset: 2,
@@ -73,7 +73,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: true,
         trails: [],
-        worstCaseBackTrackCount: { infinite: false, value: 1 },
+        worstCaseBacktrackCount: { infinite: false, value: 1 },
       })
     ).toMatchSnapshot();
     expect(
@@ -83,7 +83,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: true,
         trails: [],
-        worstCaseBackTrackCount: { infinite: false, value: 2 },
+        worstCaseBacktrackCount: { infinite: false, value: 2 },
       })
     ).toMatchSnapshot();
     expect(
@@ -93,7 +93,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: true,
         trails: [],
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
   });
@@ -106,7 +106,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -116,7 +116,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -126,7 +126,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
   });
@@ -139,7 +139,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -149,7 +149,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -159,7 +159,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -169,7 +169,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: false, value: 1 },
+        worstCaseBacktrackCount: { infinite: false, value: 1 },
       })
     ).toMatchSnapshot();
     expect(
@@ -179,7 +179,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: false, value: 2 },
+        worstCaseBacktrackCount: { infinite: false, value: 2 },
       })
     ).toMatchSnapshot();
     expect(
@@ -189,7 +189,7 @@ describe('toFriendly', () => {
         patternDowngraded: true,
         safe: false,
         trails: mockTrails,
-        worstCaseBackTrackCount: { infinite: true },
+        worstCaseBacktrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -200,7 +200,7 @@ describe('toFriendly', () => {
           patternDowngraded: true,
           safe: false,
           trails: mockTrails,
-          worstCaseBackTrackCount: { infinite: true },
+          worstCaseBacktrackCount: { infinite: true },
         },
         { resultsLimit: 0 }
       )
@@ -213,7 +213,7 @@ describe('toFriendly', () => {
           patternDowngraded: true,
           safe: false,
           trails: mockTrails,
-          worstCaseBackTrackCount: { infinite: true },
+          worstCaseBacktrackCount: { infinite: true },
         },
         { resultsLimit: 1 }
       )
@@ -229,7 +229,7 @@ describe('toFriendly', () => {
           patternDowngraded: true,
           safe: false,
           trails: mockTrails,
-          worstCaseBackTrackCount: { infinite: true },
+          worstCaseBacktrackCount: { infinite: true },
         },
         { resultsLimit: -1 }
       )

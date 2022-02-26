@@ -47,7 +47,7 @@ export type ZeroWidthEntry = Readonly<{
 
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderWithReferencesValueGroups = Readonly<{
-  backReferenceStack: BackReferenceStack;
+  backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
   lookaheadStack: LookaheadStack;
@@ -73,7 +73,7 @@ export type CharacterReaderWithReferences = Reader<
 >;
 
 export type GroupContentsStoreEntryContentsEntry = Readonly<{
-  backReferenceStack: readonly Reference[];
+  backreferenceStack: readonly Reference[];
   groups: CharacterGroups;
   node:
     | CharacterClass
@@ -250,7 +250,7 @@ export function buildCharacterReaderWithReferences(
                     contents: [
                       ...contents.contents,
                       {
-                        backReferenceStack: [],
+                        backreferenceStack: [],
                         groups: value.characterGroups,
                         node: value.node,
                       },
@@ -267,8 +267,8 @@ export function buildCharacterReaderWithReferences(
                         (entry) => {
                           return {
                             ...entry,
-                            backReferenceStack: [
-                              ...entry.backReferenceStack,
+                            backreferenceStack: [
+                              ...entry.backreferenceStack,
                               value.node,
                             ],
                           };
@@ -304,8 +304,8 @@ export function buildCharacterReaderWithReferences(
                 for (const contents of groupContents) {
                   emittedSomething = true;
                   yield {
-                    backReferenceStack: [
-                      ...contents.backReferenceStack,
+                    backreferenceStack: [
+                      ...contents.backreferenceStack,
                       value.node,
                     ],
                     characterGroups: contents.groups,
@@ -333,7 +333,7 @@ export function buildCharacterReaderWithReferences(
               emittedSomething = true;
 
               yield {
-                backReferenceStack: [],
+                backreferenceStack: [],
                 characterGroups: value.characterGroups,
                 groups: value.groups,
                 lookaheadStack: value.lookaheadStack,

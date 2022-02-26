@@ -58,7 +58,7 @@ export type CharacterGroupsOrReference = Readonly<
 >;
 
 export type TrailEntrySide = Readonly<{
-  backReferenceStack: BackReferenceStack;
+  backreferenceStack: BackReferenceStack;
   node:
     | CharacterClass
     | CharacterClassEscape
@@ -405,12 +405,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         {
           intersection,
           left: {
-            backReferenceStack: leftValue.backReferenceStack,
+            backreferenceStack: leftValue.backreferenceStack,
             node: leftValue.node,
             quantifierStack: leftValue.quantifierStack,
           },
           right: {
-            backReferenceStack: rightValue.backReferenceStack,
+            backreferenceStack: rightValue.backreferenceStack,
             node: rightValue.node,
             quantifierStack: rightValue.quantifierStack,
           },
