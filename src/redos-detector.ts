@@ -186,7 +186,7 @@ export type RedosDetectorResult = {
    * If it's infinite the `infinite` property will be `true`, otherwise the number
    * will be on `value`.
    */
-  readonly worstCaseBackTrackCount: BacktrackCount;
+  readonly worstCaseBacktrackCount: BacktrackCount;
 } & (
   | {
       /**
@@ -350,7 +350,7 @@ export function isSafePattern(
       };
       return safeRegexTrail;
     }),
-    worstCaseBackTrackCount:
+    worstCaseBacktrackCount:
       result.worstCaseBacktrackCount === Infinity
         ? { infinite: true }
         : { infinite: false, value: result.worstCaseBacktrackCount },

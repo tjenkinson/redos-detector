@@ -412,7 +412,7 @@ describe('RedosDetector', () => {
             maxBacktracks: Infinity,
             maxSteps: 5000,
           });
-          const { error, trails, safe, worstCaseBackTrackCount } = result;
+          const { error, trails, safe, worstCaseBacktrackCount } = result;
 
           if (expectNoBacktracks === true) {
             expect(error).toBe(null);
@@ -421,12 +421,12 @@ describe('RedosDetector', () => {
 
           expect(trails.length === 0).toBe(expectNoBacktracks === true);
           if (expectNoBacktracks === true) {
-            expect(worstCaseBackTrackCount).toStrictEqual({
+            expect(worstCaseBacktrackCount).toStrictEqual({
               infinite: false,
               value: 0,
             });
           } else {
-            expect(worstCaseBackTrackCount).toMatchSnapshot();
+            expect(worstCaseBacktrackCount).toMatchSnapshot();
           }
           expect(safe).toBe(!error);
 

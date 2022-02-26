@@ -93,7 +93,7 @@ type Root = {
   trails: Trail[];
   patternDowngraded: boolean;
   pattern: string;
-  worstCaseBackTrackCount:
+  worstCaseBacktrackCount:
     | {
         infinite: true;
       }
