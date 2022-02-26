@@ -20,7 +20,6 @@ import {
   ReaderResult,
 } from './reader';
 import {
-  buildQuantifierIterations,
   buildQuantifiersInInfinitePortion,
   buildQuantifierTrail,
   QuantifierStack,
