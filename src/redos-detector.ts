@@ -38,7 +38,7 @@ export type RedosDetectorNode = {
 
 export type RedosDetectorBackReference = {
   /**
-   * The index of the capturing group the back reference points at.
+   * The index of the capturing group the backreference points at.
    * The first group has index `1`.
    */
   readonly index: number;
@@ -67,7 +67,7 @@ export type RedosDetectorQuantifierIterations =
 
 export type RedosDetectorTrailEntrySide = {
   /**
-   * If not `null`, this means the current node is part of the back reference.
+   * If not `null`, this means the current node is part of the backreference.
    */
   readonly backreferenceStack: RedosDetectorBackReferenceStack;
   /**
