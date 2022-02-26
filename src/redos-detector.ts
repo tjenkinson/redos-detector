@@ -222,7 +222,7 @@ export type IsSafePatternConfig = IsSafeConfig & {
 };
 
 export const defaultTimeout = Infinity;
-export const defaultMaxBacktracks = 200; // TOOD check this
+export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
 const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
