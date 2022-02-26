@@ -61,7 +61,7 @@ _Note this could be made good again by making the first group atomic. [Atomic gr
 isSafe(/^(a|a)+$/).safe === false;
 ```
 
-[Demo](https://redosdetector.com/?pattern=%5E%28a%7Ca%29%24)
+[Demo](https://redosdetector.com/?pattern=%5E%28a%7Ca%29%2B%24)
 
 is bad because in the group `a` could match on both sides. The input `aaaaaax` could result in many combinations being tried.
 
