@@ -2,6 +2,8 @@
 
 A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks. Supported in the browser, Node and Deno.
 
+By default it considers a pattern unsafe if there are potentially more than 200 backtracks possible.
+
 There are some cases where it may report a pattern as unsafe when in reality it's safe, but it should never report a pattern as safe when it is not.
 
 ## Demo
@@ -13,34 +15,47 @@ There are some cases where it may report a pattern as unsafe when in reality it'
 ### Good
 
 ```ts
-isSafe(/^([a-c]?)d([a-c]?)$/).safe === true;
+isSafe(/^([a-c]*)d([a-c]*)$/).safe === true;
 ```
 
-[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D%3F%29d%28%5Ba-c%5D%3F%29%24)
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D*%29d%28%5Ba-c%5D*%29%24)
 
 because for any given input string this can only match in one way, or not match.
 
 ### Bad
 
 ```ts
-isSafe(/^([a-b]?)([a-c]?)$/).safe === false;
+isSafe(/^([a-b]*)([a-c]*)$/).safe === false;
 ```
 
-[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-b%5D%3F%29%28%5Ba-c%5D%3F%29%24)
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-b%5D*%29%28%5Ba-c%5D*%29%24)
 
 because the input `a` could match in both places. The input `ax` could result in both being tried.
 
 The CLI would output the following for this:
 
 ```
-Regex is not safe. The following trail shows how the same input can be matched multiple ways.
+Regex is not safe. There could be infinite backtracks in the worst case. The following trails show how the same input can be matched multiple ways.
 
-10: `[a-c]` | 2: `[a-b]`
+2: `[a-b]` | 10: `[a-c]`
+========================
+ 2: `[a-b]` | 10: `[a-c]`
+10: `[a-c]` | 10: `[a-c]`
+=========================
+ 2: `[a-b]` | 10: `[a-c]`
+10: `[a-c]` | 10: `[a-c]`
+10: `[a-c]` | 10: `[a-c]`
+=========================
+2: `[a-b]` | 10: `[a-c]`
+2: `[a-b]` | 10: `[a-c]`
+========================
+Hit maxiumum number of backtracks so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed.
 ```
 
-which means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
+The first result means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
 
-_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pattern like `^(?=([a-b]?))\1([a-c]?)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D%3F%29%29%5C1%28%5Ba-c%5D%3F%29%24))._
+_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pattern like `^(?=([a-b]*))\1([a-c]*)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D*%29%29%5C1%28%5Ba-c%5D*%29%24))._
 
 ```ts
 isSafe(/^(a|a)+$/).safe === false;
@@ -69,8 +84,23 @@ The following is the structure of the result you will get from both `isSafe`, `i
 ```ts
 type Root = {
   safe: boolean;
-  error: null | 'hitMaxResults' | 'hitMaxSteps' | 'stackOverflow' | 'timedOut';
+  error:
+    | null
+    | 'hitMaxBacktracks'
+    | 'hitMaxSteps'
+    | 'stackOverflow'
+    | 'timedOut';
   trails: Trail[];
+  patternDowngraded: boolean;
+  pattern: string;
+  worstCaseBackTrackCount:
+    | {
+        infinite: true;
+      }
+    | {
+        infinite: false;
+        value: number;
+      };
 };
 ```
 
@@ -124,7 +154,7 @@ type Location = {
 The following options exist for both the library and CLI:
 
 - `unicode`: Enable unicode mode. _(Default: `false`)_
-- `maxResults`: The maximum number of results to return. If this limit is hit `error` will be `hitMaxResults`. _(Default: `1`)_
+- `maxBacktracks`: If worst case count of possible backtracks is below this number, the regex will be considered safe. _(Default: `200`)_
 - `maxSteps`: The maximum number of steps to make. Every time a new node is read from the pattern this counts as one step. If this limit is hit `error` will be `hitMaxSteps`. _(Default: `20000`)_
 - `timeout`: The maximum amount of time (ms) to spend processing. Once this time is passed the trails found so far will be returned, and the `error` will be `timeout`. _(Default: `Infinity`)_
 - `downgradePattern`: Automatically downgrade the pattern if it's not supported as is. If this happens `patternDowngraded` will be `true` and `pattern` will contain the downgraded version. An exception may be thrown if the pattern needed to be downgraded and it wasn't. _(Default: `true`)_
@@ -134,7 +164,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--unicode) (--maxResults <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--json)
+$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or
@@ -147,6 +177,8 @@ to make the command available globally as `redos-detector`.
 
 By default this will output the result in a text format, and the exit status will be `0` if the pattern is safe, otherwise non-`0`. You should not try and parse this text output as it may change between any version.
 
+Only the first 15 results will be shown in the text output, but this can be changed with the `--resultsLimit` option. This option is ignored with `--json`.
+
 The `--json` option will result in JSON being outputted containing more information. The structure of this will follow semantic versioning. When this option is used the exit status will always be `0` (unless an exception occurred), so you should always check the `safe` property to determine if the pattern is safe.
 
 ### Library
@@ -157,8 +189,8 @@ $ npm install redos-detector
 
 The following functions are provided:
 
-- `isSafe(regexp: RegExp, options?: { maxResults?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
-- `isSafePattern(pattern: string, options?: { maxResults?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
+- `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
+- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
 
 ## Useful Resources

@@ -33,6 +33,36 @@ describe('toFriendly', () => {
         },
       ],
     },
+    {
+      trail: [
+        {
+          a: {
+            backReferenceStack: [],
+            node: {
+              end: { offset: 4 },
+              source: 'a',
+              start: {
+                offset: 3,
+              },
+            },
+            quantifierIterations: [],
+          },
+          b: {
+            backReferenceStack: [],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+        },
+      ],
+    },
   ];
 
   it('returns the correct string when safe', () => {
@@ -43,6 +73,27 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: true,
         trails: [],
+        worstCaseBackTrackCount: { infinite: false, value: 1 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: null,
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: true,
+        trails: [],
+        worstCaseBackTrackCount: { infinite: false, value: 2 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: null,
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: true,
+        trails: [],
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
   });
@@ -55,6 +106,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -64,6 +116,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -73,6 +126,7 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: [],
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
   });
@@ -80,29 +134,12 @@ describe('toFriendly', () => {
   it('returns the correct string when not safe', () => {
     expect(
       toFriendly({
-        error: null,
-        pattern: 'pattern',
-        patternDowngraded: false,
-        safe: false,
-        trails: mockTrails,
-      })
-    ).toMatchSnapshot();
-    expect(
-      toFriendly({
-        error: 'hitMaxResults',
-        pattern: 'pattern',
-        patternDowngraded: false,
-        safe: false,
-        trails: mockTrails,
-      })
-    ).toMatchSnapshot();
-    expect(
-      toFriendly({
         error: 'hitMaxSteps',
         pattern: 'pattern',
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
@@ -112,16 +149,90 @@ describe('toFriendly', () => {
         patternDowngraded: false,
         safe: false,
         trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
     expect(
       toFriendly({
-        error: null,
+        error: 'hitMaxBacktracks',
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: false,
+        trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: true },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: 'hitMaxBacktracks',
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: false,
+        trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: false, value: 1 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: 'hitMaxBacktracks',
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: false,
+        trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: false, value: 2 },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
+        error: 'hitMaxSteps',
         pattern: 'pattern',
         patternDowngraded: true,
         safe: false,
         trails: mockTrails,
+        worstCaseBackTrackCount: { infinite: true },
       })
     ).toMatchSnapshot();
+    expect(
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: 0 }
+      )
+    ).toMatchSnapshot();
+    expect(
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: 1 }
+      )
+    ).toMatchSnapshot();
+  });
+
+  it('throws if `resultsLimit` is < 0', () => {
+    expect(() =>
+      toFriendly(
+        {
+          error: 'hitMaxSteps',
+          pattern: 'pattern',
+          patternDowngraded: true,
+          safe: false,
+          trails: mockTrails,
+          worstCaseBackTrackCount: { infinite: true },
+        },
+        { resultsLimit: -1 }
+      )
+    ).toThrowError('`resultsLimit` must be > 0.');
   });
 });

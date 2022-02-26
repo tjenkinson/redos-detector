@@ -7,8 +7,7 @@ import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
 import { QuantifierStack } from './nodes/quantifier';
 
 export { downgradePattern, DowngradePatternConfig } from './downgrade-pattern';
-
-export { toFriendly } from './to-friendly';
+export * from './to-friendly';
 
 /**
  * The current version.
@@ -95,12 +94,14 @@ export type RedosDetectorTrail = {
 
 export type IsSafeConfig = {
   /**
-   * The maximum number of results to return. If this limit is hit `error`
-   * will be `hitMaxResults`.
+   * The maximum number of backtracks that should be allowed.
+   * If this limit is hit `error` will be `hitMaxBacktracks` and
+   * the pattern is considered unsafe.
    *
-   * Note it's possible for there to be a infinite number of results.
+   * Note this is the worst case number, and may be higher than the true
+   * number of possible backtracks.
    */
-  readonly maxResults?: number;
+  readonly maxBacktracks?: number;
   /**
    * The maximum number of steps to make. Every time a new node is read
    * from the pattern this counts as one step. If this limit is hit `error`
@@ -150,10 +151,14 @@ export type IsSafeConfig = {
 );
 
 export type RedosDetectorError =
-  | 'hitMaxResults'
+  | 'hitMaxBacktracks'
   | 'hitMaxSteps'
   | 'stackOverflow'
   | 'timedOut';
+
+export type BacktrackCount =
+  | { infinite: false; value: number }
+  | { infinite: true };
 
 export type RedosDetectorResult = {
   /**
@@ -165,35 +170,47 @@ export type RedosDetectorResult = {
    * `true` if the pattern needed to be downgraded.
    */
   readonly patternDowngraded: boolean;
+  /**
+   * An array of trails. Each trail shows 2 different ways through the pattern
+   * side by side.
+   *
+   * For every trail there's an input string that could
+   * match the regex multiple ways if backtracking occurred.
+   */
+  readonly trails: RedosDetectorTrail[];
+  /**
+   * The worst case number of backtracks that could occur on an input string.
+   *
+   * Note it's possible for this to be higher than the true number.
+   *
+   * If it's infinite the `infinite` property will be `true`, otherwise the number
+   * will be on `value`.
+   */
+  readonly worstCaseBackTrackCount: BacktrackCount;
 } & (
   | {
       /**
-       * The error that occurred or `null` if there was no error.
-       *
-       * Even if an error occurred `trails` will still contain the trails
-       * that were foundn before the error occurred.
+       * `null` means no error occurred.
        */
-      readonly error: RedosDetectorError | null;
+      readonly error: null;
+      /**
+       * `true` means the regex pattern is not susceptible to ReDoS attacks
+       * based on the configured `maxBacktracks` option.
+       */
+      readonly safe: true;
+    }
+  | {
+      /**
+       * The error that occurred.
+       *
+       * `trails` will still contain the trails that were found before
+       *  the error occurred.
+       */
+      readonly error: RedosDetectorError;
       /**
        * `false` means the regex pattern is susceptible to ReDoS attacks.
        */
       readonly safe: false;
-      /**
-       * An array of trails. Each trail shows 2 different ways through the pattern
-       * side by side.
-       *
-       * For every trail there's an input string that could
-       * match the regex multiple ways if backtracking occurred.
-       */
-      readonly trails: RedosDetectorTrail[];
-    }
-  | {
-      readonly error: null;
-      /**
-       * `true` means that ReDoS attacks are not possible with the regex pattern.
-       */
-      readonly safe: true;
-      readonly trails: [];
     }
 );
 
@@ -205,7 +222,7 @@ export type IsSafePatternConfig = IsSafeConfig & {
 };
 
 export const defaultTimeout = Infinity;
-export const defaultMaxResults = 1;
+export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
 const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
@@ -254,7 +271,7 @@ export function isSafePattern(
   inputPattern: string,
   {
     atomicGroupOffsets: atomicGroupOffsetsInput,
-    maxResults = defaultMaxResults,
+    maxBacktracks = defaultMaxBacktracks,
     maxSteps = defaultMaxSteps,
     timeout = defaultTimeout,
     unicode = defaultUnicode,
@@ -266,11 +283,11 @@ export function isSafePattern(
       '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.'
     );
   }
-  if (maxResults <= 0) {
-    throw new Error('`maxResults` must be a positive number.');
-  }
   if (timeout <= 0) {
     throw new Error('`timeout` must be a positive number.');
+  }
+  if (maxBacktracks <= 0) {
+    throw new Error('`maxBacktracks` must be a positive number.');
   }
   if (maxSteps <= 0) {
     throw new Error('`maxSteps` must be a positive number.');
@@ -287,27 +304,24 @@ export function isSafePattern(
 
   const result = collectResults({
     atomicGroupOffsets,
-    maxResults,
+    maxBacktracks,
     maxSteps,
     node: ast,
     timeout,
   });
 
-  if (!result.trails.length && !result.error) {
-    return {
-      error: null,
-      pattern,
-      patternDowngraded,
-      safe: true,
-      trails: [],
-    };
-  }
-
   return {
-    error: result.error,
+    ...(result.error
+      ? {
+          error: result.error,
+          safe: false,
+        }
+      : {
+          error: null,
+          safe: true,
+        }),
     pattern,
     patternDowngraded,
-    safe: false,
     trails: result.trails.map((trail) => {
       const safeRegexTrail: RedosDetectorTrail = {
         trail: trail.map(({ left, right }) => {
@@ -336,6 +350,10 @@ export function isSafePattern(
       };
       return safeRegexTrail;
     }),
+    worstCaseBackTrackCount:
+      result.worstCaseBacktrackCount === Infinity
+        ? { infinite: true }
+        : { infinite: false, value: result.worstCaseBacktrackCount },
   };
 }
 

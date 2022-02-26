@@ -1,6 +1,12 @@
 /* eslint-disable no-console */
-import { defaultMaxSteps, isSafePattern, toFriendly } from './redos-detector';
+import {
+  defaultMaxBacktracks,
+  defaultMaxSteps,
+  isSafePattern,
+  toFriendly,
+} from './redos-detector';
 import { Command } from 'commander';
+import { defaultResultsLimit } from './to-friendly';
 import description from 'package-json:description';
 import version from 'package-json:version';
 
@@ -25,7 +31,18 @@ program
   .command('check')
   .argument('<regex pattern>', 'the regex pattern')
   .option('--unicode', 'enable unicode mode', false)
-  .option('--maxResults <number>', 'max number of results to emit', toInt, 1)
+  .option(
+    '--maxBacktracks <number>',
+    'max number of backtracks to allow',
+    toInt,
+    defaultMaxBacktracks
+  )
+  .option(
+    '--resultsLimit <number>',
+    'the maximum number of results to print, ignored with --json',
+    toInt,
+    defaultResultsLimit
+  )
   .option(
     '--maxSteps <number>',
     'max number of steps to take',
@@ -45,23 +62,25 @@ program
       {
         disableDowngrade,
         json,
-        maxResults,
+        maxBacktracks,
         maxSteps,
+        resultsLimit,
         timeout,
         unicode,
       }: {
         disableDowngrade: boolean;
         json: boolean;
-        maxResults?: number;
-        maxSteps?: number;
-        timeout?: number;
+        maxBacktracks: number;
+        maxSteps: number;
+        resultsLimit: number;
+        timeout: number;
         unicode: boolean;
       }
     ) => {
       try {
         const result = isSafePattern(pattern, {
           downgradePattern: !disableDowngrade,
-          maxResults: coerceInfinity(maxResults),
+          maxBacktracks: coerceInfinity(maxBacktracks),
           maxSteps: coerceInfinity(maxSteps),
           timeout: coerceInfinity(timeout),
           unicode,
@@ -71,7 +90,9 @@ program
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(0);
         } else {
-          console.log(toFriendly(result));
+          console.log(
+            toFriendly(result, { resultsLimit: coerceInfinity(resultsLimit) })
+          );
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(result.safe ? 0 : 1);
         }

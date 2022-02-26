@@ -403,22 +403,34 @@ describe('RedosDetector', () => {
         [/(?=(a{0,1})b)\1a?/, false],
       ];
 
-      cases.forEach(([regex, expectedSafe]) => {
+      cases.forEach(([regex, expectNoBacktracks]) => {
         const source =
           typeof regex === 'string' ? regex : `/${regex.source}/${regex.flags}`;
 
         it(source, () => {
           const result = isSafe(regex, {
-            maxResults: 21,
+            maxBacktracks: Infinity,
             maxSteps: 5000,
           });
-          const { error, safe, trails } = result;
+          const { error, trails, safe, worstCaseBackTrackCount } = result;
 
-          expect(safe).toBe(!trails.length);
+          if (expectNoBacktracks === true) {
+            expect(error).toBe(null);
+          }
+          expect(error).toMatchSnapshot();
 
-          expect(trails.length === 0).toBe(expectedSafe === true);
+          expect(trails.length === 0).toBe(expectNoBacktracks === true);
+          if (expectNoBacktracks === true) {
+            expect(worstCaseBackTrackCount).toStrictEqual({
+              infinite: false,
+              value: 0,
+            });
+          } else {
+            expect(worstCaseBackTrackCount).toMatchSnapshot();
+          }
+          expect(safe).toBe(!error);
 
-          if (expectedSafe !== 'noIgnoreSnapshot') {
+          if (expectNoBacktracks !== 'noIgnoreSnapshot') {
             expect(
               trails.map((trail) => {
                 return {
@@ -435,11 +447,6 @@ describe('RedosDetector', () => {
             ).toMatchSnapshot();
             expect(toFriendly(result)).toMatchSnapshot();
           }
-
-          if (safe) {
-            expect(error).toBe(null);
-          }
-          expect(error).toMatchSnapshot();
 
           const neededDowngrade =
             downgradePattern({
@@ -458,6 +465,24 @@ describe('RedosDetector', () => {
       });
     });
 
+    it('respects the `maxBacktracks`', () => {
+      expect(
+        isSafe(/a?a?/, {
+          maxBacktracks: 2,
+        }).error
+      ).toBe(null);
+      expect(
+        isSafe(/a?a?/, {
+          maxBacktracks: 1,
+        }).error
+      ).toBe('hitMaxBacktracks');
+      expect(
+        isSafe(/a*a*/, {
+          maxBacktracks: Infinity,
+        }).error
+      ).toBe('hitMaxBacktracks');
+    });
+
     it('respects the timeout', () => {
       let fakeTime = 0;
       const spy = jest.spyOn(Date, 'now');
@@ -466,7 +491,6 @@ describe('RedosDetector', () => {
         return fakeTime;
       });
       const res = isSafe(/a?a?a?/, {
-        maxResults: 1000,
         timeout: 20,
       });
       expect(res.error).toBe('timedOut');
@@ -475,19 +499,9 @@ describe('RedosDetector', () => {
 
     it('respects the `maxSteps`', () => {
       const res = isSafe(/a?a?a?/, {
-        maxResults: 1000,
         maxSteps: 20,
       });
       expect(res.error).toBe('hitMaxSteps');
-      expect(res).toMatchSnapshot();
-    });
-
-    it('respects the `maxResults`', () => {
-      const res = isSafe(/a?a?a?/, {
-        maxResults: 2,
-      });
-      expect(res.error).toBe('hitMaxResults');
-      expect(res.trails.length).toBe(2);
       expect(res).toMatchSnapshot();
     });
 
@@ -498,12 +512,12 @@ describe('RedosDetector', () => {
       expect(res.error).toBe('stackOverflow');
     });
 
-    it('throws if `maxResults` not positive', () => {
+    it('throws if `maxBacktracks` not positive or 0', () => {
       expect(() =>
         isSafe(/a/, {
-          maxResults: 0,
+          maxBacktracks: 0,
         })
-      ).toThrowError('`maxResults` must be a positive number.');
+      ).toThrowError('`maxBacktracks` must be a positive number.');
     });
 
     it('throws if `timeout` not positive', () => {
@@ -554,7 +568,7 @@ describe('RedosDetector', () => {
 
   describe('isSafePattern', () => {
     it('supports no options', () => {
-      expect(isSafePattern('a').safe).toBe(true);
+      expect(isSafePattern('a').error).toBe(null);
     });
   });
 
