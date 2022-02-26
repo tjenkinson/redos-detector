@@ -1,5 +1,4 @@
 import {
-  areSidesEqual,
   buildCheckerReader,
   CheckerReaderReturn,
   checkerReaderTypeInfiniteResults,
@@ -17,6 +16,7 @@ import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
+import { SidesEqualChecker } from './sides-equal-checker';
 
 export type WalkerResult = Readonly<{
   error: RedosDetectorError | null;
@@ -45,37 +45,6 @@ function trailsCouldMatchSameInput(a: Trail, b: Trail): boolean {
   );
 }
 
-function addTrailSidesToGroup(
-  groupSides: Set<readonly TrailEntrySide[]>,
-  trail: Trail
-): void {
-  const leftSide: TrailEntrySide[] = [];
-  const rightSide: TrailEntrySide[] = [];
-  for (const { left, right } of trail) {
-    leftSide.push(left);
-    rightSide.push(right);
-  }
-
-  let hasLeft = false;
-  let hasRight = false;
-  for (const side of groupSides) {
-    if (
-      !hasLeft &&
-      side.every((entry, i) => areSidesEqual(entry, leftSide[i]))
-    ) {
-      hasLeft = true;
-    }
-    if (
-      !hasRight &&
-      side.every((entry, i) => areSidesEqual(entry, rightSide[i]))
-    ) {
-      hasRight = true;
-    }
-  }
-  if (!hasLeft) groupSides.add(leftSide);
-  if (!hasRight) groupSides.add(rightSide);
-}
-
 export function collectResults({
   atomicGroupOffsets,
   node,
@@ -86,12 +55,14 @@ export function collectResults({
   const nodeExtra = buildNodeExtra(node);
   const leftStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
   const rightStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
+  const sidesEqualChecker = new SidesEqualChecker();
 
   const reader = buildCheckerReader({
     atomicGroupOffsets,
     leftStreamReader,
     maxSteps,
     rightStreamReader,
+    sidesEqualChecker,
     timeout,
   });
 
@@ -103,6 +74,41 @@ export function collectResults({
   > = new Map();
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
   let worstCaseBacktrackCount = 0;
+
+  const addTrailSidesToGroup = (
+    groupSides: Set<readonly TrailEntrySide[]>,
+    trail: Trail
+  ): void => {
+    const leftSide: TrailEntrySide[] = [];
+    const rightSide: TrailEntrySide[] = [];
+    for (const { left, right } of trail) {
+      leftSide.push(left);
+      rightSide.push(right);
+    }
+
+    let hasLeft = false;
+    let hasRight = false;
+    for (const side of groupSides) {
+      if (
+        !hasLeft &&
+        side.every((entry, i) =>
+          sidesEqualChecker.areSidesEqual(entry, leftSide[i])
+        )
+      ) {
+        hasLeft = true;
+      }
+      if (
+        !hasRight &&
+        side.every((entry, i) =>
+          sidesEqualChecker.areSidesEqual(entry, rightSide[i])
+        )
+      ) {
+        hasRight = true;
+      }
+    }
+    if (!hasLeft) groupSides.add(leftSide);
+    if (!hasRight) groupSides.add(rightSide);
+  };
 
   outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {

@@ -1,4 +1,3 @@
-import { areArraysEqual, last } from './arrays';
 import {
   AstNode,
   CharacterClass,
@@ -31,12 +30,12 @@ import {
   intersectCharacterGroups,
   isEmptyCharacterGroups,
 } from './character-groups';
-import { areMapsEqual } from './map';
 import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
+import { last } from './arrays';
 import { MyFeatures } from './parse';
-import { ResultCache } from './result-cache';
 import { setsOverlap } from './set';
+import { SidesEqualChecker } from './sides-equal-checker';
 import { synchronisationCheck } from './synchronisation-checker';
 
 export type CheckerInput = Readonly<{
@@ -44,6 +43,7 @@ export type CheckerInput = Readonly<{
   leftStreamReader: CharacterReaderWithReferences;
   maxSteps: number;
   rightStreamReader: CharacterReaderWithReferences;
+  sidesEqualChecker: SidesEqualChecker;
   timeout: number;
 }>;
 
@@ -103,26 +103,6 @@ export type CheckerReaderReturn = Readonly<{
 
 const stackOverflowLimit = 1500;
 
-const sidesEqualCache = new ResultCache<boolean>();
-
-export function areSidesEqual(
-  left: TrailEntrySide,
-  right: TrailEntrySide
-): boolean {
-  const cached = sidesEqualCache.getResult(left, right);
-  if (cached !== undefined) return cached;
-
-  const equal =
-    left.node === right.node &&
-    areArraysEqual(left.backReferenceStack, right.backReferenceStack) &&
-    areMapsEqual(
-      buildQuantifierIterations(left.quantifierStack),
-      buildQuantifierIterations(right.quantifierStack)
-    );
-  sidesEqualCache.addResult(left, right, equal);
-  return equal;
-}
-
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
   quantifierTrail: string;
@@ -161,6 +141,7 @@ const isNodeWithQuantifierTrailEqual = (
  * input.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
+  const { sidesEqualChecker } = input;
   const trails = new Set<Trail>();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
@@ -266,7 +247,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       if (nextLeft.done && nextRight.done) {
         if (!trails.has(trail)) {
           const leftAndRightIdentical = trail.every((entry) =>
-            areSidesEqual(entry.left, entry.right)
+            sidesEqualChecker.areSidesEqual(entry.left, entry.right)
           );
 
           if (!leftAndRightIdentical) {
@@ -276,13 +257,25 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
               return (
                 existingTrail.every(
                   (existingEntry, i) =>
-                    areSidesEqual(existingEntry.left, trail[i].right) &&
-                    areSidesEqual(existingEntry.right, trail[i].left)
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].right
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].left
+                    )
                 ) ||
                 existingTrail.every(
                   (existingEntry, i) =>
-                    areSidesEqual(existingEntry.left, trail[i].left) &&
-                    areSidesEqual(existingEntry.right, trail[i].right)
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].left
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].right
+                    )
                 )
               );
             });
@@ -333,7 +326,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         )
       ) {
         const leftAndRightIdentical = trail.every((entry) =>
-          areSidesEqual(entry.left, entry.right)
+          sidesEqualChecker.areSidesEqual(entry.left, entry.right)
         );
         if (leftAndRightIdentical) {
           // left and right have been identical to each other, and we are now entering an infinite
