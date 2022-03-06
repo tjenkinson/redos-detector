@@ -21,6 +21,7 @@ module.exports = {
     'prefer-const': ['error'],
     'no-var': ['error'],
     'no-use-before-define': ['error'],
+    'no-warning-comments': ['error'],
     '@typescript-eslint/member-ordering': [
       'error',
       {

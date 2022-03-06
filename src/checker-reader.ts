@@ -244,47 +244,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (nextLeft.done && nextRight.done) {
-        if (!trails.has(trail)) {
-          const leftAndRightIdentical = trail.every((entry) =>
-            sidesEqualChecker.areSidesEqual(entry.left, entry.right)
-          );
-
-          if (!leftAndRightIdentical) {
-            const alreadyExists = [...trails].some((existingTrail) => {
-              if (existingTrail.length !== trail.length) return false;
-
-              return (
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].right
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].left
-                    )
-                ) ||
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].left
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].right
-                    )
-                )
-              );
-            });
-
-            if (!alreadyExists) {
-              trails.add(trail);
-              yield { trail, type: checkerReaderTypeTrail };
-            }
-          }
-        }
         return;
       }
 
@@ -416,6 +375,55 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           },
         },
       ];
+
+      const shouldSendTrail = (): boolean => {
+        if (!trails.has(trail)) {
+          const leftAndRightIdentical = trail.every((entry) =>
+            sidesEqualChecker.areSidesEqual(entry.left, entry.right)
+          );
+
+          if (!leftAndRightIdentical) {
+            const alreadyExists = [...trails].some((existingTrail) => {
+              if (existingTrail.length !== trail.length) return false;
+
+              return (
+                existingTrail.every(
+                  (existingEntry, i) =>
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].right
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].left
+                    )
+                ) ||
+                existingTrail.every(
+                  (existingEntry, i) =>
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].left
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].right
+                    )
+                )
+              );
+            });
+
+            if (!alreadyExists) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      if (shouldSendTrail()) {
+        trails.add(trail);
+        yield { trail, type: checkerReaderTypeTrail };
+      }
     }
   };
 
