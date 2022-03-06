@@ -144,6 +144,16 @@ describe('toFriendly', () => {
     ).toMatchSnapshot();
     expect(
       toFriendly({
+        error: 'hitMaxSteps',
+        pattern: 'pattern',
+        patternDowngraded: false,
+        safe: false,
+        trails: [mockTrails[0]],
+        worstCaseBacktrackCount: { infinite: true },
+      })
+    ).toMatchSnapshot();
+    expect(
+      toFriendly({
         error: 'timedOut',
         pattern: 'pattern',
         patternDowngraded: false,
