@@ -11,7 +11,7 @@ export function* buildAnchorReader(node: Anchor): CharacterReader {
         yield {
           groups: new Map(),
           lookaheadStack: [],
-          node,
+          offset: node.range[0],
           quantifierStack: [],
           subType: 'end',
           type: characterReaderTypeCharacterEntry,
@@ -24,7 +24,7 @@ export function* buildAnchorReader(node: Anchor): CharacterReader {
       yield {
         groups: new Map(),
         lookaheadStack: [],
-        node,
+        offset: node.range[0],
         quantifierStack: [],
         subType: 'start',
         type: characterReaderTypeCharacterEntry,

@@ -30,6 +30,7 @@ import {
   isEmptyCharacterGroups,
 } from './character-groups';
 import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
+import { Groups } from './nodes/group';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
@@ -262,6 +263,21 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         throw new Error('Internal error: impossible leftValue/rightValue type');
       }
 
+      const leftPassedStartAnchor = leftValue.preceedingZeroWidthEntries.some(
+        ({ type }) => type === 'start'
+      );
+      const rightPassedStartAnchor = rightValue.preceedingZeroWidthEntries.some(
+        ({ type }) => type === 'start'
+      );
+      if (
+        (trail.length > 0 &&
+          (leftPassedStartAnchor || rightPassedStartAnchor)) ||
+        leftPassedStartAnchor !== rightPassedStartAnchor
+      ) {
+        dispose();
+        return;
+      }
+
       const leftLookahead = last(leftValue.lookaheadStack);
       const rightLookahead = last(rightValue.lookaheadStack);
       if (leftLookahead !== rightLookahead) {
@@ -343,12 +359,20 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         atomicGroupsToSynchronisationCheckerKeys({
           atomicGroupOffsets: input.atomicGroupOffsets,
           leftGroupsNow: leftValue.groups,
-          leftPreceedingGroups: leftValue.preceedingZeroWidthEntries.map(
-            ({ groups }) => groups
+          leftPreceedingGroups: leftValue.preceedingZeroWidthEntries.reduce<
+            Groups[]
+          >(
+            (acc, entry) =>
+              entry.type === 'groups' ? [...acc, entry.groups] : acc,
+            []
           ),
           rightGroupsNow: rightValue.groups,
-          rightPreceedingGroups: rightValue.preceedingZeroWidthEntries.map(
-            ({ groups }) => groups
+          rightPreceedingGroups: rightValue.preceedingZeroWidthEntries.reduce<
+            Groups[]
+          >(
+            (acc, entry) =>
+              entry.type === 'groups' ? [...acc, entry.groups] : acc,
+            []
           ),
         })
       );

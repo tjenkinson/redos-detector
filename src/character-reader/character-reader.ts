@@ -1,13 +1,4 @@
 import {
-  Anchor,
-  CharacterClass,
-  CharacterClassEscape,
-  Dot,
-  Reference,
-  UnicodePropertyEscape,
-  Value,
-} from 'regjsparser';
-import {
   buildGroupCharacterReader,
   Groups,
   LookaheadStack,
@@ -16,6 +7,14 @@ import {
   buildQuantifierCharacterReader,
   QuantifierStack,
 } from '../nodes/quantifier';
+import {
+  CharacterClass,
+  CharacterClassEscape,
+  Dot,
+  Reference,
+  UnicodePropertyEscape,
+  Value,
+} from 'regjsparser';
 import { buildAnchorReader } from '../nodes/anchor';
 import { buildCharacterClassCharacterReader } from '../nodes/character-class';
 import { buildCharacterClassEscapeReader } from '../nodes/character-class-escape';
@@ -63,9 +62,9 @@ export type CharacterReaderValueGroups = {
       referenceIndex: number;
       subType: 'reference';
     }
-  | { node: Anchor | null; subType: 'end' }
-  | { node: Anchor; subType: 'start' }
+  | { offset: number; subType: 'end' }
   | { offset: number; subType: 'null' }
+  | { offset: number; subType: 'start' }
 );
 
 export type CharacterReaderValue =

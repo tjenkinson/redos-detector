@@ -3,11 +3,11 @@ import {
   characterReaderTypeCharacterEntry,
 } from '../character-reader/character-reader';
 
-export function* buildEndReader(): CharacterReader {
+export function* buildEndReader(offset: number): CharacterReader {
   yield {
     groups: new Map(),
     lookaheadStack: [],
-    node: null,
+    offset,
     quantifierStack: [],
     subType: 'end',
     type: characterReaderTypeCharacterEntry,

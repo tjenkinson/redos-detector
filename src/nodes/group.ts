@@ -46,7 +46,7 @@ export function buildGroupCharacterReader(
                     lookaheadStack: newLookaheadStack,
                   };
                 }),
-              (): CharacterReader => buildEndReader(),
+              (): CharacterReader => buildEndReader(node.range[1]),
             ]),
           type: characterReaderTypeSplit,
         },
