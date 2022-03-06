@@ -378,6 +378,7 @@ describe('RedosDetector', () => {
         [/($)*a+a+/, false],
         [/b(a)?^\1?a?/, true],
         [/b(a)?^(a\1)(aa)?/, true],
+        [/(a)?^\1?a?/, true],
         [/(?=(a?)b)\1a?/, false],
         [/.?[a-z]?/, false],
         [/.?[^a-z]?/, false],

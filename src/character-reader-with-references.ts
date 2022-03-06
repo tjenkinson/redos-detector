@@ -41,9 +41,15 @@ export type CharacterReaderWithReferencesValueSplit = {
   type: typeof characterReaderWithReferencesTypeSplit;
 };
 
-export type ZeroWidthEntry = Readonly<{
-  groups: Groups;
-}>;
+export type ZeroWidthEntry = Readonly<
+  | {
+      groups: Groups;
+      type: 'groups';
+    }
+  | {
+      type: 'start';
+    }
+>;
 
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderWithReferencesValueGroups = Readonly<{
@@ -103,7 +109,6 @@ function haveHadCompleteIteration(
 }
 
 type ThreadInput = Readonly<{
-  emittedSomething: boolean;
   groupContentsStore: GroupContentsStore;
   groupsWithInfiniteSize: ReadonlySet<number>;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
@@ -126,7 +131,6 @@ export function buildCharacterReaderWithReferences(
     preceedingZeroWidthEntries,
     quantifierIterationsAtLastGroup,
     groupsWithInfiniteSize,
-    emittedSomething,
   }: ThreadInput): CharacterReaderWithReferences {
     let next: ReaderResult<CharacterReaderValue>;
     while (!(next = threadCharacterReader.next()).done) {
@@ -137,12 +141,10 @@ export function buildCharacterReaderWithReferences(
           const _quantifierIterationsAtLastGroup =
             quantifierIterationsAtLastGroup;
           const _groupsWithInfiniteSize = groupsWithInfiniteSize;
-          const _emittedSomething = emittedSomething;
           const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
           yield {
             reader: (): CharacterReaderWithReferences =>
               startThread({
-                emittedSomething: _emittedSomething,
                 groupContentsStore: _groupContentsStore,
                 groupsWithInfiniteSize: _groupsWithInfiniteSize,
                 preceedingZeroWidthEntries: _preceedingZeroWidthEntries,
@@ -304,7 +306,6 @@ export function buildCharacterReaderWithReferences(
               );
               if (groupContents.length) {
                 for (const contents of groupContents) {
-                  emittedSomething = true;
                   yield {
                     backreferenceStack: [
                       ...contents.backreferenceStack,
@@ -332,7 +333,6 @@ export function buildCharacterReaderWithReferences(
             }
             case 'groups': {
               quantifierIterationsAtLastGroup = quantifierIterations;
-              emittedSomething = true;
 
               yield {
                 backreferenceStack: [],
@@ -352,15 +352,16 @@ export function buildCharacterReaderWithReferences(
               return 'end';
             }
             case 'start': {
-              if (emittedSomething) {
-                return 'abort';
-              }
+              preceedingZeroWidthEntries = [
+                ...preceedingZeroWidthEntries,
+                { type: 'start' },
+              ];
               break;
             }
             case 'null': {
               preceedingZeroWidthEntries = [
                 ...preceedingZeroWidthEntries,
-                { groups: value.groups },
+                { groups: value.groups, type: 'groups' },
               ];
               break;
             }
@@ -373,7 +374,6 @@ export function buildCharacterReaderWithReferences(
   };
 
   return startThread({
-    emittedSomething: false,
     groupContentsStore: new Map(),
     groupsWithInfiniteSize: new Set(),
     preceedingZeroWidthEntries: [],
