@@ -412,6 +412,8 @@ describe('RedosDetector', () => {
 
           if (expectNoBacktracks === true) {
             expect(error).toBe(null);
+          } else {
+            expect(error).not.toBe('stackOverflow');
           }
           expect(error).toMatchSnapshot();
 
