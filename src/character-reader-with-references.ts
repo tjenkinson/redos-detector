@@ -207,13 +207,15 @@ export function buildCharacterReaderWithReferences(
 
           // Clear groups that are now ahead
           // This can happen when a quantifier containing a group restarts
-          if (value.subType !== 'end' && value.subType !== 'start') {
-            for (const [index, { group }] of groupContentsStore) {
-              const offset =
-                value.subType === 'null' ? value.offset : value.node.range[0];
-              if (group.range[0] >= offset) {
-                newGroupContentsStore.delete(index);
-              }
+          for (const [index, { group }] of groupContentsStore) {
+            const offset =
+              value.subType === 'null' ||
+              value.subType === 'start' ||
+              value.subType === 'end'
+                ? value.offset
+                : value.node.range[0];
+            if (group.range[0] >= offset) {
+              newGroupContentsStore.delete(index);
             }
           }
 
