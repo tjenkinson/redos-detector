@@ -139,22 +139,21 @@ export function collectResults({
     }
   }
 
-  if (next.done) {
-    if (next.value.error) {
-      worstCaseBacktrackCount = Infinity;
-    } else if (!trails.length) {
-      worstCaseBacktrackCount = 0;
-    }
-  }
-
   let error: RedosDetectorError | null = null;
   if (next.done) {
     if (next.value.error) {
+      worstCaseBacktrackCount = Infinity;
       error = next.value.error;
-    } else if (worstCaseBacktrackCount >= maxBacktracks) {
-      error = 'hitMaxBacktracks';
+    } else {
+      if (!trails.length) {
+        worstCaseBacktrackCount = 0;
+      }
+      if (worstCaseBacktrackCount >= maxBacktracks) {
+        error = 'hitMaxBacktracks';
+      }
     }
-  } else if (worstCaseBacktrackCount >= maxBacktracks) {
+  } else {
+    worstCaseBacktrackCount = Infinity;
     error = 'hitMaxBacktracks';
   }
 
