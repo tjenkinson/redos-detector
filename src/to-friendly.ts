@@ -20,12 +20,14 @@ export function toFriendly(
     throw new Error('`resultsLimit` must be > 0.');
   }
   const backtrackCountString = `There could be ${
+    !result.worstCaseBacktrackCount.infinite ? 'at most ' : ''
+  }${
     result.worstCaseBacktrackCount.infinite
       ? 'infinite backtracks'
       : result.worstCaseBacktrackCount.value === 1
       ? '1 backtrack'
       : `${result.worstCaseBacktrackCount.value} backtracks`
-  } in the worst case.`;
+  }.`;
 
   if (result.safe) {
     return `Regex is safe.${
