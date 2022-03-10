@@ -43,7 +43,6 @@ export type CheckerInput = Readonly<{
   leftStreamReader: CharacterReaderWithReferences;
   maxSteps: number;
   rightStreamReader: CharacterReaderWithReferences;
-  sidesEqualChecker: SidesEqualChecker;
   timeout: number;
 }>;
 
@@ -141,7 +140,7 @@ const isNodeWithQuantifierTrailEqual = (
  * input.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
-  const { sidesEqualChecker } = input;
+  const sidesEqualChecker = new SidesEqualChecker();
   const trails = new Set<Trail>();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
@@ -383,25 +382,28 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
       atomicGroupsInSync = syncResult.keysInSync;
 
-      trail = [
-        ...trail,
-        {
-          intersection,
-          left: {
-            backreferenceStack: leftValue.backreferenceStack,
-            node: leftValue.node,
-            quantifierStack: leftValue.quantifierStack,
-          },
-          right: {
-            backreferenceStack: rightValue.backreferenceStack,
-            node: rightValue.node,
-            quantifierStack: rightValue.quantifierStack,
-          },
+      const newEntry: TrailEntry = {
+        intersection,
+        left: {
+          backreferenceStack: leftValue.backreferenceStack,
+          node: leftValue.node,
+          quantifierStack: leftValue.quantifierStack,
         },
-      ];
+        right: {
+          backreferenceStack: rightValue.backreferenceStack,
+          node: rightValue.node,
+          quantifierStack: rightValue.quantifierStack,
+        },
+      };
+
+      trail = [...trail, newEntry];
 
       const shouldSendTrail = (): boolean => {
         if (!trails.has(trail)) {
+          if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
+            return false;
+          }
+
           const leftAndRightIdentical = trail.every((entry) =>
             sidesEqualChecker.areSidesEqual(entry.left, entry.right)
           );
