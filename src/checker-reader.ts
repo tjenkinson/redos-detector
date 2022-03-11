@@ -43,7 +43,6 @@ export type CheckerInput = Readonly<{
   leftStreamReader: CharacterReaderWithReferences;
   maxSteps: number;
   rightStreamReader: CharacterReaderWithReferences;
-  sidesEqualChecker: SidesEqualChecker;
   timeout: number;
 }>;
 
@@ -110,6 +109,7 @@ type NodeWithQuantifierTrail = Readonly<{
 
 type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
+  consumedSomething: boolean;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
     CharacterReaderWithReferencesValue,
@@ -141,7 +141,7 @@ const isNodeWithQuantifierTrailEqual = (
  * input.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
-  const { sidesEqualChecker } = input;
+  const sidesEqualChecker = new SidesEqualChecker();
   const trails = new Set<Trail>();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
@@ -150,6 +150,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   let infiniteResults = false;
 
   const startThread = function* ({
+    consumedSomething,
     leftStreamReader,
     leftInitial,
     rightStreamReader,
@@ -189,6 +190,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
+          consumedSomething,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
@@ -214,6 +216,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
+          consumedSomething,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
           leftStreamReader: leftStreamReader.fork(),
@@ -270,7 +273,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         ({ type }) => type === 'start'
       );
       if (
-        (trail.length > 0 &&
+        (consumedSomething &&
           (leftPassedStartAnchor || rightPassedStartAnchor)) ||
         leftPassedStartAnchor !== rightPassedStartAnchor
       ) {
@@ -383,76 +386,86 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
       atomicGroupsInSync = syncResult.keysInSync;
 
-      trail = [
-        ...trail,
-        {
-          intersection,
-          left: {
-            backreferenceStack: leftValue.backreferenceStack,
-            node: leftValue.node,
-            quantifierStack: leftValue.quantifierStack,
-          },
-          right: {
-            backreferenceStack: rightValue.backreferenceStack,
-            node: rightValue.node,
-            quantifierStack: rightValue.quantifierStack,
-          },
+      const newEntry: TrailEntry = {
+        intersection,
+        left: {
+          backreferenceStack: leftValue.backreferenceStack,
+          node: leftValue.node,
+          quantifierStack: leftValue.quantifierStack,
         },
-      ];
-
-      const shouldSendTrail = (): boolean => {
-        if (!trails.has(trail)) {
-          const leftAndRightIdentical = trail.every((entry) =>
-            sidesEqualChecker.areSidesEqual(entry.left, entry.right)
-          );
-
-          if (!leftAndRightIdentical) {
-            const alreadyExists = [...trails].some((existingTrail) => {
-              if (existingTrail.length !== trail.length) return false;
-
-              return (
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].right
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].left
-                    )
-                ) ||
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].left
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].right
-                    )
-                )
-              );
-            });
-
-            if (!alreadyExists) {
-              return true;
-            }
-          }
-        }
-        return false;
+        right: {
+          backreferenceStack: rightValue.backreferenceStack,
+          node: rightValue.node,
+          quantifierStack: rightValue.quantifierStack,
+        },
       };
 
-      if (shouldSendTrail()) {
-        trails.add(trail);
-        yield { trail, type: checkerReaderTypeTrail };
+      consumedSomething = true;
+      if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
+        if (trail.length > 0) {
+          // no need to continue. There will be another thread that's getting further where
+          // up to this point the sides were identical
+          dispose();
+          return;
+        }
+      } else {
+        trail = [...trail, newEntry];
+
+        const shouldSendTrail = (): boolean => {
+          if (!trails.has(trail)) {
+            const leftAndRightIdentical = trail.every((entry) =>
+              sidesEqualChecker.areSidesEqual(entry.left, entry.right)
+            );
+
+            if (!leftAndRightIdentical) {
+              const alreadyExists = [...trails].some((existingTrail) => {
+                if (existingTrail.length !== trail.length) return false;
+
+                return (
+                  existingTrail.every(
+                    (existingEntry, i) =>
+                      sidesEqualChecker.areSidesEqual(
+                        existingEntry.left,
+                        trail[i].right
+                      ) &&
+                      sidesEqualChecker.areSidesEqual(
+                        existingEntry.right,
+                        trail[i].left
+                      )
+                  ) ||
+                  existingTrail.every(
+                    (existingEntry, i) =>
+                      sidesEqualChecker.areSidesEqual(
+                        existingEntry.left,
+                        trail[i].left
+                      ) &&
+                      sidesEqualChecker.areSidesEqual(
+                        existingEntry.right,
+                        trail[i].right
+                      )
+                  )
+                );
+              });
+
+              if (!alreadyExists) {
+                return true;
+              }
+            }
+          }
+          return false;
+        };
+
+        if (shouldSendTrail()) {
+          trails.add(trail);
+          yield { trail, type: checkerReaderTypeTrail };
+        }
       }
     }
   };
 
   const reader = startThread({
     atomicGroupsInSync: new Map(),
+    consumedSomething: false,
     infiniteLoopTracker: new InfiniteLoopTracker(
       isNodeWithQuantifierTrailEqual
     ),
