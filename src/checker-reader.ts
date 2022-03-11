@@ -411,6 +411,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         }
       } else {
         branched = true;
+
         const shouldSendTrail = (): boolean => {
           if (!trails.has(trail)) {
             const leftAndRightIdentical = trail.every((entry) =>
