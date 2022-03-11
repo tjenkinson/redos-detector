@@ -109,7 +109,7 @@ type NodeWithQuantifierTrail = Readonly<{
 
 type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
-  consumedSomething: boolean;
+  branched: boolean;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
     CharacterReaderWithReferencesValue,
@@ -150,7 +150,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   let infiniteResults = false;
 
   const startThread = function* ({
-    consumedSomething,
     leftStreamReader,
     leftInitial,
     rightStreamReader,
@@ -162,6 +161,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     // was not atomic
     atomicGroupsInSync,
     level,
+    branched,
   }: StartThreadInput): Reader<CheckerReaderValue> {
     const dispose = (): void => {
       leftStreamReader.dispose();
@@ -190,7 +190,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          consumedSomething,
+          branched,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
@@ -216,7 +216,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          consumedSomething,
+          branched,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
           leftStreamReader: leftStreamReader.fork(),
@@ -273,7 +273,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         ({ type }) => type === 'start'
       );
       if (
-        (consumedSomething &&
+        (trail.length > 0 &&
           (leftPassedStartAnchor || rightPassedStartAnchor)) ||
         leftPassedStartAnchor !== rightPassedStartAnchor
       ) {
@@ -400,17 +400,17 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         },
       };
 
-      consumedSomething = true;
+      trail = [...trail, newEntry];
+
       if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
-        if (trail.length > 0) {
+        if (branched) {
           // no need to continue. There will be another thread that's getting further where
           // up to this point the sides were identical
           dispose();
           return;
         }
       } else {
-        trail = [...trail, newEntry];
-
+        branched = true;
         const shouldSendTrail = (): boolean => {
           if (!trails.has(trail)) {
             const leftAndRightIdentical = trail.every((entry) =>
@@ -465,7 +465,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
   const reader = startThread({
     atomicGroupsInSync: new Map(),
-    consumedSomething: false,
+    branched: false,
     infiniteLoopTracker: new InfiniteLoopTracker(
       isNodeWithQuantifierTrailEqual
     ),
