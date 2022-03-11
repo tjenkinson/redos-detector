@@ -402,7 +402,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       consumedSomething = true;
       if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
-        trail = [];
+        if (trail.length > 0) {
+          // no need to continue. There will be another thread that's getting further where
+          // up to this point the sides were identical
+          dispose();
+          return;
+        }
       } else {
         trail = [...trail, newEntry];
 
