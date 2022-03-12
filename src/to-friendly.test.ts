@@ -104,6 +104,7 @@ describe('toFriendly', () => {
               patternDowngraded: false,
               safe: true,
               trails: [],
+              // not really possible bug needed for coverage
               worstCaseBacktrackCount: { infinite: true },
             },
             { alwaysIncludeTrails }
@@ -147,6 +148,20 @@ describe('toFriendly', () => {
               safe: false,
               trails: [],
               worstCaseBacktrackCount: { infinite: true },
+            },
+            { alwaysIncludeTrails }
+          )
+        ).toMatchSnapshot();
+        expect(
+          toFriendly(
+            {
+              error: 'hitMaxSteps',
+              pattern: 'pattern',
+              patternDowngraded: false,
+              safe: false,
+              trails: mockTrails,
+              // not really possible but needed for coverage
+              worstCaseBacktrackCount: { infinite: false, value: 0 },
             },
             { alwaysIncludeTrails }
           )
