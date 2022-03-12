@@ -161,7 +161,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     // was not atomic
     atomicGroupsInSync,
     level,
-    branchIndex: branchIndex,
+    branchIndex,
   }: StartThreadInput): Reader<CheckerReaderValue> {
     const dispose = (): void => {
       leftStreamReader.dispose();
@@ -190,7 +190,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branchIndex: branchIndex,
+          branchIndex,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
@@ -216,7 +216,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branchIndex: branchIndex,
+          branchIndex,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
           leftStreamReader: leftStreamReader.fork(),
