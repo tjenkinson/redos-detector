@@ -469,12 +469,12 @@ describe('RedosDetector', () => {
     it('respects the `maxBacktracks`', () => {
       expect(
         isSafe(/a?a?/, {
-          maxBacktracks: 2,
+          maxBacktracks: 1,
         }).error
       ).toBe(null);
       expect(
         isSafe(/a?a?/, {
-          maxBacktracks: 1,
+          maxBacktracks: 0,
         }).error
       ).toBe('hitMaxBacktracks');
       expect(
@@ -516,9 +516,9 @@ describe('RedosDetector', () => {
     it('throws if `maxBacktracks` not positive or 0', () => {
       expect(() =>
         isSafe(/a/, {
-          maxBacktracks: 0,
+          maxBacktracks: -1,
         })
-      ).toThrowError('`maxBacktracks` must be a positive number.');
+      ).toThrowError('`maxBacktracks` must be a positive number or 0.');
     });
 
     it('throws if `timeout` not positive', () => {

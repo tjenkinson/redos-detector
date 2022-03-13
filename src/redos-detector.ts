@@ -286,8 +286,8 @@ export function isSafePattern(
   if (timeout <= 0) {
     throw new Error('`timeout` must be a positive number.');
   }
-  if (maxBacktracks <= 0) {
-    throw new Error('`maxBacktracks` must be a positive number.');
+  if (maxBacktracks < 0) {
+    throw new Error('`maxBacktracks` must be a positive number or 0.');
   }
   if (maxSteps <= 0) {
     throw new Error('`maxSteps` must be a positive number.');

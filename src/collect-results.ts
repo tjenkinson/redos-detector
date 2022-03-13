@@ -75,7 +75,10 @@ export function collectResults({
       if (!trails.length) {
         worstCaseBacktrackCount = 0;
       }
-      if (worstCaseBacktrackCount >= maxBacktracks) {
+      if (
+        worstCaseBacktrackCount > maxBacktracks ||
+        worstCaseBacktrackCount === Infinity
+      ) {
         error = 'hitMaxBacktracks';
       }
     }
