@@ -8,6 +8,7 @@ import {
 } from './checker-reader';
 import { buildCharacterReaderWithReferences } from './character-reader-with-references';
 import { buildNodeExtra } from './node-extra';
+import { getOrCreate } from './map';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
@@ -45,6 +46,7 @@ export function collectResults({
   });
 
   const trails: Trail[] = [];
+  const trailsByLength: Map<number, Set<Trail>> = new Map();
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
   let infiniteResults = false;
 
@@ -55,7 +57,10 @@ export function collectResults({
         break;
       }
       case checkerReaderTypeTrail: {
-        trails.push(next.value.trail);
+        const trail = next.value.trail;
+        trails.push(trail);
+        getOrCreate(trailsByLength, trail.length, () => new Set()).add(trail);
+
         if (infiniteResults) {
           break outer;
         }
@@ -64,7 +69,13 @@ export function collectResults({
     }
   }
 
-  let worstCaseBacktrackCount = infiniteResults ? Infinity : trails.length;
+  // Infinity if there was an infinite loop, or get the highest number of trails that match an input string
+  // of the same length.
+  // This is not perfect (i.e `a|a|b|b` would not split 2 groups, even though if the input is `a` it could not be `b`),
+  // but the trade off is that it should be performant and never underreport
+  let worstCaseBacktrackCount = infiniteResults
+    ? Infinity
+    : Math.max(...[...trailsByLength.values()].map((group) => group.size));
 
   let error: RedosDetectorError | null = null;
   if (next.done) {
