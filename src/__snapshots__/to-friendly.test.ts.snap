@@ -46,7 +46,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
@@ -59,7 +59,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
@@ -72,7 +72,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 

@@ -51,7 +51,7 @@ The following trails show how the same input can be matched multiple ways.
 2: `[a-b]` | 10: `[a-c]`
 ========================
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed.
 ```
 
