@@ -213,6 +213,26 @@ describe('DowngradePattern', () => {
       );
       expectResult(
         downgradePattern({
+          pattern: s(/(?:(?=(a))\1)/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [10],
+          pattern: s(/(?:(?=(a))(?:a))/),
+        }
+      );
+      expectResult(
+        downgradePattern({
+          pattern: s(/((?=(a))\2){1,2}/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [8],
+          pattern: s(/((?=(a))(?:a)){1,2}/),
+        }
+      );
+      expectResult(
+        downgradePattern({
           pattern: s(/(?=(a))(?=(b\1))\2/),
           unicode: false,
         }),

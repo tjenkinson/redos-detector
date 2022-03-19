@@ -158,10 +158,25 @@ export function downgradePattern({
 
     const walkAll = (
       nodes: MyRootNode[],
-      nodeStack: readonly MyRootNode[]
-    ): void =>
-      // eslint-disable-next-line no-use-before-define
-      nodes.forEach((a) => walk(a, nodeStack, null));
+      nodeStack: readonly MyRootNode[],
+      serial: boolean
+    ): void => {
+      let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
+      nodes.forEach((expression) => {
+        if (serial) {
+          // eslint-disable-next-line no-use-before-define
+          walk(expression, nodeStack, justHadLookahead);
+          justHadLookahead =
+            expression.type === 'group' && expression.behavior === 'lookahead'
+              ? expression
+              : null;
+        } else {
+          // eslint-disable-next-line no-use-before-define
+          walk(expression, nodeStack, null);
+        }
+      });
+    };
+
     const walk = (
       node: MyRootNode,
       nodeStack: readonly MyRootNode[],
@@ -182,7 +197,7 @@ export function downgradePattern({
             nextGroupIndex++;
           }
 
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], true);
 
           if (groupIndex !== null && node.behavior === 'normal') {
             groups.set(groupIndex, { group: node, stack: [...nodeStack] });
@@ -190,18 +205,11 @@ export function downgradePattern({
           return;
         }
         case 'disjunction': {
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], false);
           return;
         }
         case 'alternative': {
-          let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
-          node.body.forEach((expression) => {
-            walk(expression, [...nodeStack, node], justHadLookahead);
-            justHadLookahead =
-              expression.type === 'group' && expression.behavior === 'lookahead'
-                ? expression
-                : null;
-          });
+          walkAll(node.body, [...nodeStack, node], true);
           return;
         }
         case 'quantifier': {
@@ -212,7 +220,7 @@ export function downgradePattern({
               }
             });
           }
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], false);
           return;
         }
         case 'reference': {
