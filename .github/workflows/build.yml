@@ -35,6 +35,6 @@ jobs:
           npm run lint
           npm run prettier:check
           npm run build
-          npm run test:ci
+          NODE_OPTIONS="--max_old_space_size=4096 npm run test:ci
         env:
           CI: true
