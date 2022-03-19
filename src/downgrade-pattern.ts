@@ -62,13 +62,24 @@ function quantifierIterationsToString(
   }`;
 }
 
+export type RawWithoutCapturingGroupsOrLookaheads = Readonly<{
+  referencesWithOffset: ReadonlyMap<Reference<MyFeatures>, number>;
+  result: string;
+}>;
+
 export function getRawWithoutCapturingGroupsOrLookaheads(
   rootNode: MyRootNode
-): { containedReference: boolean; result: string } {
-  let containedReference = false;
-  const walk = (node: MyRootNode): string => {
-    const walkAll = (nodes: MyRootNode[]): string =>
-      nodes.map((a) => walk(a)).join('');
+): RawWithoutCapturingGroupsOrLookaheads {
+  const referencesWithOffset = new Map<Reference<MyFeatures>, number>();
+
+  const walk = (node: MyRootNode, offset: number): string => {
+    const walkAll = (nodes: MyRootNode[], startOffset: number): string => {
+      let result = '';
+      nodes.forEach((a) => {
+        result += walk(a, startOffset + result.length);
+      });
+      return result;
+    };
 
     switch (node.type) {
       case 'anchor':
@@ -79,14 +90,15 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
       case 'dot':
         return node.raw;
       case 'reference': {
-        containedReference = true;
+        referencesWithOffset.set(node, offset);
         return node.raw;
       }
       case 'group': {
         switch (node.behavior) {
           case 'normal':
+            return `(?:${walkAll(node.body, offset + 3)})`;
           case 'ignore':
-            return `(?:${walkAll(node.body)})`;
+            return `(?:${walkAll(node.body, offset + 3)})`;
           case 'lookahead':
           case 'lookbehind':
           case 'negativeLookahead':
@@ -95,17 +107,28 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
         }
       }
       // eslint-disable-next-line no-fallthrough
-      case 'disjunction':
-        return node.body.map((a) => walk(a)).join('|');
+      case 'disjunction': {
+        let res = '';
+        node.body.forEach((a, i) => {
+          if (i > 0) res += '|';
+          res += walk(a, offset + res.length);
+        });
+        return res;
+      }
       case 'alternative':
-        return walkAll(node.body);
+        return walkAll(node.body, offset);
       case 'quantifier': {
-        return `${walk(node.body[0])}${quantifierIterationsToString(node)}`;
+        return `${walk(node.body[0], offset)}${quantifierIterationsToString(
+          node
+        )}`;
       }
     }
   };
-  const result = walk(rootNode);
-  return { containedReference, result };
+  const result = walk(rootNode, 0);
+  return {
+    referencesWithOffset,
+    result,
+  };
 }
 
 type Action = Readonly<{
@@ -296,18 +319,14 @@ export function downgradePattern({
           },
         } = action;
 
-        const { result, containedReference } =
+        const { result, referencesWithOffset } =
           getRawWithoutCapturingGroupsOrLookaheads(group);
 
-        if (containedReference) {
+        if (referencesWithOffset.size > 0) {
           needToRerun = true;
         }
 
         const replacement = optional ? `(?:${result}?)` : result;
-
-        if (atomic) {
-          atomicGroupOffsets.add(referenceStart);
-        }
 
         newPattern = replace(
           newPattern,
@@ -322,6 +341,23 @@ export function downgradePattern({
           [...atomicGroupOffsets].map((offset) => {
             return offset > referenceStart ? offset + shiftAmount : offset;
           })
+        );
+
+        if (atomic) {
+          atomicGroupOffsets.add(referenceStart);
+        }
+
+        actions.forEach(
+          ({ atomic: innerAtomic, reference: innerReference }) => {
+            if (innerAtomic) {
+              const offset = referencesWithOffset.get(innerReference);
+              if (offset !== undefined) {
+                atomicGroupOffsets.add(
+                  referenceStart + offset + (optional ? 3 : 0)
+                );
+              }
+            }
+          }
         );
       });
 

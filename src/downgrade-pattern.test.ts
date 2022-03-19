@@ -3,6 +3,7 @@ import {
   DowngradedRegexPattern,
   downgradePattern,
   getRawWithoutCapturingGroupsOrLookaheads,
+  RawWithoutCapturingGroupsOrLookaheads,
 } from './downgrade-pattern';
 import { parse } from './parse';
 
@@ -12,21 +13,21 @@ function s(regex: RegExp): string {
 
 const p = parse;
 
-function expectResult(
-  result: DowngradedRegexPattern,
-  {
-    atomicGroupOffsets = [],
-    pattern,
-  }: { atomicGroupOffsets?: number[]; pattern: string }
-): void {
-  expect(result.pattern).toBe(pattern);
-  expect([...result.atomicGroupOffsets].sort((a, b) => a - b)).toStrictEqual(
-    atomicGroupOffsets
-  );
-}
-
 describe('DowngradePattern', () => {
   describe('downgradePattern()', () => {
+    const expectResult = (
+      result: DowngradedRegexPattern,
+      {
+        atomicGroupOffsets = [],
+        pattern,
+      }: { atomicGroupOffsets?: number[]; pattern: string }
+    ): void => {
+      expect(result.pattern).toBe(pattern);
+      expect(
+        [...result.atomicGroupOffsets].sort((a, b) => a - b)
+      ).toStrictEqual(atomicGroupOffsets);
+    };
+
     it('does not downgrade when not needed', () => {
       expectResult(downgradePattern({ pattern: 'ab', unicode: false }), {
         pattern: 'ab',
@@ -325,11 +326,32 @@ describe('DowngradePattern', () => {
   });
 
   describe('getRawWithoutCapturingGroups', () => {
+    const expectResult = (
+      result: RawWithoutCapturingGroupsOrLookaheads,
+      {
+        references,
+        result: resultResult,
+      }: {
+        references: Record<string, number>;
+        result: string;
+      }
+    ): void => {
+      expect(result.result).toBe(resultResult);
+      expect(
+        Object.fromEntries(
+          [...result.referencesWithOffset].map(([reference, offset]) => {
+            return [reference.raw, offset];
+          })
+        )
+      ).toStrictEqual(references);
+    };
+
     it('works', () => {
-      expect(
-        getRawWithoutCapturingGroupsOrLookaheads(p(s(/(a)/), false))
-      ).toEqual({ containedReference: false, result: s(/(?:a)/) });
-      expect(
+      expectResult(
+        getRawWithoutCapturingGroupsOrLookaheads(p(s(/(a)/), false)),
+        { references: {}, result: s(/(?:a)/) }
+      );
+      expectResult(
         getRawWithoutCapturingGroupsOrLookaheads(
           p(
             s(
@@ -337,11 +359,28 @@ describe('DowngradePattern', () => {
             ),
             false
           )
-        )
-      ).toEqual({
-        containedReference: true,
-        result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
-      });
+        ),
+        {
+          references: {
+            '\\1': 51,
+          },
+          result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
+        }
+      );
+      expectResult(
+        getRawWithoutCapturingGroupsOrLookaheads(
+          p(s(/()()()()a(\1)c(d|\2|f)(?:\3)(?:\4)+/), false)
+        ),
+        {
+          references: {
+            '\\1': 20,
+            '\\2': 29,
+            '\\3': 37,
+            '\\4': 43,
+          },
+          result: s(/(?:)(?:)(?:)(?:)a(?:\1)c(?:d|\2|f)(?:\3)(?:\4)+/),
+        }
+      );
     });
   });
 });
