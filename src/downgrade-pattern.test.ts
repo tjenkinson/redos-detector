@@ -362,6 +362,7 @@ describe('DowngradePattern', () => {
         ),
         {
           references: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
             '\\1': 51,
           },
           result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
@@ -372,12 +373,14 @@ describe('DowngradePattern', () => {
           p(s(/()()()()a(\1)c(d|\2|f)(?:\3)(?:\4)+/), false)
         ),
         {
+          /* eslint-disable @typescript-eslint/naming-convention */
           references: {
             '\\1': 20,
             '\\2': 29,
             '\\3': 37,
             '\\4': 43,
           },
+          /* eslint-enable @typescript-eslint/naming-convention */
           result: s(/(?:)(?:)(?:)(?:)a(?:\1)c(?:d|\2|f)(?:\3)(?:\4)+/),
         }
       );
