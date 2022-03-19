@@ -79,19 +79,19 @@ export type Trail = readonly TrailEntry[];
 export const checkerReaderTypeTrail: unique symbol = Symbol(
   'checkerReaderTypeTrail'
 );
-export const checkerReaderTypeInfiniteResults: unique symbol = Symbol(
-  'checkerReaderTypeInfiniteResults'
+export const checkerReaderTypeInfiniteLoop: unique symbol = Symbol(
+  'checkerReaderTypeInfiniteLoop'
 );
 
 export type CheckerReaderValueTrail = Readonly<{
   trail: Trail;
   type: typeof checkerReaderTypeTrail;
 }>;
-export type CheckerReaderValueInfiniteResults = Readonly<{
-  type: typeof checkerReaderTypeInfiniteResults;
+export type CheckerReaderValueInfiniteLoop = Readonly<{
+  type: typeof checkerReaderTypeInfiniteLoop;
 }>;
 export type CheckerReaderValue =
-  | CheckerReaderValueInfiniteResults
+  | CheckerReaderValueInfiniteLoop
   | CheckerReaderValueTrail;
 
 // eslint-disable-next-line no-use-before-define
@@ -109,7 +109,6 @@ type NodeWithQuantifierTrail = Readonly<{
 
 type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
-  branchIndex: number | null;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
     CharacterReaderWithReferencesValue,
@@ -136,13 +135,12 @@ const isNodeWithQuantifierTrailEqual = (
 /**
  * Takes a left and right `CharacterReaderWithReferences` and runs them against each other.
  *
- * If the left and right reader reach the end of the pattern at the same time, but have taken
- * different routes, then this means there are at least 2 different ways of matching the same
- * input.
+ * Emits a trail when left and right differ, as it means there are 2 different ways of matching the same
+ * trail up to that point.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const sidesEqualChecker = new SidesEqualChecker();
-  const trailEnds = new Set<Trail>();
+  const trails = new Set<Trail>();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
@@ -161,7 +159,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     // was not atomic
     atomicGroupsInSync,
     level,
-    branchIndex,
   }: StartThreadInput): Reader<CheckerReaderValue> {
     const dispose = (): void => {
       leftStreamReader.dispose();
@@ -190,7 +187,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branchIndex,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
@@ -216,7 +212,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branchIndex,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
           leftStreamReader: leftStreamReader.fork(),
@@ -342,7 +337,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       if (infiniteLoopTracker.isLooping()) {
         if (!infiniteResults) {
           infiniteResults = true;
-          yield { type: checkerReaderTypeInfiniteResults };
+          yield { type: checkerReaderTypeInfiniteLoop };
         }
         dispose();
         return;
@@ -402,46 +397,33 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       trail = [...trail, newEntry];
 
-      if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
-        if (branchIndex !== null) {
-          // no need to continue. There will be another thread that's getting further where
-          // up to this point the sides were identical
-          dispose();
-          return;
-        }
-      } else {
-        if (branchIndex === null) {
-          branchIndex = trail.length - 1;
-        }
-
-        const trailEnd = trail.slice(branchIndex);
-
+      if (!sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
         const shouldSendTrail = (): boolean => {
-          if (!trailEnds.has(trailEnd)) {
-            const alreadyExists = [...trailEnds].some((existingTrail) => {
-              if (existingTrail.length !== trailEnd.length) return false;
+          if (!trails.has(trail)) {
+            const alreadyExists = [...trails].some((existingTrail) => {
+              if (existingTrail.length !== trail.length) return false;
 
               return (
                 existingTrail.every(
                   (existingEntry, i) =>
                     sidesEqualChecker.areSidesEqual(
                       existingEntry.left,
-                      trailEnd[i].right
+                      trail[i].right
                     ) &&
                     sidesEqualChecker.areSidesEqual(
                       existingEntry.right,
-                      trailEnd[i].left
+                      trail[i].left
                     )
                 ) ||
                 existingTrail.every(
                   (existingEntry, i) =>
                     sidesEqualChecker.areSidesEqual(
                       existingEntry.left,
-                      trailEnd[i].left
+                      trail[i].left
                     ) &&
                     sidesEqualChecker.areSidesEqual(
                       existingEntry.right,
-                      trailEnd[i].right
+                      trail[i].right
                     )
                 )
               );
@@ -455,7 +437,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         };
 
         if (shouldSendTrail()) {
-          trailEnds.add(trailEnd);
+          trails.add(trail);
           yield { trail, type: checkerReaderTypeTrail };
         }
       }
@@ -464,7 +446,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
   const reader = startThread({
     atomicGroupsInSync: new Map(),
-    branchIndex: null,
     infiniteLoopTracker: new InfiniteLoopTracker(
       isNodeWithQuantifierTrailEqual
     ),

@@ -310,7 +310,7 @@ describe('RedosDetector', () => {
         [/(a|b|ab|){0,4}/, false],
         [/(a|)*/, false],
         [/(a*b|a*c)*/, false],
-        [/(a*b|a*b)*/, false],
+        [/(a*b|a*b)/, false],
         [/(a|b|aabb){0,4}/, false],
         [/(a|b|aabb)*/, false],
         [/(a|b|abab)*/, false],
@@ -389,6 +389,7 @@ describe('RedosDetector', () => {
         [/a(?!(a))\1/, true],
         [/a(?!(b(?=(c))))xc?\2?/, true],
         [/(a?)a?x\1/, false],
+        [/(a+b)?(a+c)/, false],
 
         // atomic group workaround detected
         [/(?=(a{0,1}))\1a?/, true],
