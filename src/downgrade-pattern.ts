@@ -132,7 +132,8 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
 }
 
 type Action = Readonly<{
-  atomic: boolean;
+  // it's impossible for it to be both
+  atomicOrOptional: 'atomic' | 'optional' | null;
   group: CapturingGroup<MyFeatures>;
   optional: boolean;
   reference: Reference;
@@ -286,8 +287,14 @@ export function downgradePattern({
                   group
                 );
 
+              const optional = groupInLookahead && groupMayNotBeReached;
+
               actions.push({
-                atomic,
+                atomicOrOptional: atomic
+                  ? 'atomic'
+                  : optional
+                  ? 'optional'
+                  : null,
                 group,
                 optional: groupInLookahead && groupMayNotBeReached,
                 reference: node,
@@ -311,8 +318,7 @@ export function downgradePattern({
       .sort((a, b) => b.reference.range[0] - a.reference.range[0])
       .forEach((action) => {
         const {
-          atomic,
-          optional,
+          atomicOrOptional,
           group,
           reference: {
             range: [referenceStart, referenceEnd],
@@ -326,7 +332,8 @@ export function downgradePattern({
           needToRerun = true;
         }
 
-        const replacement = optional ? `(?:${result}?)` : result;
+        const replacement =
+          atomicOrOptional === 'optional' ? `(?:${result}?)` : result;
 
         newPattern = replace(
           newPattern,
@@ -343,18 +350,19 @@ export function downgradePattern({
           })
         );
 
-        if (atomic) {
+        if (atomicOrOptional === 'atomic') {
           atomicGroupOffsets.add(referenceStart);
         }
 
         actions.forEach(
-          ({ atomic: innerAtomic, reference: innerReference }) => {
-            if (innerAtomic) {
+          ({
+            atomicOrOptional: innerAtomicOrOptional,
+            reference: innerReference,
+          }) => {
+            if (innerAtomicOrOptional === 'atomic') {
               const offset = referencesWithOffset.get(innerReference);
               if (offset !== undefined) {
-                atomicGroupOffsets.add(
-                  referenceStart + offset + (optional ? 3 : 0)
-                );
+                atomicGroupOffsets.add(referenceStart + offset);
               }
             }
           }

@@ -273,6 +273,19 @@ describe('DowngradePattern', () => {
       );
     });
 
+    it('downgrades when group in a positive lookahead and handles nested atomic group', () => {
+      expectResult(
+        downgradePattern({
+          pattern: s(/^(?=((?=(a*))\2b*))\1c*$/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [13, 23, 26],
+          pattern: s(/^(?=((?=(a*))(?:a*)b*))(?:(?:a*)b*)c*$/),
+        }
+      );
+    });
+
     it('does not downgrade when group in a negative lookahead', () => {
       expectResult(
         downgradePattern({
