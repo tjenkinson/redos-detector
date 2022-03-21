@@ -71,6 +71,10 @@ is bad because in the group `a` could match on both sides. The input `aaaaaax` c
 
 This tool will generate all the combinations of input strings that would match the pattern, and will output any input string that could match the pattern in multiple ways.
 
+## What does this tool consider is a backtrack?
+
+At the end of a group or disjunction a check is done to see if there could be a match up to the same point but via a different route, and if there is, this is considered one backtrack.
+
 ## Usage
 
 This can be used via the CLI, or as a library. It's [on npm](https://www.npmjs.com/package/redos-detector).
