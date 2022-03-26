@@ -100,7 +100,7 @@ export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
 }>;
 
-const stackOverflowLimit = 1500;
+const stackOverflowLimit = 1000;
 
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
