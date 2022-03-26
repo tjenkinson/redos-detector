@@ -4,12 +4,12 @@ import {
   characterReaderTypeCharacterEntry,
   characterReaderTypeSplit,
   CharacterReaderValue,
-} from './character-reader/character-reader';
+} from './character-reader-level-0';
 import {
   buildQuantifierIterations,
   QuantifierIterations,
   QuantifierStack,
-} from './nodes/quantifier';
+} from '../nodes/quantifier';
 import {
   CapturingGroup,
   CharacterClass,
@@ -19,26 +19,26 @@ import {
   UnicodePropertyEscape,
   Value,
 } from 'regjsparser';
-import { Groups, LookaheadStack } from './nodes/group';
-import { MyFeatures, MyRootNode } from './parse';
-import { Reader, ReaderResult } from './reader';
-import { CharacterGroups } from './character-groups';
-import { dropCommon } from './arrays';
-import { mustGet } from './map';
-import { NodeExtra } from './node-extra';
+import { Groups, LookaheadStack } from '../nodes/group';
+import { MyFeatures, MyRootNode } from '../parse';
+import { Reader, ReaderResult } from '../reader';
+import { CharacterGroups } from '../character-groups';
+import { dropCommon } from '../arrays';
+import { mustGet } from '../map';
+import { NodeExtra } from '../node-extra';
 
-export const characterReaderWithReferencesTypeSplit: unique symbol = Symbol(
-  'characterReaderWithReferencesTypeSplit'
+export const characterReaderLevel1TypeSplit: unique symbol = Symbol(
+  'characterReaderLevel1TypeSplit'
 );
 
-export const characterReaderWithReferencesTypeEntry: unique symbol = Symbol(
-  'characterReaderWithReferencesTypeEntry'
+export const characterReaderLevel1TypeEntry: unique symbol = Symbol(
+  'characterReaderLevel1TypeEntry'
 );
 
-export type CharacterReaderWithReferencesValueSplit = {
+export type CharacterReaderLevel1ValueSplit = {
   // eslint-disable-next-line no-use-before-define
-  reader: () => CharacterReaderWithReferences;
-  type: typeof characterReaderWithReferencesTypeSplit;
+  reader: () => CharacterReaderLevel1;
+  type: typeof characterReaderLevel1TypeSplit;
 };
 
 export type ZeroWidthEntry = Readonly<
@@ -52,7 +52,7 @@ export type ZeroWidthEntry = Readonly<
 >;
 
 export type BackReferenceStack = readonly Reference[];
-export type CharacterReaderWithReferencesValueGroups = Readonly<{
+export type CharacterReaderLevel1ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
@@ -65,17 +65,19 @@ export type CharacterReaderWithReferencesValueGroups = Readonly<{
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierStack: QuantifierStack;
-  type: typeof characterReaderWithReferencesTypeEntry;
+  type: typeof characterReaderLevel1TypeEntry;
 }>;
 
-export type CharacterReaderWithReferencesValue = Readonly<
-  | CharacterReaderWithReferencesValueGroups
-  | CharacterReaderWithReferencesValueSplit
+export type CharacterReaderLevel1Value = Readonly<
+  CharacterReaderLevel1ValueEntry | CharacterReaderLevel1ValueSplit
 >;
-export type CharacterReaderWithReferencesReturnValue = 'abort' | 'end';
-export type CharacterReaderWithReferences = Reader<
-  CharacterReaderWithReferencesValue,
-  CharacterReaderWithReferencesReturnValue
+export type CharacterReaderLevel1ReturnValue =
+  | 'abort'
+  | 'endAnchor'
+  | 'endUnbounded';
+export type CharacterReaderLevel1 = Reader<
+  CharacterReaderLevel1Value,
+  CharacterReaderLevel1ReturnValue
 >;
 
 export type GroupContentsStoreEntryContentsEntry = Readonly<{
@@ -117,13 +119,14 @@ type ThreadInput = Readonly<{
 }>;
 
 /**
- * Takes a `CharacterReader`, and returns a new reader which
- * will replace references with their contents.
+ * Returns a `CharacterReaderLevel1` which builds on top of
+ * `CharacterReaderLevel0` but replaces references with their
+ * contents.
  */
-export function buildCharacterReaderWithReferences(
+export function buildCharacterReaderLevel1(
   node: MyRootNode,
   nodeExtra: NodeExtra
-): CharacterReaderWithReferences {
+): CharacterReaderLevel1 {
   const characterReader = buildCharacterReader(node);
   const startThread = function* ({
     threadCharacterReader,
@@ -131,7 +134,7 @@ export function buildCharacterReaderWithReferences(
     preceedingZeroWidthEntries,
     quantifierIterationsAtLastGroup,
     groupsWithInfiniteSize,
-  }: ThreadInput): CharacterReaderWithReferences {
+  }: ThreadInput): CharacterReaderLevel1 {
     let next: ReaderResult<CharacterReaderValue>;
     while (!(next = threadCharacterReader.next()).done) {
       const value = next.value;
@@ -143,7 +146,7 @@ export function buildCharacterReaderWithReferences(
           const _groupsWithInfiniteSize = groupsWithInfiniteSize;
           const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
           yield {
-            reader: (): CharacterReaderWithReferences =>
+            reader: (): CharacterReaderLevel1 =>
               startThread({
                 groupContentsStore: _groupContentsStore,
                 groupsWithInfiniteSize: _groupsWithInfiniteSize,
@@ -152,7 +155,7 @@ export function buildCharacterReaderWithReferences(
                   _quantifierIterationsAtLastGroup,
                 threadCharacterReader: value.reader(),
               }),
-            type: characterReaderWithReferencesTypeSplit,
+            type: characterReaderLevel1TypeSplit,
           };
           break;
         }
@@ -317,7 +320,7 @@ export function buildCharacterReaderWithReferences(
                     node: contents.node,
                     preceedingZeroWidthEntries,
                     quantifierStack: value.quantifierStack,
-                    type: characterReaderWithReferencesTypeEntry,
+                    type: characterReaderLevel1TypeEntry,
                   };
                 }
               } else if (
@@ -342,14 +345,14 @@ export function buildCharacterReaderWithReferences(
                 node: value.node,
                 preceedingZeroWidthEntries,
                 quantifierStack: value.quantifierStack,
-                type: characterReaderWithReferencesTypeEntry,
+                type: characterReaderLevel1TypeEntry,
               };
 
               preceedingZeroWidthEntries = [];
               break;
             }
             case 'end': {
-              return 'end';
+              return 'endAnchor';
             }
             case 'start': {
               preceedingZeroWidthEntries = [
@@ -370,7 +373,7 @@ export function buildCharacterReaderWithReferences(
         }
       }
     }
-    return 'end';
+    return 'endUnbounded';
   };
 
   return startThread({

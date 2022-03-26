@@ -3,7 +3,7 @@ import {
   buildCharacterReader,
   CharacterReader,
   characterReaderTypeSplit,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { Disjunction } from 'regjsparser';
 import { MyFeatures } from '../parse';
 

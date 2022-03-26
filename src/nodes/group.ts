@@ -1,7 +1,7 @@
 import {
   CharacterReader,
   characterReaderTypeSplit,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { Group, NonCapturingGroup } from 'regjsparser';
 import { buildArrayReader } from '../reader';
 import { buildEndReader } from './end';

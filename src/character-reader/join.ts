@@ -3,7 +3,7 @@ import {
   characterReaderTypeCharacterEntry,
   characterReaderTypeSplit,
   CharacterReaderValue,
-} from './character-reader';
+} from './character-reader-level-0';
 import { emptyReader, ReaderResult } from '../reader';
 
 export type JoinGetAction = (

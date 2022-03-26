@@ -1,7 +1,7 @@
 import {
   buildCharacterReader,
   CharacterReader,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { joinArray } from '../character-reader/join';
 import { MyRootNode } from '../parse';
 

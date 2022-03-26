@@ -1,7 +1,7 @@
 import {
   buildCharacterReader,
   CharacterReader,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { join, joinArray } from '../character-reader/join';
 import { buildNullCharacterReader } from './null';
 import { GroupsMutable } from './group';

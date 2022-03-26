@@ -49,7 +49,7 @@ function buildConfig({ input, output, declaration = false }) {
         e.code === 'CIRCULAR_DEPENDENCY' &&
         [
           'src/nodes/quantifier.ts',
-          'src/character-reader/character-reader.ts',
+          'src/character-reader/character-reader-level-0.ts',
         ].includes(e.cycle[0])
       ) {
         return;
