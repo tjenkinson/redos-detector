@@ -145,7 +145,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
   let stackOverflow = false;
-  let infiniteResults = false;
 
   const startThread = function* ({
     leftStreamReader,
@@ -335,11 +334,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (infiniteLoopTracker.isLooping()) {
-        if (!infiniteResults) {
-          infiniteResults = true;
-          yield { type: checkerReaderTypeInfiniteLoop };
-        }
+        yield { type: checkerReaderTypeInfiniteLoop };
+        /* istanbul ignore next */
         dispose();
+        /* istanbul ignore next */
         return;
       }
 

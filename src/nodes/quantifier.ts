@@ -36,14 +36,16 @@ export function buildQuantifierIterations(
   return res;
 }
 
-// "<iteration number or * if in infinite portion>,..."
+// "<node offset>:<iteration number or * if in infinite portion>,..."
 export function buildQuantifierTrail(
   stack: QuantifierStack,
   asteriskInfinite: boolean
 ): string {
   return stack
-    .map(({ inInfinitePortion, iteration }) => {
-      return asteriskInfinite && inInfinitePortion ? '*' : `${iteration}`;
+    .map(({ quantifier, inInfinitePortion, iteration }) => {
+      return `${quantifier.range[0]}:${
+        asteriskInfinite && inInfinitePortion ? '*' : `${iteration}`
+      }`;
     })
     .join(',');
 }

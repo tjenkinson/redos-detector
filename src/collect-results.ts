@@ -6,9 +6,9 @@ import {
   CheckerReaderValue,
   Trail,
 } from './checker-reader';
+import { areArraysEqual } from './arrays';
 import { buildCharacterReaderWithReferences } from './character-reader-with-references';
 import { buildNodeExtra } from './node-extra';
-import { getOrCreate } from './map';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
@@ -45,53 +45,30 @@ export function collectResults({
     timeout,
   });
 
-  const trails: Trail[] = [];
-  const trailsByLength: Map<number, Set<Trail>> = new Map();
+  let trails: Trail[] = [];
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
-  let potentiallyInfiniteResults = false;
   let infiniteBacktracks = false;
-
-  const calculateInfiniteBacktracks = (): void => {
-    // if the reader hit an infinite loop, but all the trails are different lengths,
-    // then there aren't infinite backtracks given the input string would be a fixed
-    // length
-    infiniteBacktracks =
-      potentiallyInfiniteResults &&
-      [...trailsByLength].some(([, trailsAtLength]) => {
-        return trailsAtLength.size > 1;
-      });
-  };
 
   outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {
       case checkerReaderTypeInfiniteLoop: {
-        potentiallyInfiniteResults = true;
-        calculateInfiniteBacktracks();
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (infiniteBacktracks && trails.length > 0) {
-          break outer;
-        }
-        break;
+        infiniteBacktracks = true;
+        break outer;
       }
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
-        trails.push(trail);
-        getOrCreate(trailsByLength, trail.length, () => new Set()).add(trail);
-        calculateInfiniteBacktracks();
-
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (infiniteBacktracks) {
-          break outer;
-        }
+        trails = trails.filter((existingTrail) => {
+          const samePreix =
+            trail.length >= existingTrail.length &&
+            areArraysEqual(trail.slice(0, existingTrail.length), existingTrail);
+          return !samePreix;
+        });
+        trails = [...trails, trail];
         break;
       }
     }
   }
 
-  // Infinity, or get the highest number of trails that match an input string of the same length.
-  // This is not perfect (i.e `a|a|b|b` would not split 2 groups, even though if the input is `a` it could not be `b`),
-  // but the trade off is that it should be performant and never underreport
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   let worstCaseBacktrackCount = infiniteBacktracks ? Infinity : trails.length;
 
   let error: RedosDetectorError | null = null;
