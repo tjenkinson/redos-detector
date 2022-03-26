@@ -334,10 +334,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (infiniteLoopTracker.isLooping()) {
-        yield { type: checkerReaderTypeInfiniteLoop };
-        /* istanbul ignore next */
+        if (leftValue.node === rightValue.node) {
+          yield { type: checkerReaderTypeInfiniteLoop };
+        }
         dispose();
-        /* istanbul ignore next */
         return;
       }
 
