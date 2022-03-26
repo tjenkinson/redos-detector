@@ -9,7 +9,6 @@ import {
 import { areArraysEqual } from './arrays';
 import { buildCharacterReaderWithReferences } from './character-reader-with-references';
 import { buildNodeExtra } from './node-extra';
-import { getOrCreate } from './map';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
@@ -47,7 +46,6 @@ export function collectResults({
   });
 
   let trails: Trail[] = [];
-  const trailsByLength: Map<number, Set<Trail>> = new Map();
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
   let infiniteBacktracks = false;
 
@@ -69,7 +67,6 @@ export function collectResults({
           return !samePreix;
         });
         trails = [...trails, trail];
-        getOrCreate(trailsByLength, trail.length, () => new Set()).add(trail);
         if (infiniteBacktracks) {
           break outer;
         }
