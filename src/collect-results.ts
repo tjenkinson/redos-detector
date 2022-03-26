@@ -53,7 +53,10 @@ export function collectResults({
     switch (next.value.type) {
       case checkerReaderTypeInfiniteLoop: {
         infiniteBacktracks = true;
-        break outer;
+        if (trails.length > 0) {
+          break outer;
+        }
+        break;
       }
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
@@ -64,6 +67,9 @@ export function collectResults({
           return !samePreix;
         });
         trails = [...trails, trail];
+        if (infiniteBacktracks || trails.length > maxBacktracks) {
+          break outer;
+        }
         break;
       }
     }
