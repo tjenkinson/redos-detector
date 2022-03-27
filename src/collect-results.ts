@@ -82,16 +82,8 @@ export function collectResults({
     if (next.value.error) {
       worstCaseBacktrackCount = Infinity;
       error = next.value.error;
-    } else {
-      if (!trails.length) {
-        worstCaseBacktrackCount = 0;
-      }
-      if (
-        worstCaseBacktrackCount > maxBacktracks ||
-        worstCaseBacktrackCount === Infinity
-      ) {
-        error = 'hitMaxBacktracks';
-      }
+    } else if (!trails.length) {
+      worstCaseBacktrackCount = 0;
     }
   } else {
     worstCaseBacktrackCount = Infinity;

@@ -483,11 +483,6 @@ describe('RedosDetector', () => {
         }).error
       ).toBe('hitMaxBacktracks');
       expect(
-        isSafe(/a?a?a?$/, {
-          maxBacktracks: 3,
-        }).error
-      ).toBe('hitMaxBacktracks');
-      expect(
         isSafe(/a*a*$/, {
           maxBacktracks: Infinity,
         }).error
