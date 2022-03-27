@@ -7,7 +7,7 @@ import {
   Trail,
 } from './checker-reader';
 import { areArraysEqual } from './arrays';
-import { buildCharacterReaderWithReferences } from './character-reader-with-references';
+import { buildCharacterReaderLevel2 } from './character-reader/character-reader-level-2';
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
@@ -35,8 +35,8 @@ export function collectResults({
   timeout,
 }: CollectResultsInput): WalkerResult {
   const nodeExtra = buildNodeExtra(node);
-  const leftStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
-  const rightStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
+  const leftStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
+  const rightStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
   const reader = buildCheckerReader({
     atomicGroupOffsets,
     leftStreamReader,
@@ -53,7 +53,10 @@ export function collectResults({
     switch (next.value.type) {
       case checkerReaderTypeInfiniteLoop: {
         infiniteBacktracks = true;
-        break outer;
+        if (trails.length > 0) {
+          break outer;
+        }
+        break;
       }
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
@@ -64,6 +67,9 @@ export function collectResults({
           return !samePreix;
         });
         trails = [...trails, trail];
+        if (infiniteBacktracks || trails.length > maxBacktracks) {
+          break outer;
+        }
         break;
       }
     }
@@ -76,16 +82,8 @@ export function collectResults({
     if (next.value.error) {
       worstCaseBacktrackCount = Infinity;
       error = next.value.error;
-    } else {
-      if (!trails.length) {
-        worstCaseBacktrackCount = 0;
-      }
-      if (
-        worstCaseBacktrackCount > maxBacktracks ||
-        worstCaseBacktrackCount === Infinity
-      ) {
-        error = 'hitMaxBacktracks';
-      }
+    } else if (!trails.length) {
+      worstCaseBacktrackCount = 0;
     }
   } else {
     worstCaseBacktrackCount = Infinity;

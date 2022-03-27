@@ -7,13 +7,6 @@ import {
   Value,
 } from 'regjsparser';
 import {
-  BackReferenceStack,
-  CharacterReaderWithReferences,
-  CharacterReaderWithReferencesReturnValue,
-  characterReaderWithReferencesTypeSplit,
-  CharacterReaderWithReferencesValue,
-} from './character-reader-with-references';
-import {
   buildForkableReader,
   ForkableReader,
   Reader,
@@ -29,7 +22,14 @@ import {
   intersectCharacterGroups,
   isEmptyCharacterGroups,
 } from './character-groups';
+import {
+  CharacterReaderLevel2,
+  CharacterReaderLevel2ReturnValue,
+  characterReaderLevel2TypeSplit,
+  CharacterReaderLevel2Value,
+} from './character-reader/character-reader-level-2';
 import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
+import { BackReferenceStack } from './character-reader/character-reader-level-1';
 import { Groups } from './nodes/group';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
@@ -40,9 +40,9 @@ import { synchronisationCheck } from './synchronisation-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
-  leftStreamReader: CharacterReaderWithReferences;
+  leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
-  rightStreamReader: CharacterReaderWithReferences;
+  rightStreamReader: CharacterReaderLevel2;
   timeout: number;
 }>;
 
@@ -100,7 +100,7 @@ export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
 }>;
 
-const stackOverflowLimit = 1500;
+const stackOverflowLimit = 1000;
 
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
@@ -111,17 +111,17 @@ type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   > | null;
   leftStreamReader: ForkableReader<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
   level: number;
   rightStreamReader: ForkableReader<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
   trail: Trail;
 }>;
@@ -133,7 +133,7 @@ const isNodeWithQuantifierTrailEqual = (
   left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
- * Takes a left and right `CharacterReaderWithReferences` and runs them against each other.
+ * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
  *
  * Emits a trail when left and right differ, as it means there are 2 different ways of matching the same
  * trail up to that point.
@@ -175,14 +175,14 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         return;
       }
       const nextLeft: ReaderResult<
-        CharacterReaderWithReferencesValue,
-        CharacterReaderWithReferencesReturnValue
+        CharacterReaderLevel2Value,
+        CharacterReaderLevel2ReturnValue
       > = leftInitial ?? leftStreamReader.next();
       leftInitial = null;
 
       if (
         !nextLeft.done &&
-        nextLeft.value.type === characterReaderWithReferencesTypeSplit
+        nextLeft.value.type === characterReaderLevel2TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
@@ -202,12 +202,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       const nextRight: ReaderResult<
-        CharacterReaderWithReferencesValue,
-        CharacterReaderWithReferencesReturnValue
+        CharacterReaderLevel2Value,
+        CharacterReaderLevel2ReturnValue
       > = rightStreamReader.next();
       if (
         !nextRight.done &&
-        nextRight.value.type === characterReaderWithReferencesTypeSplit
+        nextRight.value.type === characterReaderLevel2TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
@@ -254,8 +254,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       const rightValue = nextRight.value;
       /* istanbul ignore next */
       if (
-        leftValue.type === characterReaderWithReferencesTypeSplit ||
-        rightValue.type === characterReaderWithReferencesTypeSplit
+        leftValue.type === characterReaderLevel2TypeSplit ||
+        rightValue.type === characterReaderLevel2TypeSplit
       ) {
         throw new Error('Internal error: impossible leftValue/rightValue type');
       }
@@ -395,7 +395,13 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       trail = [...trail, newEntry];
 
-      if (!sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
+      if (
+        // if both sides are unbounded then it means a backtrack won't occur
+        // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
+        // so don't emit the trail
+        (!leftValue.unbounded || !rightValue.unbounded) &&
+        !sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)
+      ) {
         const shouldSendTrail = (): boolean => {
           if (!trails.has(trail)) {
             const alreadyExists = [...trails].some((existingTrail) => {

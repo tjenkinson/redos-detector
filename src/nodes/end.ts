@@ -1,7 +1,7 @@
 import {
   CharacterReader,
   characterReaderTypeCharacterEntry,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 
 export function* buildEndReader(offset: number): CharacterReader {
   yield {

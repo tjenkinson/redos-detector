@@ -2,7 +2,7 @@ import {
   CharacterReader,
   characterReaderTypeCharacterEntry,
   CharacterReaderValueGroups,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { buildArrayReader } from '../reader';
 import { Value } from 'regjsparser';
 

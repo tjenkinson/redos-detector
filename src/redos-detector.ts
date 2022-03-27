@@ -1,7 +1,7 @@
 import { MyFeatures, parse } from './parse';
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
-import { BackReferenceStack } from './character-reader-with-references';
+import { BackReferenceStack } from './character-reader/character-reader-level-1';
 import { collectResults } from './collect-results';
 import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
 import { QuantifierStack } from './nodes/quantifier';
