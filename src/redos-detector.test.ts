@@ -41,6 +41,7 @@ describe('RedosDetector', () => {
         [/(ab)*a(ba){0,2}$/, false],
         [/(a+b)+(a+b)+f$/, false],
         [/(a*)*/, true],
+        [/a*a*/, true],
         [/(a*)*$/, false],
         [/(a+b)*((a+b)+[ax]b)?$/, false],
         [/(a+b)*((a+b)[ax]b)?$/, false],
@@ -117,7 +118,6 @@ describe('RedosDetector', () => {
         [/(a|b*)+$/, false],
         [/(a|b*)$/, true],
         [/(a|b+|c)+$/, false],
-        [/(a|b{1,3}|c)+/, true],
         [/(a|b{1,3}|c)+$/, false],
         [/a+a{0,3}$/, false],
         [/(a|b|c)+$/, true],
@@ -480,6 +480,11 @@ describe('RedosDetector', () => {
       expect(
         isSafe(/a?a?$/, {
           maxBacktracks: 0,
+        }).error
+      ).toBe('hitMaxBacktracks');
+      expect(
+        isSafe(/a?a?a?$/, {
+          maxBacktracks: 3,
         }).error
       ).toBe('hitMaxBacktracks');
       expect(
