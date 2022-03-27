@@ -166,7 +166,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--disableDowngrade) (--resultsLimit <number>) (--json)
+$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or

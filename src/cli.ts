@@ -50,6 +50,11 @@ program
     defaultMaxSteps
   )
   .option('--timeout <number>', 'timeout in ms', toInt, -1)
+  .option(
+    '--alwaysIncludeTrails',
+    'always include trails if some are found, even if the patten is considered safe',
+    false
+  )
   .option('--disableDowngrade', 'do not downgrade the regex if required', false)
   .option(
     '--json',
@@ -60,6 +65,7 @@ program
     (
       pattern: string,
       {
+        alwaysIncludeTrails,
         disableDowngrade,
         json,
         maxBacktracks,
@@ -68,6 +74,7 @@ program
         timeout,
         unicode,
       }: {
+        alwaysIncludeTrails: boolean;
         disableDowngrade: boolean;
         json: boolean;
         maxBacktracks: number;
@@ -91,7 +98,10 @@ program
           process.exit(0);
         } else {
           console.log(
-            toFriendly(result, { resultsLimit: coerceInfinity(resultsLimit) })
+            toFriendly(result, {
+              alwaysIncludeTrails,
+              resultsLimit: coerceInfinity(resultsLimit),
+            })
           );
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(result.safe ? 0 : 1);
