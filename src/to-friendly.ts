@@ -51,7 +51,7 @@ export function toFriendly(
 
   if (!result.trails.length) {
     const parts: string[] = [];
-    parts.push(`Regex may not be safe.`);
+    parts.push(result.safe ? 'Regex is safe.' : 'Regex may not be safe.');
 
     if (result.error === 'timedOut') {
       parts.push(`Timed out.`);
@@ -62,7 +62,9 @@ export function toFriendly(
     if (result.error === 'stackOverflow') {
       parts.push(`Stack overflow.`);
     }
-    parts.push(`The pattern may have too many variations.`);
+    if (!result.safe) {
+      parts.push(`The pattern may have too many variations.`);
+    }
     outputLines.push(parts.join(' '));
   } else {
     const resultBlocks = result.trails

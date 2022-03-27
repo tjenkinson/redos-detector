@@ -179,7 +179,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
@@ -192,7 +192,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
@@ -205,7 +205,7 @@ The following trails show how the same input can be matched multiple ways.
 3: \`a\` | 1: \`a\`
 ===============
 
-Hit maxiumum number of backtracks so there may be more results than shown here.
+Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
@@ -260,7 +260,7 @@ Hit maximum number of steps so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 1`] = `"Regex may not be safe. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 1`] = `"Regex is safe."`;
 
 exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 2`] = `
 "Regex is safe. There could be at most 2 backtracks.
@@ -274,4 +274,4 @@ The following trails show how the same input can be matched multiple ways.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 3`] = `"Regex may not be safe. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 3`] = `"Regex is safe."`;
