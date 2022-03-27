@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`toFriendly returns the correct string when not safe 1`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 1`] = `
 "Regex is not safe. There could be infinite backtracks.
 
 The following trails show how the same input can be matched multiple ways.
@@ -13,7 +13,7 @@ Hit maximum number of steps so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 2`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 2`] = `
 "Regex is not safe. There could be infinite backtracks.
 
 The following trail shows how the same input can be matched multiple ways.
@@ -24,7 +24,7 @@ Hit maximum number of steps so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 3`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 3`] = `
 "Regex is not safe. There could be infinite backtracks.
 
 The following trails show how the same input can be matched multiple ways.
@@ -37,7 +37,7 @@ Timed out so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 4`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 4`] = `
 "Regex is not safe. There could be infinite backtracks.
 
 The following trails show how the same input can be matched multiple ways.
@@ -50,7 +50,7 @@ Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 5`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 5`] = `
 "Regex is not safe. There could be at most 1 backtrack.
 
 The following trails show how the same input can be matched multiple ways.
@@ -63,7 +63,7 @@ Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 6`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 6`] = `
 "Regex is not safe. There could be at most 2 backtracks.
 
 The following trails show how the same input can be matched multiple ways.
@@ -76,7 +76,7 @@ Hit maximum number of backtracks so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 7`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 7`] = `
 "Pattern was downgraded to \`pattern\`.
 Regex is not safe. There could be infinite backtracks.
 
@@ -90,12 +90,12 @@ Hit maximum number of steps so there may be more results than shown here.
 Note there may be more results than shown here as some infinite loops are detected and removed."
 `;
 
-exports[`toFriendly returns the correct string when not safe 8`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 8`] = `
 "Pattern was downgraded to \`pattern\`.
 Regex is not safe. There could be infinite backtracks."
 `;
 
-exports[`toFriendly returns the correct string when not safe 9`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe 9`] = `
 "Pattern was downgraded to \`pattern\`.
 Regex is not safe. There could be infinite backtracks.
 
@@ -108,14 +108,170 @@ Note there may be more results than shown here as some infinite loops are detect
 There are more results than this but hit results limit."
 `;
 
-exports[`toFriendly returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. Reached steps limit. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. Reached steps limit. The pattern may have too many variations."`;
 
-exports[`toFriendly returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
 
-exports[`toFriendly returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
 
-exports[`toFriendly returns the correct string when safe 1`] = `"Regex is safe. There could be at most 1 backtrack."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 4`] = `
+"Regex is not safe.
 
-exports[`toFriendly returns the correct string when safe 2`] = `"Regex is safe. There could be at most 2 backtracks."`;
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
 
-exports[`toFriendly returns the correct string when safe 3`] = `"Regex is safe. There could be infinite backtracks."`;
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when safe 1`] = `"Regex is safe. There could be at most 1 backtrack."`;
+
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when safe 2`] = `"Regex is safe. There could be at most 2 backtracks."`;
+
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when safe 3`] = `"Regex is safe. There could be infinite backtracks."`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 1`] = `
+"Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 2`] = `
+"Regex is not safe. There could be infinite backtracks.
+
+The following trail shows how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 3`] = `
+"Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Timed out so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 4`] = `
+"Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of backtracks so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 5`] = `
+"Regex is not safe. There could be at most 1 backtrack.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of backtracks so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 6`] = `
+"Regex is not safe. There could be at most 2 backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of backtracks so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 7`] = `
+"Pattern was downgraded to \`pattern\`.
+Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 8`] = `
+"Pattern was downgraded to \`pattern\`.
+Regex is not safe. There could be infinite backtracks."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe 9`] = `
+"Pattern was downgraded to \`pattern\`.
+Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed.
+There are more results than this but hit results limit."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. Reached steps limit. The pattern may have too many variations."`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 4`] = `
+"Regex is not safe.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Hit maximum number of steps so there may be more results than shown here.
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 1`] = `"Regex is safe."`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 2`] = `
+"Regex is safe. There could be at most 2 backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+3: \`a\` | 1: \`a\`
+===============
+3: \`a\` | 1: \`a\`
+===============
+
+Note there may be more results than shown here as some infinite loops are detected and removed."
+`;
+
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 3`] = `"Regex is safe."`;

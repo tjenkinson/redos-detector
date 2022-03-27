@@ -1,6 +1,7 @@
 import { RedosDetectorError, RedosDetectorResult } from './redos-detector';
 
 export type ToFriendlyConfig = {
+  alwaysIncludeTrails?: boolean;
   resultsLimit?: number;
 };
 
@@ -14,27 +15,31 @@ export const defaultResultsLimit = 15;
  */
 export function toFriendly(
   result: RedosDetectorResult,
-  { resultsLimit = defaultResultsLimit }: ToFriendlyConfig = {}
+  {
+    resultsLimit = defaultResultsLimit,
+    alwaysIncludeTrails = false,
+  }: ToFriendlyConfig = {}
 ): string {
   if (resultsLimit < 0) {
     throw new Error('`resultsLimit` must be > 0.');
   }
-  const backtrackCountString = `There could be ${
-    !result.worstCaseBacktrackCount.infinite ? 'at most ' : ''
-  }${
-    result.worstCaseBacktrackCount.infinite
-      ? 'infinite backtracks'
-      : result.worstCaseBacktrackCount.value === 1
-      ? '1 backtrack'
-      : `${result.worstCaseBacktrackCount.value} backtracks`
-  }.`;
+  const backtrackCountString =
+    result.worstCaseBacktrackCount.infinite ||
+    result.worstCaseBacktrackCount.value > 0
+      ? `There could be ${
+          !result.worstCaseBacktrackCount.infinite ? 'at most ' : ''
+        }${
+          result.worstCaseBacktrackCount.infinite
+            ? 'infinite backtracks'
+            : result.worstCaseBacktrackCount.value === 1
+            ? '1 backtrack'
+            : `${result.worstCaseBacktrackCount.value} backtracks`
+        }.`
+      : null;
 
-  if (result.safe) {
+  if (result.safe && !alwaysIncludeTrails) {
     return `Regex is safe.${
-      result.worstCaseBacktrackCount.infinite ||
-      result.worstCaseBacktrackCount.value > 0
-        ? ` ${backtrackCountString}`
-        : ''
+      backtrackCountString ? ` ${backtrackCountString}` : ''
     }`;
   }
 
@@ -46,7 +51,7 @@ export function toFriendly(
 
   if (!result.trails.length) {
     const parts: string[] = [];
-    parts.push(`Regex may not be safe.`);
+    parts.push(result.safe ? 'Regex is safe.' : 'Regex may not be safe.');
 
     if (result.error === 'timedOut') {
       parts.push(`Timed out.`);
@@ -57,7 +62,9 @@ export function toFriendly(
     if (result.error === 'stackOverflow') {
       parts.push(`Stack overflow.`);
     }
-    parts.push(`The pattern may have too many variations.`);
+    if (!result.safe) {
+      parts.push(`The pattern may have too many variations.`);
+    }
     outputLines.push(parts.join(' '));
   } else {
     const resultBlocks = result.trails
@@ -107,7 +114,9 @@ export function toFriendly(
 
     outputLines.push(
       ...[
-        `Regex is not safe. ${backtrackCountString}`,
+        `Regex is ${!result.safe ? 'not ' : ''}safe.${
+          backtrackCountString ? ` ${backtrackCountString}` : ''
+        }`,
         ...(resultsLimit > 0
           ? [
               '',
@@ -116,7 +125,7 @@ export function toFriendly(
               } how the same input can be matched multiple ways.`,
               ...resultBlocks,
               '',
-              errorToMessage[result.error],
+              ...(result.error ? [errorToMessage[result.error]] : []),
               `Note there may be more results than shown here as some infinite loops are detected and removed.`,
               ...(result.trails.length > resultsLimit
                 ? ['There are more results than this but hit results limit.']
