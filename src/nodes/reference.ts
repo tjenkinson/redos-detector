@@ -1,7 +1,7 @@
 import {
   CharacterReader,
   characterReaderTypeCharacterEntry,
-} from '../character-reader/character-reader';
+} from '../character-reader/character-reader-level-0';
 import { MyFeatures } from '../parse';
 import { Reference } from 'regjsparser';
 

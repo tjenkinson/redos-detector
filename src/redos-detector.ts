@@ -1,7 +1,7 @@
 import { MyFeatures, parse } from './parse';
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
-import { BackReferenceStack } from './character-reader-with-references';
+import { BackReferenceStack } from './character-reader/character-reader-level-1';
 import { collectResults } from './collect-results';
 import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
 import { QuantifierStack } from './nodes/quantifier';
@@ -94,12 +94,8 @@ export type RedosDetectorTrail = {
 
 export type IsSafeConfig = {
   /**
-   * The maximum number of backtracks that should be allowed.
-   * If this limit is hit `error` will be `hitMaxBacktracks` and
-   * the pattern is considered unsafe.
-   *
-   * Note this is the worst case number, and may be higher than the true
-   * number of possible backtracks.
+   * If worst case count of possible backtracks is above this number,
+   * the regex will be considered unsafe.
    */
   readonly maxBacktracks?: number;
   /**
@@ -286,8 +282,8 @@ export function isSafePattern(
   if (timeout <= 0) {
     throw new Error('`timeout` must be a positive number.');
   }
-  if (maxBacktracks <= 0) {
-    throw new Error('`maxBacktracks` must be a positive number.');
+  if (maxBacktracks < 0) {
+    throw new Error('`maxBacktracks` must be a positive number or 0.');
   }
   if (maxSteps <= 0) {
     throw new Error('`maxSteps` must be a positive number.');

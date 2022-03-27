@@ -62,13 +62,24 @@ function quantifierIterationsToString(
   }`;
 }
 
+export type RawWithoutCapturingGroupsOrLookaheads = Readonly<{
+  referencesWithOffset: ReadonlyMap<Reference<MyFeatures>, number>;
+  result: string;
+}>;
+
 export function getRawWithoutCapturingGroupsOrLookaheads(
   rootNode: MyRootNode
-): { containedReference: boolean; result: string } {
-  let containedReference = false;
-  const walk = (node: MyRootNode): string => {
-    const walkAll = (nodes: MyRootNode[]): string =>
-      nodes.map((a) => walk(a)).join('');
+): RawWithoutCapturingGroupsOrLookaheads {
+  const referencesWithOffset = new Map<Reference<MyFeatures>, number>();
+
+  const walk = (node: MyRootNode, offset: number): string => {
+    const walkAll = (nodes: MyRootNode[], startOffset: number): string => {
+      let result = '';
+      nodes.forEach((a) => {
+        result += walk(a, startOffset + result.length);
+      });
+      return result;
+    };
 
     switch (node.type) {
       case 'anchor':
@@ -79,14 +90,15 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
       case 'dot':
         return node.raw;
       case 'reference': {
-        containedReference = true;
+        referencesWithOffset.set(node, offset);
         return node.raw;
       }
       case 'group': {
         switch (node.behavior) {
           case 'normal':
+            return `(?:${walkAll(node.body, offset + 3)})`;
           case 'ignore':
-            return `(?:${walkAll(node.body)})`;
+            return `(?:${walkAll(node.body, offset + 3)})`;
           case 'lookahead':
           case 'lookbehind':
           case 'negativeLookahead':
@@ -95,21 +107,33 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
         }
       }
       // eslint-disable-next-line no-fallthrough
-      case 'disjunction':
-        return node.body.map((a) => walk(a)).join('|');
+      case 'disjunction': {
+        let res = '';
+        node.body.forEach((a, i) => {
+          if (i > 0) res += '|';
+          res += walk(a, offset + res.length);
+        });
+        return res;
+      }
       case 'alternative':
-        return walkAll(node.body);
+        return walkAll(node.body, offset);
       case 'quantifier': {
-        return `${walk(node.body[0])}${quantifierIterationsToString(node)}`;
+        return `${walk(node.body[0], offset)}${quantifierIterationsToString(
+          node
+        )}`;
       }
     }
   };
-  const result = walk(rootNode);
-  return { containedReference, result };
+  const result = walk(rootNode, 0);
+  return {
+    referencesWithOffset,
+    result,
+  };
 }
 
 type Action = Readonly<{
-  atomic: boolean;
+  // it's impossible for it to be both
+  atomicOrOptional: 'atomic' | 'optional' | null;
   group: CapturingGroup<MyFeatures>;
   optional: boolean;
   reference: Reference;
@@ -158,10 +182,25 @@ export function downgradePattern({
 
     const walkAll = (
       nodes: MyRootNode[],
-      nodeStack: readonly MyRootNode[]
-    ): void =>
-      // eslint-disable-next-line no-use-before-define
-      nodes.forEach((a) => walk(a, nodeStack, null));
+      nodeStack: readonly MyRootNode[],
+      serial: boolean
+    ): void => {
+      let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
+      nodes.forEach((expression) => {
+        if (serial) {
+          // eslint-disable-next-line no-use-before-define
+          walk(expression, nodeStack, justHadLookahead);
+          justHadLookahead =
+            expression.type === 'group' && expression.behavior === 'lookahead'
+              ? expression
+              : null;
+        } else {
+          // eslint-disable-next-line no-use-before-define
+          walk(expression, nodeStack, null);
+        }
+      });
+    };
+
     const walk = (
       node: MyRootNode,
       nodeStack: readonly MyRootNode[],
@@ -182,7 +221,7 @@ export function downgradePattern({
             nextGroupIndex++;
           }
 
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], true);
 
           if (groupIndex !== null && node.behavior === 'normal') {
             groups.set(groupIndex, { group: node, stack: [...nodeStack] });
@@ -190,18 +229,11 @@ export function downgradePattern({
           return;
         }
         case 'disjunction': {
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], false);
           return;
         }
         case 'alternative': {
-          let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
-          node.body.forEach((expression) => {
-            walk(expression, [...nodeStack, node], justHadLookahead);
-            justHadLookahead =
-              expression.type === 'group' && expression.behavior === 'lookahead'
-                ? expression
-                : null;
-          });
+          walkAll(node.body, [...nodeStack, node], true);
           return;
         }
         case 'quantifier': {
@@ -212,7 +244,7 @@ export function downgradePattern({
               }
             });
           }
-          walkAll(node.body, [...nodeStack, node]);
+          walkAll(node.body, [...nodeStack, node], false);
           return;
         }
         case 'reference': {
@@ -255,8 +287,14 @@ export function downgradePattern({
                   group
                 );
 
+              const optional = groupInLookahead && groupMayNotBeReached;
+
               actions.push({
-                atomic,
+                atomicOrOptional: atomic
+                  ? 'atomic'
+                  : optional
+                  ? 'optional'
+                  : null,
                 group,
                 optional: groupInLookahead && groupMayNotBeReached,
                 reference: node,
@@ -280,26 +318,22 @@ export function downgradePattern({
       .sort((a, b) => b.reference.range[0] - a.reference.range[0])
       .forEach((action) => {
         const {
-          atomic,
-          optional,
+          atomicOrOptional,
           group,
           reference: {
             range: [referenceStart, referenceEnd],
           },
         } = action;
 
-        const { result, containedReference } =
+        const { result, referencesWithOffset } =
           getRawWithoutCapturingGroupsOrLookaheads(group);
 
-        if (containedReference) {
+        if (referencesWithOffset.size > 0) {
           needToRerun = true;
         }
 
-        const replacement = optional ? `(?:${result}?)` : result;
-
-        if (atomic) {
-          atomicGroupOffsets.add(referenceStart);
-        }
+        const replacement =
+          atomicOrOptional === 'optional' ? `(?:${result}?)` : result;
 
         newPattern = replace(
           newPattern,
@@ -314,6 +348,24 @@ export function downgradePattern({
           [...atomicGroupOffsets].map((offset) => {
             return offset > referenceStart ? offset + shiftAmount : offset;
           })
+        );
+
+        if (atomicOrOptional === 'atomic') {
+          atomicGroupOffsets.add(referenceStart);
+        }
+
+        actions.forEach(
+          ({
+            atomicOrOptional: innerAtomicOrOptional,
+            reference: innerReference,
+          }) => {
+            if (innerAtomicOrOptional === 'atomic') {
+              const offset = referencesWithOffset.get(innerReference);
+              if (offset !== undefined) {
+                atomicGroupOffsets.add(referenceStart + offset);
+              }
+            }
+          }
         );
       });
 

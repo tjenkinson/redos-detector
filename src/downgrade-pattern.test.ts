@@ -3,6 +3,7 @@ import {
   DowngradedRegexPattern,
   downgradePattern,
   getRawWithoutCapturingGroupsOrLookaheads,
+  RawWithoutCapturingGroupsOrLookaheads,
 } from './downgrade-pattern';
 import { parse } from './parse';
 
@@ -12,21 +13,21 @@ function s(regex: RegExp): string {
 
 const p = parse;
 
-function expectResult(
-  result: DowngradedRegexPattern,
-  {
-    atomicGroupOffsets = [],
-    pattern,
-  }: { atomicGroupOffsets?: number[]; pattern: string }
-): void {
-  expect(result.pattern).toBe(pattern);
-  expect([...result.atomicGroupOffsets].sort((a, b) => a - b)).toStrictEqual(
-    atomicGroupOffsets
-  );
-}
-
 describe('DowngradePattern', () => {
   describe('downgradePattern()', () => {
+    const expectResult = (
+      result: DowngradedRegexPattern,
+      {
+        atomicGroupOffsets = [],
+        pattern,
+      }: { atomicGroupOffsets?: number[]; pattern: string }
+    ): void => {
+      expect(result.pattern).toBe(pattern);
+      expect(
+        [...result.atomicGroupOffsets].sort((a, b) => a - b)
+      ).toStrictEqual(atomicGroupOffsets);
+    };
+
     it('does not downgrade when not needed', () => {
       expectResult(downgradePattern({ pattern: 'ab', unicode: false }), {
         pattern: 'ab',
@@ -213,6 +214,26 @@ describe('DowngradePattern', () => {
       );
       expectResult(
         downgradePattern({
+          pattern: s(/(?:(?=(a))\1)/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [10],
+          pattern: s(/(?:(?=(a))(?:a))/),
+        }
+      );
+      expectResult(
+        downgradePattern({
+          pattern: s(/((?=(a))\2){1,2}/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [8],
+          pattern: s(/((?=(a))(?:a)){1,2}/),
+        }
+      );
+      expectResult(
+        downgradePattern({
           pattern: s(/(?=(a))(?=(b\1))\2/),
           unicode: false,
         }),
@@ -248,6 +269,19 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b(?!(c))))c(?:b)/),
+        }
+      );
+    });
+
+    it('downgrades when group in a positive lookahead and handles nested atomic group', () => {
+      expectResult(
+        downgradePattern({
+          pattern: s(/^(?=((?=(a*))\2b*))\1c*$/),
+          unicode: false,
+        }),
+        {
+          atomicGroupOffsets: [13, 23, 26],
+          pattern: s(/^(?=((?=(a*))(?:a*)b*))(?:(?:a*)b*)c*$/),
         }
       );
     });
@@ -305,11 +339,32 @@ describe('DowngradePattern', () => {
   });
 
   describe('getRawWithoutCapturingGroups', () => {
+    const expectResult = (
+      result: RawWithoutCapturingGroupsOrLookaheads,
+      {
+        references,
+        result: resultResult,
+      }: {
+        references: Record<string, number>;
+        result: string;
+      }
+    ): void => {
+      expect(result.result).toBe(resultResult);
+      expect(
+        Object.fromEntries(
+          [...result.referencesWithOffset].map(([reference, offset]) => {
+            return [reference.raw, offset];
+          })
+        )
+      ).toStrictEqual(references);
+    };
+
     it('works', () => {
-      expect(
-        getRawWithoutCapturingGroupsOrLookaheads(p(s(/(a)/), false))
-      ).toEqual({ containedReference: false, result: s(/(?:a)/) });
-      expect(
+      expectResult(
+        getRawWithoutCapturingGroupsOrLookaheads(p(s(/(a)/), false)),
+        { references: {}, result: s(/(?:a)/) }
+      );
+      expectResult(
         getRawWithoutCapturingGroupsOrLookaheads(
           p(
             s(
@@ -317,11 +372,31 @@ describe('DowngradePattern', () => {
             ),
             false
           )
-        )
-      ).toEqual({
-        containedReference: true,
-        result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
-      });
+        ),
+        {
+          references: {
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            '\\1': 51,
+          },
+          result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
+        }
+      );
+      expectResult(
+        getRawWithoutCapturingGroupsOrLookaheads(
+          p(s(/()()()()a(\1)c(d|\2|f)(?:\3)(?:\4)+/), false)
+        ),
+        {
+          /* eslint-disable @typescript-eslint/naming-convention */
+          references: {
+            '\\1': 20,
+            '\\2': 29,
+            '\\3': 37,
+            '\\4': 43,
+          },
+          /* eslint-enable @typescript-eslint/naming-convention */
+          result: s(/(?:)(?:)(?:)(?:)a(?:\1)c(?:d|\2|f)(?:\3)(?:\4)+/),
+        }
+      );
     });
   });
 });

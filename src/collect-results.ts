@@ -1,12 +1,13 @@
 import {
   buildCheckerReader,
   CheckerReaderReturn,
-  checkerReaderTypeInfiniteResults,
+  checkerReaderTypeInfiniteLoop,
   checkerReaderTypeTrail,
   CheckerReaderValue,
   Trail,
 } from './checker-reader';
-import { buildCharacterReaderWithReferences } from './character-reader-with-references';
+import { areArraysEqual } from './arrays';
+import { buildCharacterReaderLevel2 } from './character-reader/character-reader-level-2';
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
@@ -34,8 +35,8 @@ export function collectResults({
   timeout,
 }: CollectResultsInput): WalkerResult {
   const nodeExtra = buildNodeExtra(node);
-  const leftStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
-  const rightStreamReader = buildCharacterReaderWithReferences(node, nodeExtra);
+  const leftStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
+  const rightStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
   const reader = buildCheckerReader({
     atomicGroupOffsets,
     leftStreamReader,
@@ -44,19 +45,29 @@ export function collectResults({
     timeout,
   });
 
-  const trails: Trail[] = [];
+  let trails: Trail[] = [];
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
-  let infiniteResults = false;
+  let infiniteBacktracks = false;
 
   outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {
-      case checkerReaderTypeInfiniteResults: {
-        infiniteResults = true;
+      case checkerReaderTypeInfiniteLoop: {
+        infiniteBacktracks = true;
+        if (trails.length > 0) {
+          break outer;
+        }
         break;
       }
       case checkerReaderTypeTrail: {
-        trails.push(next.value.trail);
-        if (infiniteResults) {
+        const trail = next.value.trail;
+        trails = trails.filter((existingTrail) => {
+          const samePreix =
+            trail.length >= existingTrail.length &&
+            areArraysEqual(trail.slice(0, existingTrail.length), existingTrail);
+          return !samePreix;
+        });
+        trails = [...trails, trail];
+        if (infiniteBacktracks || trails.length > maxBacktracks) {
           break outer;
         }
         break;
@@ -64,20 +75,15 @@ export function collectResults({
     }
   }
 
-  let worstCaseBacktrackCount = infiniteResults ? Infinity : trails.length;
+  let worstCaseBacktrackCount = infiniteBacktracks ? Infinity : trails.length;
 
   let error: RedosDetectorError | null = null;
   if (next.done) {
     if (next.value.error) {
       worstCaseBacktrackCount = Infinity;
       error = next.value.error;
-    } else {
-      if (!trails.length) {
-        worstCaseBacktrackCount = 0;
-      }
-      if (worstCaseBacktrackCount >= maxBacktracks) {
-        error = 'hitMaxBacktracks';
-      }
+    } else if (!trails.length) {
+      worstCaseBacktrackCount = 0;
     }
   } else {
     worstCaseBacktrackCount = Infinity;

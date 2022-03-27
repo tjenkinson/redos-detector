@@ -102,7 +102,7 @@ export function toFriendly(
 
     const errorToMessage: Record<RedosDetectorError, string> = {
       hitMaxBacktracks:
-        'Hit maxiumum number of backtracks so there may be more results than shown here.',
+        'Hit maximum number of backtracks so there may be more results than shown here.',
       hitMaxSteps:
         'Hit maximum number of steps so there may be more results than shown here.',
       stackOverflow:

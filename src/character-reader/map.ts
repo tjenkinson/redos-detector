@@ -4,7 +4,7 @@ import {
   characterReaderTypeSplit,
   CharacterReaderValue,
   CharacterReaderValueGroups,
-} from './character-reader';
+} from './character-reader-level-0';
 import { ReaderResult } from '../reader';
 
 /**

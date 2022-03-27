@@ -7,13 +7,6 @@ import {
   Value,
 } from 'regjsparser';
 import {
-  BackReferenceStack,
-  CharacterReaderWithReferences,
-  CharacterReaderWithReferencesReturnValue,
-  characterReaderWithReferencesTypeSplit,
-  CharacterReaderWithReferencesValue,
-} from './character-reader-with-references';
-import {
   buildForkableReader,
   ForkableReader,
   Reader,
@@ -29,7 +22,14 @@ import {
   intersectCharacterGroups,
   isEmptyCharacterGroups,
 } from './character-groups';
+import {
+  CharacterReaderLevel2,
+  CharacterReaderLevel2ReturnValue,
+  characterReaderLevel2TypeSplit,
+  CharacterReaderLevel2Value,
+} from './character-reader/character-reader-level-2';
 import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
+import { BackReferenceStack } from './character-reader/character-reader-level-1';
 import { Groups } from './nodes/group';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
@@ -40,9 +40,9 @@ import { synchronisationCheck } from './synchronisation-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
-  leftStreamReader: CharacterReaderWithReferences;
+  leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
-  rightStreamReader: CharacterReaderWithReferences;
+  rightStreamReader: CharacterReaderLevel2;
   timeout: number;
 }>;
 
@@ -79,19 +79,19 @@ export type Trail = readonly TrailEntry[];
 export const checkerReaderTypeTrail: unique symbol = Symbol(
   'checkerReaderTypeTrail'
 );
-export const checkerReaderTypeInfiniteResults: unique symbol = Symbol(
-  'checkerReaderTypeInfiniteResults'
+export const checkerReaderTypeInfiniteLoop: unique symbol = Symbol(
+  'checkerReaderTypeInfiniteLoop'
 );
 
 export type CheckerReaderValueTrail = Readonly<{
   trail: Trail;
   type: typeof checkerReaderTypeTrail;
 }>;
-export type CheckerReaderValueInfiniteResults = Readonly<{
-  type: typeof checkerReaderTypeInfiniteResults;
+export type CheckerReaderValueInfiniteLoop = Readonly<{
+  type: typeof checkerReaderTypeInfiniteLoop;
 }>;
 export type CheckerReaderValue =
-  | CheckerReaderValueInfiniteResults
+  | CheckerReaderValueInfiniteLoop
   | CheckerReaderValueTrail;
 
 // eslint-disable-next-line no-use-before-define
@@ -100,7 +100,7 @@ export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
 }>;
 
-const stackOverflowLimit = 1500;
+const stackOverflowLimit = 1000;
 
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
@@ -109,20 +109,19 @@ type NodeWithQuantifierTrail = Readonly<{
 
 type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
-  branched: boolean;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   > | null;
   leftStreamReader: ForkableReader<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
   level: number;
   rightStreamReader: ForkableReader<
-    CharacterReaderWithReferencesValue,
-    CharacterReaderWithReferencesReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
   trail: Trail;
 }>;
@@ -134,11 +133,10 @@ const isNodeWithQuantifierTrailEqual = (
   left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
- * Takes a left and right `CharacterReaderWithReferences` and runs them against each other.
+ * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
  *
- * If the left and right reader reach the end of the pattern at the same time, but have taken
- * different routes, then this means there are at least 2 different ways of matching the same
- * input.
+ * Emits a trail when left and right differ, as it means there are 2 different ways of matching the same
+ * trail up to that point.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const sidesEqualChecker = new SidesEqualChecker();
@@ -147,7 +145,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
   let stackOverflow = false;
-  let infiniteResults = false;
 
   const startThread = function* ({
     leftStreamReader,
@@ -161,7 +158,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     // was not atomic
     atomicGroupsInSync,
     level,
-    branched,
   }: StartThreadInput): Reader<CheckerReaderValue> {
     const dispose = (): void => {
       leftStreamReader.dispose();
@@ -179,18 +175,17 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         return;
       }
       const nextLeft: ReaderResult<
-        CharacterReaderWithReferencesValue,
-        CharacterReaderWithReferencesReturnValue
+        CharacterReaderLevel2Value,
+        CharacterReaderLevel2ReturnValue
       > = leftInitial ?? leftStreamReader.next();
       leftInitial = null;
 
       if (
         !nextLeft.done &&
-        nextLeft.value.type === characterReaderWithReferencesTypeSplit
+        nextLeft.value.type === characterReaderLevel2TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branched,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
@@ -207,16 +202,15 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       const nextRight: ReaderResult<
-        CharacterReaderWithReferencesValue,
-        CharacterReaderWithReferencesReturnValue
+        CharacterReaderLevel2Value,
+        CharacterReaderLevel2ReturnValue
       > = rightStreamReader.next();
       if (
         !nextRight.done &&
-        nextRight.value.type === characterReaderWithReferencesTypeSplit
+        nextRight.value.type === characterReaderLevel2TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
-          branched,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
           leftStreamReader: leftStreamReader.fork(),
@@ -260,8 +254,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       const rightValue = nextRight.value;
       /* istanbul ignore next */
       if (
-        leftValue.type === characterReaderWithReferencesTypeSplit ||
-        rightValue.type === characterReaderWithReferencesTypeSplit
+        leftValue.type === characterReaderLevel2TypeSplit ||
+        rightValue.type === characterReaderLevel2TypeSplit
       ) {
         throw new Error('Internal error: impossible leftValue/rightValue type');
       }
@@ -340,9 +334,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (infiniteLoopTracker.isLooping()) {
-        if (!infiniteResults) {
-          infiniteResults = true;
-          yield { type: checkerReaderTypeInfiniteResults };
+        if (leftValue.node === rightValue.node) {
+          yield { type: checkerReaderTypeInfiniteLoop };
         }
         dispose();
         return;
@@ -402,55 +395,46 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       trail = [...trail, newEntry];
 
-      if (sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)) {
-        if (branched) {
-          // no need to continue. There will be another thread that's getting further where
-          // up to this point the sides were identical
-          dispose();
-          return;
-        }
-      } else {
-        branched = true;
-
+      if (
+        // if both sides are unbounded then it means a backtrack won't occur
+        // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
+        // so don't emit the trail
+        (!leftValue.unbounded || !rightValue.unbounded) &&
+        !sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)
+      ) {
         const shouldSendTrail = (): boolean => {
           if (!trails.has(trail)) {
-            const leftAndRightIdentical = trail.every((entry) =>
-              sidesEqualChecker.areSidesEqual(entry.left, entry.right)
-            );
+            const alreadyExists = [...trails].some((existingTrail) => {
+              if (existingTrail.length !== trail.length) return false;
 
-            if (!leftAndRightIdentical) {
-              const alreadyExists = [...trails].some((existingTrail) => {
-                if (existingTrail.length !== trail.length) return false;
+              return (
+                existingTrail.every(
+                  (existingEntry, i) =>
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].right
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].left
+                    )
+                ) ||
+                existingTrail.every(
+                  (existingEntry, i) =>
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.left,
+                      trail[i].left
+                    ) &&
+                    sidesEqualChecker.areSidesEqual(
+                      existingEntry.right,
+                      trail[i].right
+                    )
+                )
+              );
+            });
 
-                return (
-                  existingTrail.every(
-                    (existingEntry, i) =>
-                      sidesEqualChecker.areSidesEqual(
-                        existingEntry.left,
-                        trail[i].right
-                      ) &&
-                      sidesEqualChecker.areSidesEqual(
-                        existingEntry.right,
-                        trail[i].left
-                      )
-                  ) ||
-                  existingTrail.every(
-                    (existingEntry, i) =>
-                      sidesEqualChecker.areSidesEqual(
-                        existingEntry.left,
-                        trail[i].left
-                      ) &&
-                      sidesEqualChecker.areSidesEqual(
-                        existingEntry.right,
-                        trail[i].right
-                      )
-                  )
-                );
-              });
-
-              if (!alreadyExists) {
-                return true;
-              }
+            if (!alreadyExists) {
+              return true;
             }
           }
           return false;
@@ -466,7 +450,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
   const reader = startThread({
     atomicGroupsInSync: new Map(),
-    branched: false,
     infiniteLoopTracker: new InfiniteLoopTracker(
       isNodeWithQuantifierTrailEqual
     ),
