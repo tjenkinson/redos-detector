@@ -512,8 +512,9 @@ describe('RedosDetector', () => {
     });
 
     it('returns the `stackOverflow` error if too much branching', () => {
-      const res = isSafe(/(a|b|c|d|e){1,1000}/, {
+      const res = isSafe(/a|b/, {
         maxSteps: Infinity,
+        stackOverflowLimit: 1,
       });
       expect(res.error).toBe('stackOverflow');
     });

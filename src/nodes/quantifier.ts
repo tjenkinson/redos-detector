@@ -79,7 +79,7 @@ export function buildQuantifierCharacterReader(
               (): CharacterReader => buildCharacterReader(node.body[0]),
             ]),
             (value) => {
-              const inInfinitePortion = i >= min && i >= 1 && max === Infinity;
+              const inInfinitePortion = i >= min && i >= 1;
               const newGroups: GroupsMutable = new Map();
               for (const [group, entry] of value.groups) {
                 newGroups.set(group, {
