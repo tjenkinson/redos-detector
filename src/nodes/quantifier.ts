@@ -11,19 +11,19 @@ import { Quantifier } from 'regjsparser';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
 export type QuantifierStackEntry = Readonly<{
-  inInfinitePortion: boolean;
+  inOptionalPortion: boolean;
   iteration: number;
   quantifier: Quantifier<MyFeatures>;
 }>;
 export type QuantifierStack = readonly QuantifierStackEntry[];
-export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
+export type QuantifiersInOptionalPortion = ReadonlySet<Quantifier<MyFeatures>>;
 
-export function buildQuantifiersInInfinitePortion(
+export function buildQuantifiersInOptionalPortion(
   stack: QuantifierStack
-): QuantifiersInInfinitePortion {
+): QuantifiersInOptionalPortion {
   return new Set(
     stack
-      .filter(({ inInfinitePortion }) => inInfinitePortion)
+      .filter(({ inOptionalPortion }) => inOptionalPortion)
       .map(({ quantifier }) => quantifier)
   );
 }
@@ -42,9 +42,9 @@ export function buildQuantifierTrail(
   asteriskInfinite: boolean
 ): string {
   return stack
-    .map(({ quantifier, inInfinitePortion, iteration }) => {
+    .map(({ quantifier, inOptionalPortion, iteration }) => {
       return `${quantifier.range[0]}:${
-        asteriskInfinite && inInfinitePortion ? '*' : `${iteration}`
+        asteriskInfinite && inOptionalPortion ? '*' : `${iteration}`
       }`;
     })
     .join(',');
@@ -79,13 +79,13 @@ export function buildQuantifierCharacterReader(
               (): CharacterReader => buildCharacterReader(node.body[0]),
             ]),
             (value) => {
-              const inInfinitePortion = i >= min && i >= 1;
+              const inOptionalPortion = i >= min && i >= 1;
               const newGroups: GroupsMutable = new Map();
               for (const [group, entry] of value.groups) {
                 newGroups.set(group, {
                   ...entry,
                   quantifierStack: [
-                    { inInfinitePortion, iteration: i, quantifier: node },
+                    { inOptionalPortion, iteration: i, quantifier: node },
                     ...entry.quantifierStack,
                   ],
                 });
@@ -94,7 +94,7 @@ export function buildQuantifierCharacterReader(
                 ...value,
                 groups: newGroups,
                 quantifierStack: [
-                  { inInfinitePortion, iteration: i, quantifier: node },
+                  { inOptionalPortion, iteration: i, quantifier: node },
                   ...value.quantifierStack,
                 ],
               };

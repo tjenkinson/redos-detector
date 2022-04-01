@@ -13,7 +13,7 @@ import {
   ReaderResult,
 } from './reader';
 import {
-  buildQuantifiersInInfinitePortion,
+  buildQuantifiersInOptionalPortion,
   buildQuantifierTrail,
   QuantifierStack,
 } from './nodes/quantifier';
@@ -285,9 +285,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       const leftQuantifiersInInfiniteProportion =
-        buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
+        buildQuantifiersInOptionalPortion(leftValue.quantifierStack);
       const rightQuantifiersInInfiniteProportion =
-        buildQuantifiersInInfinitePortion(rightValue.quantifierStack);
+        buildQuantifiersInOptionalPortion(rightValue.quantifierStack);
 
       if (
         setsOverlap(
