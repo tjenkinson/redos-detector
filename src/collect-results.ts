@@ -24,6 +24,7 @@ export type CollectResultsInput = Readonly<{
   maxBacktracks: number;
   maxSteps: number;
   node: MyRootNode;
+  stackOverflowLimit: number;
   timeout: number;
 }>;
 
@@ -32,6 +33,7 @@ export function collectResults({
   node,
   maxBacktracks,
   maxSteps,
+  stackOverflowLimit,
   timeout,
 }: CollectResultsInput): WalkerResult {
   const nodeExtra = buildNodeExtra(node);
@@ -42,6 +44,7 @@ export function collectResults({
     leftStreamReader,
     maxSteps,
     rightStreamReader,
+    stackOverflowLimit,
     timeout,
   });
 

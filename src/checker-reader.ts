@@ -43,6 +43,7 @@ export type CheckerInput = Readonly<{
   leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
   rightStreamReader: CharacterReaderLevel2;
+  stackOverflowLimit: number;
   timeout: number;
 }>;
 
@@ -99,8 +100,6 @@ export type CheckerReader = Reader<CheckerReaderValue, CheckerReaderReturn>;
 export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
 }>;
-
-const stackOverflowLimit = 1000;
 
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
@@ -164,7 +163,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       rightStreamReader.dispose();
     };
 
-    if (level >= stackOverflowLimit) {
+    if (level >= input.stackOverflowLimit) {
       stackOverflow = true;
     }
 

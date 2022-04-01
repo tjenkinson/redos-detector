@@ -542,6 +542,14 @@ describe('RedosDetector', () => {
       ).toThrowError('`maxSteps` must be a positive number.');
     });
 
+    it('throws if `stackOverflowLimit` not positive', () => {
+      expect(() =>
+        isSafe(/a/, {
+          stackOverflowLimit: 0,
+        })
+      ).toThrowError('`stackOverflowLimit` must be a positive number.');
+    });
+
     it('throws if an unsupported flag is passed', () => {
       expect(() => isSafe(/a/i)).toThrowError('Unsupported flag: i');
     });

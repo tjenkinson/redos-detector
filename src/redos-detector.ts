@@ -108,6 +108,13 @@ export type IsSafeConfig = {
    */
   readonly maxSteps?: number;
   /**
+   * The number of levels branching can go before a `stackOverflow` error
+   * is triggered.
+   *
+   * You shouldn't need to set this.
+   */
+  readonly stackOverflowLimit?: number;
+  /**
    * The maximum amount of time (ms) to spend processing. Once this time
    * is passed the trails found so far will be returned, and the `error`
    * will be `timeout`.
@@ -220,6 +227,7 @@ export type IsSafePatternConfig = IsSafeConfig & {
 export const defaultTimeout = Infinity;
 export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
+export const defaultStackOverflowLimit = 1000;
 export const defaultUnicode = false;
 const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
 
@@ -269,6 +277,7 @@ export function isSafePattern(
     atomicGroupOffsets: atomicGroupOffsetsInput,
     maxBacktracks = defaultMaxBacktracks,
     maxSteps = defaultMaxSteps,
+    stackOverflowLimit = defaultStackOverflowLimit,
     timeout = defaultTimeout,
     unicode = defaultUnicode,
     downgradePattern = true,
@@ -288,6 +297,9 @@ export function isSafePattern(
   if (maxSteps <= 0) {
     throw new Error('`maxSteps` must be a positive number.');
   }
+  if (stackOverflowLimit <= 0) {
+    throw new Error('`stackOverflowLimit` must be a positive number.');
+  }
 
   const { pattern, atomicGroupOffsets }: PatternWithAtomicGroupOffsets =
     downgradePattern
@@ -303,6 +315,7 @@ export function isSafePattern(
     maxBacktracks,
     maxSteps,
     node: ast,
+    stackOverflowLimit,
     timeout,
   });
 
