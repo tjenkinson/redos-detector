@@ -19,7 +19,6 @@ function buildConfig({ input, output, declaration = false }) {
       }),
       json(),
       resolve(),
-    //  commonjs(),
       {
         name: 'package-json',
         resolveId(id) {
