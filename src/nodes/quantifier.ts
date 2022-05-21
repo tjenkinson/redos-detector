@@ -1,22 +1,33 @@
 import {
   buildCharacterReader,
   CharacterReader,
+  Stack,
 } from '../character-reader/character-reader-level-0';
 import { join, joinArray } from '../character-reader/join';
 import { buildNullCharacterReader } from './null';
-import { GroupsMutable } from './group';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
 import { Quantifier } from 'regjsparser';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
-export type QuantifierStackEntry = Readonly<{
+export type StackQuantifierEntry = Readonly<{
   inInfinitePortion: boolean;
   iteration: number;
   quantifier: Quantifier<MyFeatures>;
+  type: 'quantifier';
 }>;
-export type QuantifierStack = readonly QuantifierStackEntry[];
+export type QuantifierStack = readonly StackQuantifierEntry[];
 export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
+
+export function getQuantifierStack(stack: Stack): QuantifierStack {
+  const quantifierStack: StackQuantifierEntry[] = [];
+  for (const entry of stack) {
+    if (entry.type === 'quantifier') {
+      quantifierStack.push(entry);
+    }
+  }
+  return quantifierStack;
+}
 
 export function buildQuantifiersInInfinitePortion(
   stack: QuantifierStack
@@ -80,22 +91,16 @@ export function buildQuantifierCharacterReader(
             ]),
             (value) => {
               const inInfinitePortion = i >= min && i >= 1 && max === Infinity;
-              const newGroups: GroupsMutable = new Map();
-              for (const [group, entry] of value.groups) {
-                newGroups.set(group, {
-                  ...entry,
-                  quantifierStack: [
-                    { inInfinitePortion, iteration: i, quantifier: node },
-                    ...entry.quantifierStack,
-                  ],
-                });
-              }
               return {
                 ...value,
-                groups: newGroups,
-                quantifierStack: [
-                  { inInfinitePortion, iteration: i, quantifier: node },
-                  ...value.quantifierStack,
+                stack: [
+                  {
+                    inInfinitePortion,
+                    iteration: i,
+                    quantifier: node,
+                    type: 'quantifier',
+                  },
+                  ...value.stack,
                 ],
               };
             }

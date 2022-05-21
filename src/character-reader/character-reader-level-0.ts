@@ -1,11 +1,7 @@
-import {
-  buildGroupCharacterReader,
-  Groups,
-  LookaheadStack,
-} from '../nodes/group';
+import { buildGroupCharacterReader, StackGroupEntry } from '../nodes/group';
 import {
   buildQuantifierCharacterReader,
-  QuantifierStack,
+  StackQuantifierEntry,
 } from '../nodes/quantifier';
 import {
   CharacterClass,
@@ -41,10 +37,11 @@ export type CharacterReaderValueSplit = {
   type: typeof characterReaderTypeSplit;
 };
 
+export type StackEntry = StackGroupEntry | StackQuantifierEntry;
+export type Stack = readonly StackEntry[];
+
 export type CharacterReaderValueGroups = {
-  groups: Groups;
-  lookaheadStack: LookaheadStack;
-  quantifierStack: QuantifierStack;
+  stack: Stack;
   type: typeof characterReaderTypeCharacterEntry;
 } & (
   | {

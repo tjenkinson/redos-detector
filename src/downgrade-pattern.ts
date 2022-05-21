@@ -238,10 +238,16 @@ export function downgradePattern({
         }
         case 'quantifier': {
           if (node.max === undefined) {
-            nodeStack.forEach((stackNode) => {
+            [...nodeStack].reverse().some((stackNode) => {
               if (stackNode.type === 'group') {
+                if (lookaheadBehaviours.indexOf(stackNode.behavior) >= 0) {
+                  // this infinite quantifier is contained in a lookahead,
+                  // so doesn't effect outer group size
+                  return true;
+                }
                 infiniteGroups.add(stackNode);
               }
+              return false;
             });
           }
           walkAll(node.body, [...nodeStack, node], false);

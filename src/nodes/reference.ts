@@ -9,11 +9,9 @@ export function* buildReferenceCharacterReader(
   node: Reference<MyFeatures>
 ): CharacterReader {
   yield {
-    groups: new Map(),
-    lookaheadStack: [],
     node,
-    quantifierStack: [],
     referenceIndex: node.matchIndex,
+    stack: [],
     subType: 'reference',
     type: characterReaderTypeCharacterEntry,
   };

@@ -13,10 +13,8 @@ export function* buildDotCharacterReader(node: Dot): CharacterReader {
       ranges: [],
       unicodePropertyEscapes: new Set(),
     },
-    groups: new Map(),
-    lookaheadStack: [],
     node,
-    quantifierStack: [],
+    stack: [],
     subType: 'groups',
     type: characterReaderTypeCharacterEntry,
   };

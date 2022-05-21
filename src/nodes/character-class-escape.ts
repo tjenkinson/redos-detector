@@ -25,10 +25,8 @@ export function* buildCharacterClassEscapeReader(
       ranges: range ? [range] : [],
       unicodePropertyEscapes: new Set(),
     },
-    groups: new Map(),
-    lookaheadStack: [],
     node,
-    quantifierStack: [],
+    stack: [],
     subType: 'groups',
     type: characterReaderTypeCharacterEntry,
   };

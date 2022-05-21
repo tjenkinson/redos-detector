@@ -7,6 +7,7 @@ import {
 } from './character-reader-level-0';
 import {
   buildQuantifierIterations,
+  getQuantifierStack,
   QuantifierIterations,
   QuantifierStack,
 } from '../nodes/quantifier';
@@ -19,7 +20,12 @@ import {
   UnicodePropertyEscape,
   Value,
 } from 'regjsparser';
-import { Groups, LookaheadStack } from '../nodes/group';
+import {
+  getGroups,
+  getLookaheadStack,
+  Groups,
+  LookaheadStack,
+} from '../nodes/group';
 import { MyFeatures, MyRootNode } from '../parse';
 import { Reader, ReaderResult } from '../reader';
 import { CharacterGroups } from '../character-groups';
@@ -160,6 +166,9 @@ export function buildCharacterReaderLevel1(
           break;
         }
         case characterReaderTypeCharacterEntry: {
+          const quantifierStack = getQuantifierStack(value.stack);
+          const groups = getGroups(value.stack);
+          const lookaheadStack = getLookaheadStack(value.stack);
           const getGroupContents = (
             index: number,
             reference: Reference
@@ -192,7 +201,7 @@ export function buildCharacterReaderLevel1(
             }
 
             if (
-              value.groups.has(
+              groups.has(
                 groupContents.group
               ) /* reference is inside group being referenced */
             ) {
@@ -224,82 +233,95 @@ export function buildCharacterReaderLevel1(
             }
           }
 
-          value.groups.forEach(
-            ({ quantifierStack: groupQuantifierStack }, group) => {
-              if (group.behavior !== 'normal') {
-                // it's a non capturing group
-                return;
+          let groupInfiniteSize = false;
+          outer: for (const stackEntry of [...value.stack].reverse()) {
+            if (
+              stackEntry.type === 'quantifier' &&
+              stackEntry.quantifier.max === undefined
+            ) {
+              groupInfiniteSize = true;
+              continue;
+            } else if (stackEntry.type !== 'group') {
+              continue;
+            }
+            const group = stackEntry.group;
+
+            if (
+              group.behavior === 'lookbehind' ||
+              group.behavior === 'negativeLookbehind' ||
+              group.behavior === 'negativeLookahead' ||
+              group.behavior === 'lookahead'
+            ) {
+              groupInfiniteSize = false;
+              continue;
+            }
+
+            if (group.behavior !== 'normal') {
+              // it's a non capturing group
+              continue;
+            }
+
+            const index = mustGet(nodeExtra.capturingGroupToIndex, group);
+
+            if (groupInfiniteSize) {
+              const newGroupsWithInfiniteSize = new Set(groupsWithInfiniteSize);
+              newGroupsWithInfiniteSize.add(index);
+              groupsWithInfiniteSize = newGroupsWithInfiniteSize;
+            }
+
+            const contents = newGroupContentsStore.get(index) || {
+              contents: [],
+              group,
+            };
+
+            switch (value.subType) {
+              case 'groups': {
+                newGroupContentsStore.set(index, {
+                  ...contents,
+                  contents: [
+                    ...contents.contents,
+                    {
+                      backreferenceStack: [],
+                      groups: value.characterGroups,
+                      node: value.node,
+                    },
+                  ],
+                });
+                break;
               }
-
-              const index = mustGet(nodeExtra.capturingGroupToIndex, group);
-              const contents = newGroupContentsStore.get(index) || {
-                contents: [],
-                group,
-              };
-
-              if (
-                value.quantifierStack
-                  .map(({ quantifier }) => quantifier)
-                  .slice(groupQuantifierStack.length)
-                  .some((q) => q.max === undefined)
-              ) {
-                const newGroupsWithInfiniteSize = new Set(
-                  groupsWithInfiniteSize
-                );
-                newGroupsWithInfiniteSize.add(index);
-                groupsWithInfiniteSize = newGroupsWithInfiniteSize;
+              case 'reference': {
+                newGroupContentsStore.set(index, {
+                  ...contents,
+                  contents: [
+                    ...contents.contents,
+                    ...getGroupContents(value.referenceIndex, value.node).map(
+                      (entry) => {
+                        return {
+                          ...entry,
+                          backreferenceStack: [
+                            ...entry.backreferenceStack,
+                            value.node,
+                          ],
+                        };
+                      }
+                    ),
+                  ],
+                });
+                break;
               }
-
-              switch (value.subType) {
-                case 'groups': {
-                  newGroupContentsStore.set(index, {
-                    ...contents,
-                    contents: [
-                      ...contents.contents,
-                      {
-                        backreferenceStack: [],
-                        groups: value.characterGroups,
-                        node: value.node,
-                      },
-                    ],
-                  });
-                  break;
-                }
-                case 'reference': {
-                  newGroupContentsStore.set(index, {
-                    ...contents,
-                    contents: [
-                      ...contents.contents,
-                      ...getGroupContents(value.referenceIndex, value.node).map(
-                        (entry) => {
-                          return {
-                            ...entry,
-                            backreferenceStack: [
-                              ...entry.backreferenceStack,
-                              value.node,
-                            ],
-                          };
-                        }
-                      ),
-                    ],
-                  });
-                  break;
-                }
-                case 'end': {
-                  return;
-                }
-                case 'null':
-                case 'start': {
-                  break;
-                }
+              case 'end': {
+                break outer;
+              }
+              case 'null':
+              case 'start': {
+                break;
               }
             }
-          );
+          }
           groupContentsStore = newGroupContentsStore;
 
-          const quantifierIterations = buildQuantifierIterations(
-            value.quantifierStack
-          );
+          const quantifierIterations =
+            buildQuantifierIterations(quantifierStack);
 
           switch (value.subType) {
             case 'reference': {
@@ -315,11 +337,11 @@ export function buildCharacterReaderLevel1(
                       value.node,
                     ],
                     characterGroups: contents.groups,
-                    groups: value.groups,
-                    lookaheadStack: value.lookaheadStack,
+                    groups,
+                    lookaheadStack,
                     node: contents.node,
                     preceedingZeroWidthEntries,
-                    quantifierStack: value.quantifierStack,
+                    quantifierStack,
                     type: characterReaderLevel1TypeEntry,
                   };
                 }
@@ -340,11 +362,11 @@ export function buildCharacterReaderLevel1(
               yield {
                 backreferenceStack: [],
                 characterGroups: value.characterGroups,
-                groups: value.groups,
-                lookaheadStack: value.lookaheadStack,
+                groups,
+                lookaheadStack,
                 node: value.node,
                 preceedingZeroWidthEntries,
-                quantifierStack: value.quantifierStack,
+                quantifierStack,
                 type: characterReaderLevel1TypeEntry,
               };
 
@@ -364,7 +386,10 @@ export function buildCharacterReaderLevel1(
             case 'null': {
               preceedingZeroWidthEntries = [
                 ...preceedingZeroWidthEntries,
-                { groups: value.groups, type: 'groups' },
+                {
+                  groups,
+                  type: 'groups',
+                },
               ];
               break;
             }

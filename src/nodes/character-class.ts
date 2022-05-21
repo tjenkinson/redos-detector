@@ -52,10 +52,8 @@ export function buildCharacterClassCharacterReader(
   return buildArrayReader<CharacterReaderValueGroups>([
     {
       characterGroups,
-      groups: new Map(),
-      lookaheadStack: [],
       node,
-      quantifierStack: [],
+      stack: [],
       subType: 'groups',
       type: characterReaderTypeCharacterEntry,
     },
