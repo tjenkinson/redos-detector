@@ -335,6 +335,27 @@ describe('DowngradePattern', () => {
           pattern: s(/(a+)(?:a+)/),
         }
       );
+      expectResult(
+        downgradePattern({
+          pattern: s(/(a+(?=b+))\1/),
+          unicode: false,
+        }),
+        {
+          pattern: s(/(a+(?=b+))(?:a+)/),
+        }
+      );
+    });
+
+    it('does not downgrade when a lookahead group is not finite size', () => {
+      expectResult(
+        downgradePattern({
+          pattern: s(/(a(?=b+))\1/),
+          unicode: false,
+        }),
+        {
+          pattern: s(/(a(?=b+))\1/),
+        }
+      );
     });
   });
 

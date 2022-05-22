@@ -5,10 +5,8 @@ import {
 
 export function* buildNullCharacterReader(offset: number): CharacterReader {
   yield {
-    groups: new Map(),
-    lookaheadStack: [],
     offset,
-    quantifierStack: [],
+    stack: [],
     subType: 'null',
     type: characterReaderTypeCharacterEntry,
   };

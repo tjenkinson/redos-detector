@@ -9,10 +9,8 @@ export function* buildAnchorReader(node: Anchor): CharacterReader {
     case 'end':
       {
         yield {
-          groups: new Map(),
-          lookaheadStack: [],
           offset: node.range[0],
-          quantifierStack: [],
+          stack: [],
           subType: 'end',
           type: characterReaderTypeCharacterEntry,
         };
@@ -22,10 +20,8 @@ export function* buildAnchorReader(node: Anchor): CharacterReader {
       throw new Error('Internal error: should not be reading after end');
     case 'start': {
       yield {
-        groups: new Map(),
-        lookaheadStack: [],
         offset: node.range[0],
-        quantifierStack: [],
+        stack: [],
         subType: 'start',
         type: characterReaderTypeCharacterEntry,
       };

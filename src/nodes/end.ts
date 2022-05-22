@@ -5,10 +5,8 @@ import {
 
 export function* buildEndReader(offset: number): CharacterReader {
   yield {
-    groups: new Map(),
-    lookaheadStack: [],
     offset,
-    quantifierStack: [],
+    stack: [],
     subType: 'end',
     type: characterReaderTypeCharacterEntry,
   };
