@@ -61,10 +61,10 @@ export function collectResults({
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
         trails = trails.filter((existingTrail) => {
-          const samePreix =
+          const samePrefix =
             trail.length >= existingTrail.length &&
             areArraysEqual(trail.slice(0, existingTrail.length), existingTrail);
-          return !samePreix;
+          return !samePrefix;
         });
         trails = [...trails, trail];
         if (infiniteBacktracks || trails.length > maxBacktracks) {
