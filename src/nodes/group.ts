@@ -31,7 +31,7 @@ export function getGroups(stack: Stack): Groups {
       quantifierStack.push(entry);
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (entry.type === 'group') {
-      groups.set(entry.group, { quantifierStack: quantifierStack.slice(0) });
+      groups.set(entry.group, { quantifierStack: [...quantifierStack] });
     }
   }
   return groups;
