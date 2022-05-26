@@ -358,6 +358,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         )
       );
       if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
+        // if we are not entering/leaving an atomic group in sync
+        // then bail, as atomic groups can't give something up to be
+        // consumed somewhere else
         dispose();
         return;
       }
