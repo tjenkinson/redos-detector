@@ -1,13 +1,9 @@
-export function areSetsEqual<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
-  if (a.size !== b.size) return false;
-  for (const entry of a) {
-    if (!b.has(entry)) return false;
-  }
-  return true;
-}
-
 export function mergeSets<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Set<T> {
   return new Set([...a, ...b]);
+}
+
+export function areSetsEqual<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
+  return a.size === b.size && mergeSets(a, b).size === a.size;
 }
 
 export function subtractSets<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Set<T> {
