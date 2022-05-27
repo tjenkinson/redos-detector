@@ -1,3 +1,4 @@
+import { areSetsEqual, setsOverlap } from './sets';
 import {
   AstNode,
   CharacterClass,
@@ -28,15 +29,11 @@ import {
   characterReaderLevel2TypeSplit,
   CharacterReaderLevel2Value,
 } from './character-reader/character-reader-level-2';
-import { atomicGroupsToSynchronisationCheckerKeys } from './atomic-groups-to-synchronisation-checker-keys';
 import { BackReferenceStack } from './character-reader/character-reader-level-1';
-import { Groups } from './nodes/group';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
-import { setsOverlap } from './set';
 import { SidesEqualChecker } from './sides-equal-checker';
-import { synchronisationCheck } from './synchronisation-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -350,34 +347,23 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         return;
       }
 
-      const syncResult = synchronisationCheck(
-        atomicGroupsInSync,
-        atomicGroupsToSynchronisationCheckerKeys({
-          atomicGroupOffsets: input.atomicGroupOffsets,
-          leftGroupsNow: leftValue.groups,
-          leftPreceedingGroups: leftValue.preceedingZeroWidthEntries.reduce<
-            Groups[]
-          >(
-            (acc, entry) =>
-              entry.type === 'groups' ? [...acc, entry.groups] : acc,
-            []
-          ),
-          rightGroupsNow: rightValue.groups,
-          rightPreceedingGroups: rightValue.preceedingZeroWidthEntries.reduce<
-            Groups[]
-          >(
-            (acc, entry) =>
-              entry.type === 'groups' ? [...acc, entry.groups] : acc,
-            []
-          ),
-        })
+      const leftAtomicGroups = new Set(
+        [...leftValue.groups.keys()].filter((group) =>
+          input.atomicGroupOffsets.has(group.range[0])
+        )
       );
-
-      if (syncResult.type === 'goneOutOfSync') {
+      const rightAtomicGroups = new Set(
+        [...rightValue.groups.keys()].filter((group) =>
+          input.atomicGroupOffsets.has(group.range[0])
+        )
+      );
+      if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
+        // if we are not entering/leaving an atomic group in sync
+        // then bail, as atomic groups can't give something up to be
+        // consumed somewhere else
         dispose();
         return;
       }
-      atomicGroupsInSync = syncResult.keysInSync;
 
       const newEntry: TrailEntry = {
         intersection,

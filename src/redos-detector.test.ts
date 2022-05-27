@@ -403,7 +403,7 @@ describe('RedosDetector', () => {
         [/(?=(a{0,1}))\1a?$/, true],
         [/(?=(a?))\1a?$/, true],
         [/(?=(a?b))\1a?$/, true],
-        [/a?(?=(a{0,1}))\1$/, false],
+        [/a?(?=(a{0,1}))\1$/, true],
         [/(?=(a?a?))\1a$/, false],
 
         // atomic group workaround not detected because group not entire lookahead

@@ -1,5 +1,5 @@
 import { intersectRanges, OurRange } from './our-range';
-import { mergeSets, subtractSets } from './set';
+import { mergeSets, subtractSets } from './sets';
 
 export type MutableCharacterGroups = {
   characterClassEscapes: Set<string>;
