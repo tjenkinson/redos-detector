@@ -121,7 +121,7 @@ export type IsSafeConfig = {
        * The offsets of groups which should be considered atomic.
        * This is an advanced option you probably never want to use.
        *
-       * It exists because sometimes when a patten is downgraded, some of
+       * It exists because sometimes when a pattern is downgraded, some of
        * the groups in the downgrade can be considered atomic.
        */
       readonly atomicGroupOffsets?: ReadonlySet<number>;
@@ -130,7 +130,7 @@ export type IsSafeConfig = {
        *
        * An exception may be thrown if the pattern needed to be downgraded.
        */
-      readonly downgradePattern?: false;
+      readonly downgradePattern: false;
     }
   | {
       readonly atomicGroupOffsets?: undefined;
@@ -142,7 +142,7 @@ export type IsSafeConfig = {
        *
        * You can downgrade the pattern yourself with `downgradePattern`.
        */
-      readonly downgradePattern: true;
+      readonly downgradePattern?: true;
     }
 );
 
@@ -292,7 +292,10 @@ export function isSafePattern(
   const { pattern, atomicGroupOffsets }: PatternWithAtomicGroupOffsets =
     downgradePattern
       ? downgradePatternFn({ pattern: inputPattern, unicode })
-      : { atomicGroupOffsets: new Set(), pattern: inputPattern };
+      : {
+          atomicGroupOffsets: new Set(atomicGroupOffsetsInput || []),
+          pattern: inputPattern,
+        };
 
   const patternDowngraded = downgradePattern && inputPattern !== pattern;
 
