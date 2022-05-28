@@ -574,6 +574,15 @@ describe('RedosDetector', () => {
         '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.'
       );
     });
+
+    it('supports `atomicGroupOffsets`', () => {
+      expect(
+        isSafePattern('(a?)a?$', {
+          atomicGroupOffsets: new Set([0]),
+          downgradePattern: false,
+        }).trails
+      ).toHaveLength(0);
+    });
   });
 
   describe('isSafePattern', () => {
