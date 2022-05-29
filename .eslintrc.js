@@ -5,6 +5,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'prettier',
   ],
+  plugins: ['redos-detector'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2019,
@@ -44,5 +45,6 @@ module.exports = {
     '@typescript-eslint/no-loss-of-precision': ['error'],
     '@typescript-eslint/no-throw-literal': ['error'],
     '@typescript-eslint/no-unused-expressions': ['error'],
+    'redos-detector/no-unsafe-regex': ['error'],
   },
 };

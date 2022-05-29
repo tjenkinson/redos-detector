@@ -1,4 +1,4 @@
-/* eslint-disable no-control-regex, no-useless-backreference */
+/* eslint-disable no-control-regex, no-useless-backreference, redos-detector/no-unsafe-regex */
 import {
   downgradePattern,
   isSafe,

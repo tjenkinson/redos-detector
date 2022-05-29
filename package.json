@@ -50,6 +50,7 @@
     "commander": "9.2.0",
     "eslint": "8.16.0",
     "eslint-config-prettier": "8.5.0",
+    "eslint-plugin-redos-detector": "2.0.12",
     "husky": "8.0.1",
     "jest": "28.1.0",
     "lint-staged": "12.4.1",
