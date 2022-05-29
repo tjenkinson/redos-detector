@@ -18,7 +18,7 @@
   "scripts": {
     "build": "rm -rf dist && rollup --config rollup.config.js",
     "watch": "rollup --config rollup.config.js --watch",
-    "lint": "eslint --ext .ts --max-warnings 0 src",
+    "lint": "eslint --ext .ts --max-warnings 0 --cache src",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
     "test": "jest",
