@@ -52,7 +52,7 @@
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-redos-detector": "2.0.12",
     "husky": "8.0.1",
-    "jest": "28.1.0",
+    "jest": "28.1.1",
     "lint-staged": "13.0.1",
     "micromatch": "4.0.5",
     "prettier": "2.6.2",
