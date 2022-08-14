@@ -26,6 +26,9 @@
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tjenkinson/redos-detector.git"
