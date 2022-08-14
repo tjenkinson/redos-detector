@@ -4,14 +4,18 @@ export type ReaderResult<T, TReturn = void> = IteratorResult<T, TReturn>;
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export function* emptyReader<T>(): Reader<T> {}
 
+const pendingItemsSymbol = Symbol('pendingItems');
+
+const supportsGC =
+  typeof FinalizationRegistry === 'function' && typeof WeakRef === 'function';
+
 export type ForkableReader<T, TReturn = void> = Reader<T, TReturn> & {
-  dispose(): void;
   fork(): ForkableReader<T, TReturn>;
+  [pendingItemsSymbol]: T[];
 };
 
 /**
  * Returns a reader that can be forked with the `fork` function.
- * To prevent memory leaks `dispose` should be called when finished.
  *
  * The source reader must not be read from directly.
  */
@@ -21,6 +25,13 @@ export function buildForkableReader<T, TReturn = void>(
   const onItem: Array<(item: T) => void> = [];
   let sourceDone = false;
   let returnVal: TReturn;
+
+  const registry: FinalizationRegistry<(item: T) => void> | null = supportsGC
+    ? new FinalizationRegistry((onItemCallback) => {
+        const index = onItem.indexOf(onItemCallback);
+        if (index >= 0) onItem.splice(index, 1);
+      })
+    : null;
 
   const readSource = (): void => {
     if (sourceDone) return;
@@ -35,50 +46,46 @@ export function buildForkableReader<T, TReturn = void>(
   };
 
   const makeFork = (initialPendingItems: T[]): ForkableReader<T, TReturn> => {
-    const pendingItems: T[] = [...initialPendingItems];
-    let handler: ((item: T) => void) | null = null;
-    if (!sourceDone) {
-      handler = (item: T): void => void pendingItems.push(item);
-      onItem.push(handler);
-    }
-
-    const readSourceIfNeeded = (): void => {
-      if (!pendingItems.length) {
-        readSource();
-      }
-    };
-
-    let disposed = false;
-    const ensureNotDisposed = (): void => {
-      if (disposed) throw new Error('Internal error: reader disposed');
-    };
-
-    const fork = (): ForkableReader<T, TReturn> => {
-      ensureNotDisposed();
-      return makeFork(pendingItems);
-    };
-
-    return {
-      // technically does not need to be called if the source has been drained
-      dispose(): void {
-        if (disposed) return;
-        disposed = true;
-        if (handler) {
-          const index = onItem.indexOf(handler);
-          onItem.splice(index, 1);
-        }
+    const reader: ForkableReader<T, TReturn> = {
+      fork() {
+        return makeFork(this[pendingItemsSymbol]);
       },
-      fork,
       next(): ReaderResult<T, TReturn> {
-        ensureNotDisposed();
-        readSourceIfNeeded();
+        const pendingItems = this[pendingItemsSymbol];
+        if (!pendingItems.length) {
+          readSource();
+        }
         if (pendingItems.length) {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           return { value: pendingItems.shift()! };
         }
         return { done: true, value: returnVal };
       },
+      [pendingItemsSymbol]: [...initialPendingItems],
     };
+
+    if (!sourceDone) {
+      if (registry) {
+        const ref = new WeakRef(reader);
+        const callback = (item: T): void => {
+          const maybeReader = ref.deref();
+          maybeReader?.[pendingItemsSymbol].push(item);
+        };
+        registry.register(reader, callback);
+        onItem.push(callback);
+      } else {
+        // using `reader` directly in the callback prevents it being gc'd
+        // for some reason even when this `else` can't run
+        const localReader = reader;
+        // this will never be cleaned up unless the source reader
+        // reaches the end
+        onItem.push((item: T) => {
+          localReader[pendingItemsSymbol].push(item);
+        });
+      }
+    }
+
+    return reader;
   };
 
   return makeFork([]);

@@ -4,6 +4,12 @@ import {
   ForkableReader,
 } from './reader';
 
+if (!global.gc) {
+  throw new Error('node --expose-gc flag required');
+}
+
+const gc: () => void = global.gc;
+
 describe('Reader', () => {
   describe('ForkableReader', () => {
     let reader: ForkableReader<number, void>;
@@ -33,16 +39,16 @@ describe('Reader', () => {
       expect(fork2.next().value).toBe(undefined);
     });
 
-    it('throws if next() is called after dispose', () => {
-      reader.dispose();
-      expect(() => reader.next()).toThrowError(
-        'Internal error: reader disposed'
-      );
-    });
+    it('gcs a fork when it is no longer referenced', async () => {
+      const fork = reader.fork();
+      fork.next();
 
-    it('allows dispose() to be called multiple times', () => {
-      reader.dispose();
-      reader.dispose();
+      const fork2 = new WeakRef(reader.fork());
+
+      await new Promise((resolve) => process.nextTick(resolve));
+      gc();
+
+      expect(fork2.deref()).toBe(undefined);
     });
   });
 });

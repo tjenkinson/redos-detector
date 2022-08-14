@@ -5,6 +5,7 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: 'src',
   restoreMocks: true,
+  setupFilesAfterEnv: ['<rootDir>/jest-setup.js'],
   globals: {
     'ts-jest': {
       tsconfig: path.resolve(__dirname, './tsconfig.test.json'),

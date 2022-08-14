@@ -21,8 +21,8 @@
     "lint": "eslint --ext .ts --max-warnings 0 --cache src",
     "prettier": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "test": "jest",
-    "test:ci": "jest --coverage",
+    "test": "node --expose-gc ./node_modules/.bin/jest",
+    "test:ci": "node --expose-gc ./node_modules/.bin/jest --coverage",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },

@@ -156,11 +156,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     atomicGroupsInSync,
     level,
   }: StartThreadInput): Reader<CheckerReaderValue> {
-    const dispose = (): void => {
-      leftStreamReader.dispose();
-      rightStreamReader.dispose();
-    };
-
     if (level >= stackOverflowLimit) {
       stackOverflow = true;
     }
@@ -168,7 +163,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     for (;;) {
       if (!timedOut) timedOut = Date.now() > latestEndTime;
       if (timedOut || stackOverflow) {
-        dispose();
         return;
       }
       const nextLeft: ReaderResult<
@@ -226,7 +220,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (++stepCount > input.maxSteps) {
-        dispose();
         return;
       }
 
@@ -234,7 +227,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         (nextLeft.done && nextLeft.value === 'abort') ||
         (nextRight.done && nextRight.value === 'abort')
       ) {
-        dispose();
         return;
       }
 
@@ -243,7 +235,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (nextLeft.done || nextRight.done) {
-        dispose();
         return;
       }
 
@@ -268,7 +259,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           (leftPassedStartAnchor || rightPassedStartAnchor)) ||
         leftPassedStartAnchor !== rightPassedStartAnchor
       ) {
-        dispose();
         return;
       }
 
@@ -278,7 +268,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         // something before a lookahead can't give something up to be consumed in the lookahead
         // therefore we only want to compare instances that start a lookahead in sync
         // I.e. `a+(?=a+)` is fine but `a+(?=a+a+)` is not
-        dispose();
         return;
       }
 
@@ -299,7 +288,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         if (leftAndRightIdentical) {
           // left and right have been identical to each other, and we are now entering an infinite
           // portion, so bail
-          dispose();
           return;
         }
       }
@@ -334,7 +322,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         if (leftValue.node === rightValue.node) {
           yield { type: checkerReaderTypeInfiniteLoop };
         }
-        dispose();
         return;
       }
 
@@ -343,7 +330,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         rightValue.characterGroups
       );
       if (isEmptyCharacterGroups(intersection)) {
-        dispose();
         return;
       }
 
@@ -361,7 +347,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         // if we are not entering/leaving an atomic group in sync
         // then bail, as atomic groups can't give something up to be
         // consumed somewhere else
-        dispose();
         return;
       }
 

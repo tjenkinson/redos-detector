@@ -89,10 +89,7 @@ function isReaderAtEnd(
     return false;
   };
 
-  const fork = reader.fork();
-  const atEnd = isAtEndUnbounded(fork);
-  fork.dispose();
-  return atEnd;
+  return isAtEndUnbounded(reader.fork());
 }
 
 /**
