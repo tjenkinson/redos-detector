@@ -6,9 +6,6 @@ export function* emptyReader<T>(): Reader<T> {}
 
 const pendingItemsSymbol = Symbol('pendingItems');
 
-const supportsGC =
-  typeof FinalizationRegistry === 'function' && typeof WeakRef === 'function';
-
 export type ForkableReader<T, TReturn = void> = Reader<T, TReturn> & {
   fork(): ForkableReader<T, TReturn>;
   [pendingItemsSymbol]: T[];
@@ -26,12 +23,12 @@ export function buildForkableReader<T, TReturn = void>(
   let sourceDone = false;
   let returnVal: TReturn;
 
-  const registry: FinalizationRegistry<(item: T) => void> | null = supportsGC
-    ? new FinalizationRegistry((onItemCallback) => {
-        const index = onItem.indexOf(onItemCallback);
-        if (index >= 0) onItem.splice(index, 1);
-      })
-    : null;
+  const registry = new FinalizationRegistry<(item: T) => void>(
+    (onItemCallback) => {
+      const index = onItem.indexOf(onItemCallback);
+      if (index >= 0) onItem.splice(index, 1);
+    }
+  );
 
   const readSource = (): void => {
     if (sourceDone) return;
@@ -65,24 +62,14 @@ export function buildForkableReader<T, TReturn = void>(
     };
 
     if (!sourceDone) {
-      if (registry) {
-        const ref = new WeakRef(reader);
-        const callback = (item: T): void => {
-          const maybeReader = ref.deref();
-          maybeReader?.[pendingItemsSymbol].push(item);
-        };
-        registry.register(reader, callback);
-        onItem.push(callback);
-      } else {
-        // using `reader` directly in the callback prevents it being gc'd
-        // for some reason even when this `else` can't run
-        const localReader = reader;
-        // this will never be cleaned up unless the source reader
-        // reaches the end
-        onItem.push((item: T) => {
-          localReader[pendingItemsSymbol].push(item);
-        });
-      }
+      const ref = new WeakRef(reader);
+      const callback = (item: T): void => {
+        const maybeReader = ref.deref();
+        /* istanbul ignore next */
+        maybeReader?.[pendingItemsSymbol].push(item);
+      };
+      registry.register(reader, callback);
+      onItem.push(callback);
     }
 
     return reader;

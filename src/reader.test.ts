@@ -45,8 +45,9 @@ describe('Reader', () => {
 
       const fork2 = new WeakRef(reader.fork());
 
-      await new Promise((resolve) => process.nextTick(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       gc();
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(fork2.deref()).toBe(undefined);
     });
