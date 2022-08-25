@@ -9,7 +9,10 @@
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "matchPackageNames": ["eslint-plugin-redos-detector"],
+      "matchPackageNames": [
+        "eslint-plugin-redos-detector",
+        "forkable-iterator"
+      ],
       "stabilityDays": 0
     },
     {
