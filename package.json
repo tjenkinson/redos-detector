@@ -27,7 +27,7 @@
     "lint-staged": "lint-staged"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=v16.17.0"
   },
   "repository": {
     "type": "git",
