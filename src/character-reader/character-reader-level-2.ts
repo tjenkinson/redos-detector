@@ -23,6 +23,7 @@ import {
 } from 'regjsparser';
 import { Groups, LookaheadStack } from '../nodes/group';
 import { CharacterGroups } from '../character-groups';
+import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
 import { QuantifierStack } from '../nodes/quantifier';
@@ -89,7 +90,7 @@ function isReaderAtEnd(
     return false;
   };
 
-  return isAtEndUnbounded(reader.fork());
+  return isAtEndUnbounded(fork(reader));
 }
 
 /**

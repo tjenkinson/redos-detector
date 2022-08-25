@@ -30,6 +30,7 @@ import {
   CharacterReaderLevel2Value,
 } from './character-reader/character-reader-level-2';
 import { BackReferenceStack } from './character-reader/character-reader-level-1';
+import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
@@ -181,7 +182,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           leftInitial: null,
           leftStreamReader: buildForkableReader(nextLeft.value.reader()),
           level: level + 1,
-          rightStreamReader: rightStreamReader.fork(),
+          rightStreamReader: fork(rightStreamReader),
           trail,
         });
 
@@ -204,7 +205,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           atomicGroupsInSync,
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           leftInitial: nextLeft,
-          leftStreamReader: leftStreamReader.fork(),
+          leftStreamReader: fork(leftStreamReader),
           level: level + 1,
           rightStreamReader: buildForkableReader(nextRight.value.reader()),
           trail,
