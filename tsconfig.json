@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ES5",
-    "lib": ["dom", "es2019", "ESNext.WeakRef"],
+    "lib": ["dom", "es2019"],
     "types": ["node"],
     "rootDir": "src",
     "strict": true,
