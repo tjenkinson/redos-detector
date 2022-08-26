@@ -1,5 +1,6 @@
 {
   "extends": ["config:base"],
+  "ignorePresets": ["group:nodeJs"]
   "labels": ["dependencies"],
   "prHourlyLimit": 0,
   "prCreation": "not-pending",
