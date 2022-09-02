@@ -47,15 +47,9 @@ export type CharacterReaderLevel1ValueSplit = {
   type: typeof characterReaderLevel1TypeSplit;
 };
 
-export type ZeroWidthEntry = Readonly<
-  | {
-      groups: Groups;
-      type: 'groups';
-    }
-  | {
-      type: 'start';
-    }
->;
+export type ZeroWidthEntry = Readonly<{
+  type: 'start';
+}>;
 
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel1ValueEntry = Readonly<{
@@ -384,13 +378,6 @@ export function buildCharacterReaderLevel1(
               break;
             }
             case 'null': {
-              preceedingZeroWidthEntries = [
-                ...preceedingZeroWidthEntries,
-                {
-                  groups,
-                  type: 'groups',
-                },
-              ];
               break;
             }
           }
