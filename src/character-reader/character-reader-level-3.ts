@@ -6,7 +6,7 @@ import {
   characterReaderLevel1TypeEntry,
   characterReaderLevel1TypeSplit,
   CharacterReaderLevel1Value,
-} from './character-reader-level-1';
+} from './character-reader-level-2';
 import {
   buildForkableReader,
   ForkableReader,
