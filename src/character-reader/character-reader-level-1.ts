@@ -80,7 +80,7 @@ export type CharacterReaderLevel1 = Reader<
   CharacterReaderLevel1ReturnValue
 >;
 /**
- * Returns a `CharacterReaderLevel1` (TODO) which builds on top of
+ * Returns a `CharacterReaderLevel1` which builds on top of
  * `CharacterReaderLevel0` adds a `preceedingZeroWidthEntries` property
  * and makes every result map to a character.
  */
