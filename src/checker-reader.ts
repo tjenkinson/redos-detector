@@ -24,12 +24,12 @@ import {
   isEmptyCharacterGroups,
 } from './character-groups';
 import {
-  CharacterReaderLevel2,
-  CharacterReaderLevel2ReturnValue,
-  characterReaderLevel2TypeSplit,
-  CharacterReaderLevel2Value,
-} from './character-reader/character-reader-level-2';
-import { BackReferenceStack } from './character-reader/character-reader-level-1';
+  CharacterReaderLevel3,
+  CharacterReaderLevel3ReturnValue,
+  characterReaderLevel3TypeSplit,
+  CharacterReaderLevel3Value,
+} from './character-reader/character-reader-level-3';
+import { BackReferenceStack } from './character-reader/character-reader-level-2';
 import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
@@ -38,9 +38,9 @@ import { SidesEqualChecker } from './sides-equal-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
-  leftStreamReader: CharacterReaderLevel2;
+  leftStreamReader: CharacterReaderLevel3;
   maxSteps: number;
-  rightStreamReader: CharacterReaderLevel2;
+  rightStreamReader: CharacterReaderLevel3;
   timeout: number;
 }>;
 
@@ -109,17 +109,17 @@ type StartThreadInput = Readonly<{
   atomicGroupsInSync: ReadonlyMap<string, boolean>;
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   leftInitial: ReaderResult<
-    CharacterReaderLevel2Value,
-    CharacterReaderLevel2ReturnValue
+    CharacterReaderLevel3Value,
+    CharacterReaderLevel3ReturnValue
   > | null;
   leftStreamReader: ForkableReader<
-    CharacterReaderLevel2Value,
-    CharacterReaderLevel2ReturnValue
+    CharacterReaderLevel3Value,
+    CharacterReaderLevel3ReturnValue
   >;
   level: number;
   rightStreamReader: ForkableReader<
-    CharacterReaderLevel2Value,
-    CharacterReaderLevel2ReturnValue
+    CharacterReaderLevel3Value,
+    CharacterReaderLevel3ReturnValue
   >;
   trail: Trail;
 }>;
@@ -131,7 +131,7 @@ const isNodeWithQuantifierTrailEqual = (
   left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
- * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
+ * Takes a left and right `CharacterReaderLevel3` and runs them against each other.
  *
  * Emits a trail when left and right differ, as it means there are 2 different ways of matching the same
  * trail up to that point.
@@ -167,14 +167,14 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         return;
       }
       const nextLeft: ReaderResult<
-        CharacterReaderLevel2Value,
-        CharacterReaderLevel2ReturnValue
+        CharacterReaderLevel3Value,
+        CharacterReaderLevel3ReturnValue
       > = leftInitial ?? leftStreamReader.next();
       leftInitial = null;
 
       if (
         !nextLeft.done &&
-        nextLeft.value.type === characterReaderLevel2TypeSplit
+        nextLeft.value.type === characterReaderLevel3TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
@@ -194,12 +194,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       const nextRight: ReaderResult<
-        CharacterReaderLevel2Value,
-        CharacterReaderLevel2ReturnValue
+        CharacterReaderLevel3Value,
+        CharacterReaderLevel3ReturnValue
       > = rightStreamReader.next();
       if (
         !nextRight.done &&
-        nextRight.value.type === characterReaderLevel2TypeSplit
+        nextRight.value.type === characterReaderLevel3TypeSplit
       ) {
         const reader = startThread({
           atomicGroupsInSync,
@@ -225,8 +225,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (
-        (nextLeft.done && nextLeft.value === 'abort') ||
-        (nextRight.done && nextRight.value === 'abort')
+        (nextLeft.done && nextLeft.value.type === 'abort') ||
+        (nextRight.done && nextRight.value.type === 'abort')
       ) {
         return;
       }
@@ -243,8 +243,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       const rightValue = nextRight.value;
       /* istanbul ignore next */
       if (
-        leftValue.type === characterReaderLevel2TypeSplit ||
-        rightValue.type === characterReaderLevel2TypeSplit
+        leftValue.type === characterReaderLevel3TypeSplit ||
+        rightValue.type === characterReaderLevel3TypeSplit
       ) {
         throw new Error('Internal error: impossible leftValue/rightValue type');
       }

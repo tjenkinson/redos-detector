@@ -7,7 +7,7 @@ import {
   Trail,
 } from './checker-reader';
 import { areArraysEqual } from './arrays';
-import { buildCharacterReaderLevel2 } from './character-reader/character-reader-level-2';
+import { buildCharacterReaderLevel3 } from './character-reader/character-reader-level-3';
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
@@ -35,8 +35,8 @@ export function collectResults({
   timeout,
 }: CollectResultsInput): WalkerResult {
   const nodeExtra = buildNodeExtra(node);
-  const leftStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
-  const rightStreamReader = buildCharacterReaderLevel2(node, nodeExtra);
+  const leftStreamReader = buildCharacterReaderLevel3(node, nodeExtra);
+  const rightStreamReader = buildCharacterReaderLevel3(node, nodeExtra);
   const reader = buildCheckerReader({
     atomicGroupOffsets,
     leftStreamReader,

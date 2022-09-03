@@ -5,6 +5,7 @@ import {
 
 export function* buildEndReader(offset: number): CharacterReader {
   yield {
+    bounded: false,
     offset,
     stack: [],
     subType: 'end',

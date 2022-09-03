@@ -9,6 +9,7 @@ export function* buildAnchorReader(node: Anchor): CharacterReader {
     case 'end':
       {
         yield {
+          bounded: true,
           offset: node.range[0],
           stack: [],
           subType: 'end',
