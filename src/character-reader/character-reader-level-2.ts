@@ -6,7 +6,7 @@ import {
   characterReaderLevelNewTypeSplit,
   CharacterReaderLevelNewValue,
   ZeroWidthEntry,
-} from './character-reader-level-new';
+} from './character-reader-level-1';
 import {
   buildQuantifierIterations,
   getQuantifierStack,

@@ -26,7 +26,7 @@ import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
 import { QuantifierStack } from '../nodes/quantifier';
-import { ZeroWidthEntry } from './character-reader-level-new';
+import { ZeroWidthEntry } from './character-reader-level-1';
 
 export const characterReaderLevel2TypeSplit: unique symbol = Symbol(
   'characterReaderLevel2TypeSplit'
