@@ -28,7 +28,7 @@ import {
   CharacterReaderLevel2ReturnValue,
   characterReaderLevel2TypeSplit,
   CharacterReaderLevel2Value,
-} from './character-reader/character-reader-level-2';
+} from './character-reader/character-reader-level-3';
 import { BackReferenceStack } from './character-reader/character-reader-level-1';
 import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
