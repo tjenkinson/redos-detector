@@ -1,10 +1,10 @@
 import {
-  buildCharacterReaderLevelNew,
-  CharacterReaderLevelNew,
-  CharacterReaderLevelNewReturnValue,
-  characterReaderLevelNewTypeEntry,
-  characterReaderLevelNewTypeSplit,
-  CharacterReaderLevelNewValue,
+  buildCharacterReaderLevel1,
+  CharacterReaderLevel1,
+  CharacterReaderLevel1ReturnValue,
+  characterReaderLevel1TypeEntry,
+  characterReaderLevel1TypeSplit,
+  CharacterReaderLevel1Value,
   ZeroWidthEntry,
 } from './character-reader-level-1';
 import {
@@ -35,22 +35,22 @@ import { dropCommon } from '../arrays';
 import { mustGet } from '../map';
 import { NodeExtra } from '../node-extra';
 
-export const characterReaderLevel1TypeSplit: unique symbol = Symbol(
-  'characterReaderLevel1TypeSplit'
+export const characterReaderLevel2TypeSplit: unique symbol = Symbol(
+  'characterReaderLevel2TypeSplit'
 );
 
-export const characterReaderLevel1TypeEntry: unique symbol = Symbol(
-  'characterReaderLevel1TypeEntry'
+export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
+  'characterReaderLevel2TypeEntry'
 );
 
-export type CharacterReaderLevel1ValueSplit = {
+export type CharacterReaderLevel2ValueSplit = {
   // eslint-disable-next-line no-use-before-define
-  reader: () => CharacterReaderLevel1;
-  type: typeof characterReaderLevel1TypeSplit;
+  reader: () => CharacterReaderLevel2;
+  type: typeof characterReaderLevel2TypeSplit;
 };
 
 export type BackReferenceStack = readonly Reference[];
-export type CharacterReaderLevel1ValueEntry = Readonly<{
+export type CharacterReaderLevel2ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
@@ -63,13 +63,13 @@ export type CharacterReaderLevel1ValueEntry = Readonly<{
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierStack: QuantifierStack;
-  type: typeof characterReaderLevel1TypeEntry;
+  type: typeof characterReaderLevel2TypeEntry;
 }>;
 
-export type CharacterReaderLevel1Value = Readonly<
-  CharacterReaderLevel1ValueEntry | CharacterReaderLevel1ValueSplit
+export type CharacterReaderLevel2Value = Readonly<
+  CharacterReaderLevel2ValueEntry | CharacterReaderLevel2ValueSplit
 >;
-export type CharacterReaderLevel1ReturnValue = Readonly<
+export type CharacterReaderLevel2ReturnValue = Readonly<
   | {
       bounded: boolean;
       preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
@@ -77,9 +77,9 @@ export type CharacterReaderLevel1ReturnValue = Readonly<
     }
   | { type: 'abort' }
 >;
-export type CharacterReaderLevel1 = Reader<
-  CharacterReaderLevel1Value,
-  CharacterReaderLevel1ReturnValue
+export type CharacterReaderLevel2 = Reader<
+  CharacterReaderLevel2Value,
+  CharacterReaderLevel2ReturnValue
 >;
 
 export type GroupContentsStoreEntryContentsEntry = Readonly<{
@@ -117,41 +117,41 @@ type ThreadInput = Readonly<{
   groupsWithInfiniteSize: ReadonlySet<number>;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierIterationsAtLastGroup: QuantifierIterations;
-  threadCharacterReader: CharacterReaderLevelNew;
+  threadCharacterReader: CharacterReaderLevel1;
 }>;
 
 /**
- * Returns a `CharacterReaderLevel1` which builds on top of
+ * Returns a `CharacterReaderLevel2` which builds on top of
  * `CharacterReaderLevel0` but replaces references with their
  * contents.
  */
-export function buildCharacterReaderLevel1(
+export function buildCharacterReaderLevel2(
   node: MyRootNode,
   nodeExtra: NodeExtra
-): CharacterReaderLevel1 {
-  const characterReader = buildCharacterReaderLevelNew(node);
+): CharacterReaderLevel2 {
+  const characterReader = buildCharacterReaderLevel1(node);
   const startThread = function* ({
     threadCharacterReader,
     groupContentsStore,
     preceedingZeroWidthEntries,
     quantifierIterationsAtLastGroup,
     groupsWithInfiniteSize,
-  }: ThreadInput): CharacterReaderLevel1 {
+  }: ThreadInput): CharacterReaderLevel2 {
     let next: ReaderResult<
-      CharacterReaderLevelNewValue,
-      CharacterReaderLevelNewReturnValue
+      CharacterReaderLevel1Value,
+      CharacterReaderLevel1ReturnValue
     >;
     while (!(next = threadCharacterReader.next()).done) {
       const value = next.value;
       switch (value.type) {
-        case characterReaderLevelNewTypeSplit: {
+        case characterReaderLevel1TypeSplit: {
           const _groupContentsStore = groupContentsStore;
           const _quantifierIterationsAtLastGroup =
             quantifierIterationsAtLastGroup;
           const _groupsWithInfiniteSize = groupsWithInfiniteSize;
           const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
           yield {
-            reader: (): CharacterReaderLevel1 =>
+            reader: (): CharacterReaderLevel2 =>
               startThread({
                 groupContentsStore: _groupContentsStore,
                 groupsWithInfiniteSize: _groupsWithInfiniteSize,
@@ -160,11 +160,11 @@ export function buildCharacterReaderLevel1(
                   _quantifierIterationsAtLastGroup,
                 threadCharacterReader: value.reader(),
               }),
-            type: characterReaderLevel1TypeSplit,
+            type: characterReaderLevel2TypeSplit,
           };
           break;
         }
-        case characterReaderLevelNewTypeEntry: {
+        case characterReaderLevel1TypeEntry: {
           preceedingZeroWidthEntries = [
             ...preceedingZeroWidthEntries,
             ...value.preceedingZeroWidthEntries,
@@ -340,7 +340,7 @@ export function buildCharacterReaderLevel1(
                     node: contents.node,
                     preceedingZeroWidthEntries,
                     quantifierStack,
-                    type: characterReaderLevel1TypeEntry,
+                    type: characterReaderLevel2TypeEntry,
                   };
                   preceedingZeroWidthEntries = [];
                 }
@@ -366,7 +366,7 @@ export function buildCharacterReaderLevel1(
                 node: value.node,
                 preceedingZeroWidthEntries,
                 quantifierStack,
-                type: characterReaderLevel1TypeEntry,
+                type: characterReaderLevel2TypeEntry,
               };
               preceedingZeroWidthEntries = [];
               break;

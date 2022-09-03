@@ -1,11 +1,11 @@
 import {
   BackReferenceStack,
-  buildCharacterReaderLevel1,
-  CharacterReaderLevel1,
-  CharacterReaderLevel1ReturnValue,
-  characterReaderLevel1TypeEntry,
-  characterReaderLevel1TypeSplit,
-  CharacterReaderLevel1Value,
+  buildCharacterReaderLevel2,
+  CharacterReaderLevel2,
+  CharacterReaderLevel2ReturnValue,
+  characterReaderLevel2TypeEntry,
+  characterReaderLevel2TypeSplit,
+  CharacterReaderLevel2Value,
 } from './character-reader-level-2';
 import {
   buildForkableReader,
@@ -28,21 +28,21 @@ import { NodeExtra } from '../node-extra';
 import { QuantifierStack } from '../nodes/quantifier';
 import { ZeroWidthEntry } from './character-reader-level-1';
 
-export const characterReaderLevel2TypeSplit: unique symbol = Symbol(
-  'characterReaderLevel2TypeSplit'
+export const characterReaderLevel3TypeSplit: unique symbol = Symbol(
+  'characterReaderLevel3TypeSplit'
 );
 
-export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
-  'characterReaderLevel2TypeEntry'
+export const characterReaderLevel3TypeEntry: unique symbol = Symbol(
+  'characterReaderLevel3TypeEntry'
 );
 
-export type CharacterReaderLevel2ValueSplit = {
+export type CharacterReaderLevel3ValueSplit = {
   // eslint-disable-next-line no-use-before-define
-  reader: () => CharacterReaderLevel2;
-  type: typeof characterReaderLevel2TypeSplit;
+  reader: () => CharacterReaderLevel3;
+  type: typeof characterReaderLevel3TypeSplit;
 };
 
-export type CharacterReaderLevel2ValueEntry = Readonly<{
+export type CharacterReaderLevel3ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
@@ -55,34 +55,34 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierStack: QuantifierStack;
-  type: typeof characterReaderLevel2TypeEntry;
+  type: typeof characterReaderLevel3TypeEntry;
   // `true` if this could be nothing following this.
   // I.e. anything that didn't match would fall outside the pattern
   // the `a+` in `^a+` because a `b` would just end the match
   unbounded: boolean;
 }>;
 
-export type CharacterReaderLevel2Value = Readonly<
-  CharacterReaderLevel2ValueEntry | CharacterReaderLevel2ValueSplit
+export type CharacterReaderLevel3Value = Readonly<
+  CharacterReaderLevel3ValueEntry | CharacterReaderLevel3ValueSplit
 >;
-export type CharacterReaderLevel2ReturnValue = CharacterReaderLevel1ReturnValue;
-export type CharacterReaderLevel2 = Reader<
-  CharacterReaderLevel2Value,
-  CharacterReaderLevel2ReturnValue
+export type CharacterReaderLevel3ReturnValue = CharacterReaderLevel2ReturnValue;
+export type CharacterReaderLevel3 = Reader<
+  CharacterReaderLevel3Value,
+  CharacterReaderLevel3ReturnValue
 >;
 
 function isReaderAtEnd(
   reader: ForkableReader<
-    CharacterReaderLevel1Value,
-    CharacterReaderLevel1ReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >
 ): boolean {
-  const isAtEndUnbounded = (innerReader: CharacterReaderLevel1): boolean => {
+  const isAtEndUnbounded = (innerReader: CharacterReaderLevel2): boolean => {
     const next = innerReader.next();
     if (next.done) {
       return next.value.type === 'end' && !next.value.bounded;
     }
-    if (next.value.type === characterReaderLevel1TypeSplit) {
+    if (next.value.type === characterReaderLevel2TypeSplit) {
       return (
         isAtEndUnbounded(next.value.reader()) || isAtEndUnbounded(innerReader)
       );
@@ -94,27 +94,27 @@ function isReaderAtEnd(
 }
 
 /**
- * Returns a `CharacterReaderLevel2` which does the same as
- * `CharacterReaderLevel1` but adds a `unbounded` property.
+ * Returns a `CharacterReaderLevel3` which does the same as
+ * `CharacterReaderLevel2` but adds a `unbounded` property.
  */
-export function buildCharacterReaderLevel2(
+export function buildCharacterReaderLevel3(
   node: MyRootNode,
   nodeExtra: NodeExtra
-): CharacterReaderLevel2 {
+): CharacterReaderLevel3 {
   const startThread = function* (
     reader: ForkableReader<
-      CharacterReaderLevel1Value,
-      CharacterReaderLevel1ReturnValue
+      CharacterReaderLevel2Value,
+      CharacterReaderLevel2ReturnValue
     >
-  ): CharacterReaderLevel2 {
+  ): CharacterReaderLevel3 {
     let next: ReaderResult<
-      CharacterReaderLevel1Value,
-      CharacterReaderLevel1ReturnValue
+      CharacterReaderLevel2Value,
+      CharacterReaderLevel2ReturnValue
     >;
     while (!(next = reader.next()).done) {
       const value = next.value;
       switch (value.type) {
-        case characterReaderLevel1TypeEntry: {
+        case characterReaderLevel2TypeEntry: {
           yield {
             backreferenceStack: value.backreferenceStack,
             characterGroups: value.characterGroups,
@@ -123,16 +123,16 @@ export function buildCharacterReaderLevel2(
             node: value.node,
             preceedingZeroWidthEntries: value.preceedingZeroWidthEntries,
             quantifierStack: value.quantifierStack,
-            type: characterReaderLevel2TypeEntry,
+            type: characterReaderLevel3TypeEntry,
             unbounded: isReaderAtEnd(reader),
           };
           break;
         }
-        case characterReaderLevel1TypeSplit: {
+        case characterReaderLevel2TypeSplit: {
           yield {
-            reader: (): CharacterReaderLevel2 =>
+            reader: (): CharacterReaderLevel3 =>
               startThread(buildForkableReader(value.reader())),
-            type: characterReaderLevel2TypeSplit,
+            type: characterReaderLevel3TypeSplit,
           };
           break;
         }
@@ -142,6 +142,6 @@ export function buildCharacterReaderLevel2(
   };
 
   return startThread(
-    buildForkableReader(buildCharacterReaderLevel1(node, nodeExtra))
+    buildForkableReader(buildCharacterReaderLevel2(node, nodeExtra))
   );
 }
