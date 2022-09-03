@@ -26,11 +26,11 @@ export const characterReaderLevel1TypeEntry: unique symbol = Symbol(
   'characterReaderLevel1TypeEntry'
 );
 
-export type CharacterReaderLevel1ValueSplit = {
+export type CharacterReaderLevel1ValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel1;
   type: typeof characterReaderLevel1TypeSplit;
-};
+}>;
 
 export type ZeroWidthEntry = Readonly<
   | {

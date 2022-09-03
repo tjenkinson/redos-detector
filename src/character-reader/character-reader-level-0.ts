@@ -31,38 +31,40 @@ export const characterReaderTypeSplit: unique symbol = Symbol(
   'characterReaderTypeSplit'
 );
 
-export type CharacterReaderValueSplit = {
+export type CharacterReaderValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReader;
   type: typeof characterReaderTypeSplit;
-};
+}>;
 
 export type StackEntry = StackGroupEntry | StackQuantifierEntry;
 export type Stack = readonly StackEntry[];
 
-export type CharacterReaderValueGroups = {
-  stack: Stack;
-  type: typeof characterReaderTypeCharacterEntry;
-} & (
-  | {
-      characterGroups: CharacterGroups;
-      node:
-        | CharacterClass
-        | CharacterClassEscape
-        | Dot
-        | UnicodePropertyEscape
-        | Value;
-      subType: 'groups';
-    }
-  | {
-      node: Reference;
-      referenceIndex: number;
-      subType: 'reference';
-    }
-  | { bounded: boolean; offset: number; subType: 'end' }
-  | { offset: number; subType: 'null' }
-  | { offset: number; subType: 'start' }
-);
+export type CharacterReaderValueGroups = Readonly<
+  {
+    stack: Stack;
+    type: typeof characterReaderTypeCharacterEntry;
+  } & (
+    | {
+        characterGroups: CharacterGroups;
+        node:
+          | CharacterClass
+          | CharacterClassEscape
+          | Dot
+          | UnicodePropertyEscape
+          | Value;
+        subType: 'groups';
+      }
+    | {
+        node: Reference;
+        referenceIndex: number;
+        subType: 'reference';
+      }
+    | { bounded: boolean; offset: number; subType: 'end' }
+    | { offset: number; subType: 'null' }
+    | { offset: number; subType: 'start' }
+  )
+>;
 
 export type CharacterReaderValue =
   | CharacterReaderValueGroups
