@@ -225,8 +225,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
 
       if (
-        (nextLeft.done && nextLeft.value === 'abort') ||
-        (nextRight.done && nextRight.value === 'abort')
+        (nextLeft.done && nextLeft.value.type === 'abort') ||
+        (nextRight.done && nextRight.value.type === 'abort')
       ) {
         return;
       }

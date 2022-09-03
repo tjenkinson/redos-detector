@@ -6,7 +6,6 @@ import {
   characterReaderLevel1TypeEntry,
   characterReaderLevel1TypeSplit,
   CharacterReaderLevel1Value,
-  ZeroWidthEntry,
 } from './character-reader-level-1';
 import {
   buildForkableReader,
@@ -27,6 +26,7 @@ import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
 import { QuantifierStack } from '../nodes/quantifier';
+import { ZeroWidthEntry } from './character-reader-level-new';
 
 export const characterReaderLevel2TypeSplit: unique symbol = Symbol(
   'characterReaderLevel2TypeSplit'
@@ -80,7 +80,7 @@ function isReaderAtEnd(
   const isAtEndUnbounded = (innerReader: CharacterReaderLevel1): boolean => {
     const next = innerReader.next();
     if (next.done) {
-      return next.value === 'endUnbounded';
+      return next.value.type === 'end' && !next.value.bounded;
     }
     if (next.value.type === characterReaderLevel1TypeSplit) {
       return (

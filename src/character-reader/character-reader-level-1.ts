@@ -1,10 +1,12 @@
 import {
-  buildCharacterReader,
-  CharacterReader,
-  characterReaderTypeCharacterEntry,
-  characterReaderTypeSplit,
-  CharacterReaderValue,
-} from './character-reader-level-0';
+  buildCharacterReaderLevelNew,
+  CharacterReaderLevelNew,
+  CharacterReaderLevelNewReturnValue,
+  characterReaderLevelNewTypeEntry,
+  characterReaderLevelNewTypeSplit,
+  CharacterReaderLevelNewValue,
+  ZeroWidthEntry,
+} from './character-reader-level-new';
 import {
   buildQuantifierIterations,
   getQuantifierStack,
@@ -47,10 +49,6 @@ export type CharacterReaderLevel1ValueSplit = {
   type: typeof characterReaderLevel1TypeSplit;
 };
 
-export type ZeroWidthEntry = Readonly<{
-  type: 'start';
-}>;
-
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel1ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
@@ -71,10 +69,14 @@ export type CharacterReaderLevel1ValueEntry = Readonly<{
 export type CharacterReaderLevel1Value = Readonly<
   CharacterReaderLevel1ValueEntry | CharacterReaderLevel1ValueSplit
 >;
-export type CharacterReaderLevel1ReturnValue =
-  | 'abort'
-  | 'endAnchor'
-  | 'endUnbounded';
+export type CharacterReaderLevel1ReturnValue = Readonly<
+  | {
+      bounded: boolean;
+      preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
+      type: 'end';
+    }
+  | { type: 'abort' }
+>;
 export type CharacterReaderLevel1 = Reader<
   CharacterReaderLevel1Value,
   CharacterReaderLevel1ReturnValue
@@ -115,7 +117,7 @@ type ThreadInput = Readonly<{
   groupsWithInfiniteSize: ReadonlySet<number>;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierIterationsAtLastGroup: QuantifierIterations;
-  threadCharacterReader: CharacterReader;
+  threadCharacterReader: CharacterReaderLevelNew;
 }>;
 
 /**
@@ -127,7 +129,7 @@ export function buildCharacterReaderLevel1(
   node: MyRootNode,
   nodeExtra: NodeExtra
 ): CharacterReaderLevel1 {
-  const characterReader = buildCharacterReader(node);
+  const characterReader = buildCharacterReaderLevelNew(node);
   const startThread = function* ({
     threadCharacterReader,
     groupContentsStore,
@@ -135,11 +137,14 @@ export function buildCharacterReaderLevel1(
     quantifierIterationsAtLastGroup,
     groupsWithInfiniteSize,
   }: ThreadInput): CharacterReaderLevel1 {
-    let next: ReaderResult<CharacterReaderValue>;
+    let next: ReaderResult<
+      CharacterReaderLevelNewValue,
+      CharacterReaderLevelNewReturnValue
+    >;
     while (!(next = threadCharacterReader.next()).done) {
       const value = next.value;
       switch (value.type) {
-        case characterReaderTypeSplit: {
+        case characterReaderLevelNewTypeSplit: {
           const _groupContentsStore = groupContentsStore;
           const _quantifierIterationsAtLastGroup =
             quantifierIterationsAtLastGroup;
@@ -159,7 +164,11 @@ export function buildCharacterReaderLevel1(
           };
           break;
         }
-        case characterReaderTypeCharacterEntry: {
+        case characterReaderLevelNewTypeEntry: {
+          preceedingZeroWidthEntries = [
+            ...preceedingZeroWidthEntries,
+            ...value.preceedingZeroWidthEntries,
+          ];
           const quantifierStack = getQuantifierStack(value.stack);
           const groups = getGroups(value.stack);
           const lookaheadStack = getLookaheadStack(value.stack);
@@ -216,19 +225,20 @@ export function buildCharacterReaderLevel1(
           // Clear groups that are now ahead
           // This can happen when a quantifier containing a group restarts
           for (const [index, { group }] of groupContentsStore) {
-            const offset =
-              value.subType === 'null' ||
-              value.subType === 'start' ||
-              value.subType === 'end'
-                ? value.offset
-                : value.node.range[0];
-            if (group.range[0] >= offset) {
-              newGroupContentsStore.delete(index);
+            const offsets = [
+              ...preceedingZeroWidthEntries.map(({ offset }) => offset),
+              value.node.range[0],
+            ];
+            for (const offset of offsets) {
+              if (group.range[0] >= offset) {
+                newGroupContentsStore.delete(index);
+                break;
+              }
             }
           }
 
           let groupInfiniteSize = false;
-          outer: for (const stackEntry of [...value.stack].reverse()) {
+          for (const stackEntry of [...value.stack].reverse()) {
             if (
               stackEntry.type === 'quantifier' &&
               stackEntry.quantifier.max === undefined
@@ -303,13 +313,6 @@ export function buildCharacterReaderLevel1(
                 });
                 break;
               }
-              case 'end': {
-                break outer;
-              }
-              case 'null':
-              case 'start': {
-                break;
-              }
             }
           }
           groupContentsStore = newGroupContentsStore;
@@ -324,7 +327,8 @@ export function buildCharacterReaderLevel1(
                 value.node
               );
               if (groupContents.length) {
-                for (const contents of groupContents) {
+                for (let i = 0; i < groupContents.length; i++) {
+                  const contents = groupContents[i];
                   yield {
                     backreferenceStack: [
                       ...contents.backreferenceStack,
@@ -338,6 +342,7 @@ export function buildCharacterReaderLevel1(
                     quantifierStack,
                     type: characterReaderLevel1TypeEntry,
                   };
+                  preceedingZeroWidthEntries = [];
                 }
               } else if (
                 haveHadCompleteIteration(
@@ -346,7 +351,7 @@ export function buildCharacterReaderLevel1(
                 )
               ) {
                 // infinite loop of empty references
-                return 'abort';
+                return { type: 'abort' as const };
               }
               break;
             }
@@ -363,21 +368,7 @@ export function buildCharacterReaderLevel1(
                 quantifierStack,
                 type: characterReaderLevel1TypeEntry,
               };
-
               preceedingZeroWidthEntries = [];
-              break;
-            }
-            case 'end': {
-              return 'endAnchor';
-            }
-            case 'start': {
-              preceedingZeroWidthEntries = [
-                ...preceedingZeroWidthEntries,
-                { type: 'start' },
-              ];
-              break;
-            }
-            case 'null': {
               break;
             }
           }
@@ -385,7 +376,14 @@ export function buildCharacterReaderLevel1(
         }
       }
     }
-    return 'endUnbounded';
+    return {
+      bounded: next.value.bounded,
+      preceedingZeroWidthEntries: [
+        ...preceedingZeroWidthEntries,
+        ...next.value.preceedingZeroWidthEntries,
+      ],
+      type: 'end' as const,
+    };
   };
 
   return startThread({
