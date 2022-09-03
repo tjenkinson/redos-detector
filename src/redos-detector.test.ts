@@ -398,6 +398,8 @@ describe('RedosDetector', () => {
         [/(a(?!b+))*^\1?a*$/, true],
         [/(a(?<=b+))*^\1?a*$/, true],
         [/(a(?<!b+))*^\1?a*$/, true],
+        [/(?=a?a?)/, true],
+        [/(?=a?a?$)/, false],
 
         // atomic group workaround detected
         [/(?=(a{0,1}))\1a?$/, true],

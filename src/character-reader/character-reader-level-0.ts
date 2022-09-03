@@ -59,7 +59,7 @@ export type CharacterReaderValueGroups = {
       referenceIndex: number;
       subType: 'reference';
     }
-  | { offset: number; subType: 'end' }
+  | { bounded: boolean; offset: number; subType: 'end' }
   | { offset: number; subType: 'null' }
   | { offset: number; subType: 'start' }
 );

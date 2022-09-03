@@ -121,7 +121,7 @@ export function buildCharacterReaderLevelNew(
             }
             case 'end': {
               return {
-                bounded: true,
+                bounded: next.value.bounded,
                 preceedingZeroWidthEntries,
               };
             }
