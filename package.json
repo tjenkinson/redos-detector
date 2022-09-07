@@ -60,7 +60,7 @@
     "lint-staged": "13.0.3",
     "micromatch": "4.0.5",
     "prettier": "2.7.1",
-    "rollup": "2.78.1",
+    "rollup": "2.79.0",
     "rollup-plugin-typescript2": "0.33.0",
     "ts-jest": "28.0.8",
     "tslib": "2.4.0",
