@@ -6,7 +6,7 @@ By default it considers a pattern unsafe if there are potentially more than 200 
 
 There are some cases where it may report a pattern as unsafe when in reality it's safe, but it should never report a pattern as safe when it is not.
 
-Note that this tool checks patterns that are expected to run using an engine that implements the [ECMA-262](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/) (JS) standard. If your pattern will be run in a different engine please be aware the result given here could be incorrect due to [differences in engine behaviour](docs/diffeerences-in-engines.md).
+Note that this tool checks patterns that are expected to run using an engine that implements the [ECMA-262](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/) (JS) standard. If your pattern will be run in a different engine please be aware the result given here could be incorrect due to [differences in engine behaviour](docs/differences-in-engines.md).
 
 ## Demo
 
