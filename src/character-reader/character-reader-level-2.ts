@@ -168,10 +168,10 @@ type State = Readonly<{
   groupsWithInfiniteSize: ReadonlySet<number>;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierIterationsAtLastGroup: QuantifierIterations;
-  referenceCharacterReaderWithReference: {
+  referenceCharacterReaderWithReference: Readonly<{
     reader: InternalReader;
     reference: Reference;
-  } | null;
+  }> | null;
 }>;
 
 function* characterReaderLevel1ToInternalReader(
