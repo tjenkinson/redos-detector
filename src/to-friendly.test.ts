@@ -63,6 +63,261 @@ describe('toFriendly', () => {
         },
       ],
     },
+    {
+      trail: [
+        {
+          a: {
+            backreferenceStack: [],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+          b: {
+            backreferenceStack: [],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+        },
+        {
+          a: {
+            backreferenceStack: [
+              {
+                index: 1,
+                node: {
+                  end: {
+                    offset: 6,
+                  },
+                  source: '\\1',
+                  start: {
+                    offset: 4,
+                  },
+                },
+              },
+            ],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+          b: {
+            backreferenceStack: [
+              {
+                index: 1,
+                node: {
+                  end: {
+                    offset: 6,
+                  },
+                  source: '\\1',
+                  start: {
+                    offset: 4,
+                  },
+                },
+              },
+            ],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+        },
+        {
+          a: {
+            backreferenceStack: [
+              {
+                index: 1,
+                node: {
+                  end: {
+                    offset: 6,
+                  },
+                  source: '\\1',
+                  start: {
+                    offset: 4,
+                  },
+                },
+              },
+              {
+                index: 2,
+                node: {
+                  end: {
+                    offset: 10,
+                  },
+                  source: '\\2',
+                  start: {
+                    offset: 8,
+                  },
+                },
+              },
+            ],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+          b: {
+            backreferenceStack: [
+              {
+                index: 1,
+                node: {
+                  end: {
+                    offset: 6,
+                  },
+                  source: '\\1',
+                  start: {
+                    offset: 4,
+                  },
+                },
+              },
+              {
+                index: 2,
+                node: {
+                  end: {
+                    offset: 10,
+                  },
+                  source: '\\2',
+                  start: {
+                    offset: 8,
+                  },
+                },
+              },
+            ],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [],
+          },
+        },
+        {
+          a: {
+            backreferenceStack: [
+              {
+                index: 1,
+                node: {
+                  end: {
+                    offset: 6,
+                  },
+                  source: '\\1',
+                  start: {
+                    offset: 4,
+                  },
+                },
+              },
+              {
+                index: 2,
+                node: {
+                  end: {
+                    offset: 10,
+                  },
+                  source: '\\2',
+                  start: {
+                    offset: 8,
+                  },
+                },
+              },
+              {
+                index: 3,
+                node: {
+                  end: {
+                    offset: 13,
+                  },
+                  source: '\\3',
+                  start: {
+                    offset: 11,
+                  },
+                },
+              },
+            ],
+            node: {
+              end: {
+                offset: 2,
+              },
+              source: 'a',
+              start: {
+                offset: 1,
+              },
+            },
+            quantifierIterations: [
+              {
+                iteration: 0,
+                node: {
+                  end: {
+                    offset: 14,
+                  },
+                  source: '\\3?',
+                  start: {
+                    offset: 11,
+                  },
+                },
+              },
+            ],
+          },
+          b: {
+            backreferenceStack: [],
+            node: {
+              end: {
+                offset: 15,
+              },
+              source: 'a',
+              start: {
+                offset: 14,
+              },
+            },
+            quantifierIterations: [
+              {
+                iteration: 0,
+                node: {
+                  end: {
+                    offset: 16,
+                  },
+                  source: 'a?',
+                  start: {
+                    offset: 14,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
   ];
 
   [false, true].forEach((alwaysIncludeTrails) => {

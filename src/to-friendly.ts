@@ -1,4 +1,8 @@
-import { RedosDetectorError, RedosDetectorResult } from './redos-detector';
+import {
+  RedosDetectorError,
+  RedosDetectorResult,
+  RedosDetectorTrailEntrySide,
+} from './redos-detector';
 
 export type ToFriendlyConfig = {
   alwaysIncludeTrails?: boolean;
@@ -6,6 +10,13 @@ export type ToFriendlyConfig = {
 };
 
 export const defaultResultsLimit = 15;
+
+function getBreadcrumbs(side: RedosDetectorTrailEntrySide): string {
+  return `${[
+    ...side.backreferenceStack.map(({ node }) => node.start.offset).reverse(),
+    side.node.start.offset,
+  ].join(`→`)}`;
+}
 
 /**
  * Takes a result and converts it to a text representation.
@@ -72,9 +83,9 @@ export function toFriendly(
       .map(({ trail }) => {
         const rowContents = trail.map(({ a, b }) => {
           return [
-            `${a.node.start.offset}`,
+            getBreadcrumbs(a),
             `\`${a.node.source}\``,
-            `${b.node.start.offset}`,
+            getBreadcrumbs(b),
             `\`${b.node.source}\``,
           ];
         });
