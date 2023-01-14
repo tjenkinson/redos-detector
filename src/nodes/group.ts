@@ -77,6 +77,7 @@ export function buildGroupCharacterReader(
                 }),
               (): CharacterReader => buildEndReader(node.range[1]),
             ]),
+          subType: node.behavior === 'lookahead' ? 'lookahead' : null,
           type: characterReaderTypeSplit,
         },
       ]);

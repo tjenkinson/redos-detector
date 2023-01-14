@@ -15,6 +15,7 @@ export function buildDisjunctionCharacterReader(
       node.body.slice(0, -1).map((part) => {
         return {
           reader: (): CharacterReader => buildCharacterReader(part),
+          subType: null,
           type: characterReaderTypeSplit,
         };
       })

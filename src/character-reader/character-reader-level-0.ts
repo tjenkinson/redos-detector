@@ -31,9 +31,12 @@ export const characterReaderTypeSplit: unique symbol = Symbol(
   'characterReaderTypeSplit'
 );
 
+export type CharacterReaderValueSplitSubType = 'lookahead' | null;
+
 export type CharacterReaderValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReader;
+  subType: CharacterReaderValueSplitSubType;
   type: typeof characterReaderTypeSplit;
 }>;
 

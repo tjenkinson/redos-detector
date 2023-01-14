@@ -34,6 +34,7 @@ import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
+import { once } from './once';
 import { SidesEqualChecker } from './sides-equal-checker';
 
 export type CheckerInput = Readonly<{
@@ -105,22 +106,20 @@ type NodeWithQuantifierTrail = Readonly<{
   quantifierTrail: string;
 }>;
 
-type StartThreadInput = Readonly<{
-  atomicGroupsInSync: ReadonlyMap<string, boolean>;
+type ReaderWithGetter = Readonly<{
+  get: () => ReaderResult<
+    CharacterReaderLevel3Value,
+    CharacterReaderLevel3ReturnValue
+  >;
+  reader: ForkableReader<
+    CharacterReaderLevel3Value,
+    CharacterReaderLevel3ReturnValue
+  >;
+}>;
+
+type StackFrame = Readonly<{
   infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
-  leftInitial: ReaderResult<
-    CharacterReaderLevel3Value,
-    CharacterReaderLevel3ReturnValue
-  > | null;
-  leftStreamReader: ForkableReader<
-    CharacterReaderLevel3Value,
-    CharacterReaderLevel3ReturnValue
-  >;
-  level: number;
-  rightStreamReader: ForkableReader<
-    CharacterReaderLevel3Value,
-    CharacterReaderLevel3ReturnValue
-  >;
+  streamReadersWithGetters: ReaderWithGetter[];
   trail: Trail;
 }>;
 
@@ -144,297 +143,287 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   let timedOut = false;
   let stackOverflow = false;
 
-  const startThread = function* ({
-    leftStreamReader,
-    leftInitial,
-    rightStreamReader,
-    trail,
-    infiniteLoopTracker,
-    // this is used to track atomic groups
-    // if an atomic group starts at the same point on right/left, but ends at different points,
-    // then we can discard that trail as it would be invalid, as it means the atomic group
-    // was not atomic
-    atomicGroupsInSync,
-    level,
-  }: StartThreadInput): Reader<CheckerReaderValue> {
-    if (level >= stackOverflowLimit) {
-      stackOverflow = true;
+  const initialLeftStreamReader = buildForkableReader(input.leftStreamReader);
+  const initialRightStreamReader = buildForkableReader(input.rightStreamReader);
+
+  const stack: StackFrame[] = [
+    {
+      infiniteLoopTracker: new InfiniteLoopTracker(
+        isNodeWithQuantifierTrailEqual
+      ),
+      streamReadersWithGetters: [
+        {
+          get: once(() => initialLeftStreamReader.next()),
+          reader: initialLeftStreamReader,
+        },
+        {
+          get: once(() => initialRightStreamReader.next()),
+          reader: initialRightStreamReader,
+        },
+      ],
+      trail: [],
+    },
+  ];
+
+  outer: for (;;) {
+    timedOut = Date.now() > latestEndTime;
+    stackOverflow = stack.length > stackOverflowLimit;
+    if (timedOut || stackOverflow) {
+      break;
     }
 
-    for (;;) {
-      if (!timedOut) timedOut = Date.now() > latestEndTime;
-      if (timedOut || stackOverflow) {
-        return;
-      }
-      const nextLeft: ReaderResult<
-        CharacterReaderLevel3Value,
-        CharacterReaderLevel3ReturnValue
-      > = leftInitial ?? leftStreamReader.next();
-      leftInitial = null;
+    const entry = stack.pop();
+    if (!entry) break;
 
+    const { streamReadersWithGetters } = entry;
+    let { infiniteLoopTracker, trail } = entry;
+
+    const nextValues: ReaderResult<
+      CharacterReaderLevel3Value,
+      CharacterReaderLevel3ReturnValue
+    >[] = [];
+
+    for (let i = 0; i < streamReadersWithGetters.length; i++) {
+      const result = streamReadersWithGetters[i].get();
       if (
-        !nextLeft.done &&
-        nextLeft.value.type === characterReaderLevel3TypeSplit
+        !result.done &&
+        result.value.type === characterReaderLevel3TypeSplit
       ) {
-        const reader = startThread({
-          atomicGroupsInSync,
-          infiniteLoopTracker: infiniteLoopTracker.clone(),
-          leftInitial: null,
-          leftStreamReader: buildForkableReader(nextLeft.value.reader()),
-          level: level + 1,
-          rightStreamReader: fork(rightStreamReader),
+        const value = result.value;
+
+        stack.push({
+          infiniteLoopTracker,
+          streamReadersWithGetters: streamReadersWithGetters.map(
+            ({ reader, get }, j) => ({
+              get: j === i ? once(() => reader.next()) : get,
+              reader,
+            })
+          ),
           trail,
         });
 
-        let next: ReaderResult<CheckerReaderValue>;
-        while (!(next = reader.next()).done) {
-          yield next.value;
-        }
-        continue;
-      }
-
-      const nextRight: ReaderResult<
-        CharacterReaderLevel3Value,
-        CharacterReaderLevel3ReturnValue
-      > = rightStreamReader.next();
-      if (
-        !nextRight.done &&
-        nextRight.value.type === characterReaderLevel3TypeSplit
-      ) {
-        const reader = startThread({
-          atomicGroupsInSync,
-          infiniteLoopTracker: infiniteLoopTracker.clone(),
-          leftInitial: nextLeft,
-          leftStreamReader: fork(leftStreamReader),
-          level: level + 1,
-          rightStreamReader: buildForkableReader(nextRight.value.reader()),
-          trail,
-        });
-
-        let next: ReaderResult<CheckerReaderValue>;
-        while (!(next = reader.next()).done) {
-          yield next.value;
-        }
-
-        leftInitial = nextLeft;
-        continue;
-      }
-
-      if (++stepCount > input.maxSteps) {
-        return;
-      }
-
-      if (
-        (nextLeft.done && nextLeft.value.type === 'abort') ||
-        (nextRight.done && nextRight.value.type === 'abort')
-      ) {
-        return;
-      }
-
-      if (nextLeft.done && nextRight.done) {
-        return;
-      }
-
-      if (nextLeft.done || nextRight.done) {
-        return;
-      }
-
-      const leftValue = nextLeft.value;
-      const rightValue = nextRight.value;
-      /* istanbul ignore next */
-      if (
-        leftValue.type === characterReaderLevel3TypeSplit ||
-        rightValue.type === characterReaderLevel3TypeSplit
-      ) {
-        throw new Error('Internal error: impossible leftValue/rightValue type');
-      }
-
-      const leftPassedStartAnchor = leftValue.preceedingZeroWidthEntries.some(
-        ({ type }) => type === 'start'
-      );
-      const rightPassedStartAnchor = rightValue.preceedingZeroWidthEntries.some(
-        ({ type }) => type === 'start'
-      );
-      if (
-        (trail.length > 0 &&
-          (leftPassedStartAnchor || rightPassedStartAnchor)) ||
-        leftPassedStartAnchor !== rightPassedStartAnchor
-      ) {
-        return;
-      }
-
-      const leftLookahead = last(leftValue.lookaheadStack);
-      const rightLookahead = last(rightValue.lookaheadStack);
-      if (leftLookahead !== rightLookahead) {
-        // something before a lookahead can't give something up to be consumed in the lookahead
-        // therefore we only want to compare instances that start a lookahead in sync
-        // I.e. `a+(?=a+)` is fine but `a+(?=a+a+)` is not
-        return;
-      }
-
-      const leftQuantifiersInInfiniteProportion =
-        buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
-      const rightQuantifiersInInfiniteProportion =
-        buildQuantifiersInInfinitePortion(rightValue.quantifierStack);
-
-      if (
-        setsOverlap(
-          leftQuantifiersInInfiniteProportion,
-          rightQuantifiersInInfiniteProportion
-        )
-      ) {
-        const leftAndRightIdentical = trail.every((entry) =>
-          sidesEqualChecker.areSidesEqual(entry.left, entry.right)
-        );
-        if (leftAndRightIdentical) {
-          // left and right have been identical to each other, and we are now entering an infinite
-          // portion, so bail
-          return;
-        }
-      }
-
-      if (
-        leftQuantifiersInInfiniteProportion.size &&
-        rightQuantifiersInInfiniteProportion.size
-      ) {
-        infiniteLoopTracker.append(
-          {
-            node: leftValue.node,
-            quantifierTrail: buildQuantifierTrail(
-              leftValue.quantifierStack,
-              true
-            ),
-          },
-          {
-            node: rightValue.node,
-            quantifierTrail: buildQuantifierTrail(
-              rightValue.quantifierStack,
-              true
-            ),
+        const newStreamReadersWithGetters = streamReadersWithGetters.map(
+          ({ reader, get }, j) => {
+            const newReader =
+              j === i ? buildForkableReader(value.reader()) : fork(reader);
+            return {
+              get: j < i ? get : once(() => newReader.next()),
+              reader: newReader,
+            };
           }
         );
+
+        stack.push({
+          infiniteLoopTracker: infiniteLoopTracker.clone(),
+          streamReadersWithGetters: newStreamReadersWithGetters,
+          trail,
+        });
+        continue outer;
       } else {
-        infiniteLoopTracker = new InfiniteLoopTracker(
-          isNodeWithQuantifierTrailEqual
-        );
+        nextValues.push(result);
       }
+    }
 
-      if (infiniteLoopTracker.isLooping()) {
-        if (leftValue.node === rightValue.node) {
-          yield { type: checkerReaderTypeInfiniteLoop };
-        }
-        return;
-      }
+    const [leftNextValue, rightNextValue] = nextValues;
 
-      const intersection = intersectCharacterGroups(
-        leftValue.characterGroups,
-        rightValue.characterGroups
+    if (
+      ++stepCount > input.maxSteps ||
+      leftNextValue.done ||
+      rightNextValue.done
+    ) {
+      continue;
+    }
+
+    /* istanbul ignore next */
+    if (
+      leftNextValue.value.type === characterReaderLevel3TypeSplit ||
+      rightNextValue.value.type === characterReaderLevel3TypeSplit
+    ) {
+      throw new Error('Internal error: impossible leftValue/rightValue type');
+    }
+
+    const leftValue = leftNextValue.value;
+    const rightValue = rightNextValue.value;
+
+    const leftPassedStartAnchor = leftValue.preceedingZeroWidthEntries.some(
+      ({ type }) => type === 'start'
+    );
+    const rightPassedStartAnchor = rightValue.preceedingZeroWidthEntries.some(
+      ({ type }) => type === 'start'
+    );
+    const somethingPassedStartAnchor =
+      leftPassedStartAnchor || rightPassedStartAnchor;
+
+    if (
+      (trail.length > 0 && somethingPassedStartAnchor) ||
+      leftPassedStartAnchor !== rightPassedStartAnchor
+    ) {
+      continue;
+    }
+
+    const leftLookahead = last(leftValue.lookaheadStack);
+    const rightLookahead = last(rightValue.lookaheadStack);
+
+    if (leftLookahead !== rightLookahead) {
+      // something before a lookahead can't give something up to be consumed in the lookahead
+      // therefore we only want to compare instances that start a lookahead in sync
+      // I.e. `a+(?=a+)` is fine but `a+(?=a+a+)` is not
+      continue;
+    }
+
+    const leftQuantifiersInInfiniteProportion =
+      buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
+    const rightQuantifiersInInfiniteProportion =
+      buildQuantifiersInInfinitePortion(rightValue.quantifierStack);
+
+    if (
+      setsOverlap(
+        leftQuantifiersInInfiniteProportion,
+        rightQuantifiersInInfiniteProportion
+      )
+    ) {
+      const leftAndRightIdentical = trail.every(({ left, right }) =>
+        sidesEqualChecker.areSidesEqual(left, right)
       );
-      if (isEmptyCharacterGroups(intersection)) {
-        return;
+      if (leftAndRightIdentical) {
+        // left and right have been identical to each other, and we are now entering an infinite
+        // portion, so bail
+        continue;
       }
+    }
 
-      const leftAtomicGroups = new Set(
-        [...leftValue.groups.keys()].filter((group) =>
-          input.atomicGroupOffsets.has(group.range[0])
-        )
-      );
-      const rightAtomicGroups = new Set(
-        [...rightValue.groups.keys()].filter((group) =>
-          input.atomicGroupOffsets.has(group.range[0])
-        )
-      );
-      if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
-        // if we are not entering/leaving an atomic group in sync
-        // then bail, as atomic groups can't give something up to be
-        // consumed somewhere else
-        return;
-      }
-
-      const newEntry: TrailEntry = {
-        intersection,
-        left: {
-          backreferenceStack: leftValue.backreferenceStack,
+    if (
+      leftQuantifiersInInfiniteProportion.size &&
+      rightQuantifiersInInfiniteProportion.size
+    ) {
+      infiniteLoopTracker.append(
+        {
           node: leftValue.node,
-          quantifierStack: leftValue.quantifierStack,
+          quantifierTrail: buildQuantifierTrail(
+            leftValue.quantifierStack,
+            true
+          ),
         },
-        right: {
-          backreferenceStack: rightValue.backreferenceStack,
+        {
           node: rightValue.node,
-          quantifierStack: rightValue.quantifierStack,
-        },
+          quantifierTrail: buildQuantifierTrail(
+            rightValue.quantifierStack,
+            true
+          ),
+        }
+      );
+    } else {
+      infiniteLoopTracker = new InfiniteLoopTracker(
+        isNodeWithQuantifierTrailEqual
+      );
+    }
+
+    if (infiniteLoopTracker.isLooping()) {
+      if (leftValue.node === rightValue.node) {
+        yield { type: checkerReaderTypeInfiniteLoop };
+      }
+      continue;
+    }
+
+    const intersection = intersectCharacterGroups(
+      [leftValue, rightValue].map(({ characterGroups }) => characterGroups)
+    );
+
+    if (isEmptyCharacterGroups(intersection)) {
+      continue;
+    }
+
+    const leftAtomicGroups = new Set(
+      [...leftValue.groups.keys()].filter((group) =>
+        input.atomicGroupOffsets.has(group.range[0])
+      )
+    );
+    const rightAtomicGroups = new Set(
+      [...rightValue.groups.keys()].filter((group) =>
+        input.atomicGroupOffsets.has(group.range[0])
+      )
+    );
+    if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
+      // if we are not entering/leaving an atomic group in sync
+      // then bail, as atomic groups can't give something up to be
+      // consumed somewhere else
+      continue;
+    }
+
+    const newEntry: TrailEntry = {
+      intersection,
+      left: {
+        backreferenceStack: leftValue.backreferenceStack,
+        node: leftValue.node,
+        quantifierStack: leftValue.quantifierStack,
+      },
+      right: {
+        backreferenceStack: rightValue.backreferenceStack,
+        node: rightValue.node,
+        quantifierStack: rightValue.quantifierStack,
+      },
+    };
+
+    trail = [...trail, newEntry];
+
+    if (
+      // if both sides are unbounded then it means a backtrack won't occur
+      // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
+      // so don't emit the trail
+      (!leftValue.unbounded || !rightValue.unbounded) &&
+      !sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)
+    ) {
+      const shouldSendTrail = (): boolean => {
+        if (!trails.has(trail)) {
+          const alreadyExists = [...trails].some((existingTrail) => {
+            if (existingTrail.length !== trail.length) return false;
+
+            return (
+              existingTrail.every(
+                (existingEntry, i) =>
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.left,
+                    trail[i].right
+                  ) &&
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.right,
+                    trail[i].left
+                  )
+              ) ||
+              existingTrail.every(
+                (existingEntry, i) =>
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.left,
+                    trail[i].left
+                  ) &&
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.right,
+                    trail[i].right
+                  )
+              )
+            );
+          });
+
+          if (!alreadyExists) {
+            return true;
+          }
+        }
+        return false;
       };
 
-      trail = [...trail, newEntry];
-
-      if (
-        // if both sides are unbounded then it means a backtrack won't occur
-        // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
-        // so don't emit the trail
-        (!leftValue.unbounded || !rightValue.unbounded) &&
-        !sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)
-      ) {
-        const shouldSendTrail = (): boolean => {
-          if (!trails.has(trail)) {
-            const alreadyExists = [...trails].some((existingTrail) => {
-              if (existingTrail.length !== trail.length) return false;
-
-              return (
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].right
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].left
-                    )
-                ) ||
-                existingTrail.every(
-                  (existingEntry, i) =>
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.left,
-                      trail[i].left
-                    ) &&
-                    sidesEqualChecker.areSidesEqual(
-                      existingEntry.right,
-                      trail[i].right
-                    )
-                )
-              );
-            });
-
-            if (!alreadyExists) {
-              return true;
-            }
-          }
-          return false;
-        };
-
-        if (shouldSendTrail()) {
-          trails.add(trail);
-          yield { trail, type: checkerReaderTypeTrail };
-        }
+      if (shouldSendTrail()) {
+        trails.add(trail);
+        yield { trail, type: checkerReaderTypeTrail };
       }
     }
-  };
-
-  const reader = startThread({
-    atomicGroupsInSync: new Map(),
-    infiniteLoopTracker: new InfiniteLoopTracker(
-      isNodeWithQuantifierTrailEqual
-    ),
-    leftInitial: null,
-    leftStreamReader: buildForkableReader(input.leftStreamReader),
-    level: 0,
-    rightStreamReader: buildForkableReader(input.rightStreamReader),
-    trail: [],
-  });
-
-  let next: ReaderResult<CheckerReaderValue>;
-  while (!(next = reader.next()).done) {
-    yield next.value;
+    stack.push({
+      infiniteLoopTracker,
+      streamReadersWithGetters: streamReadersWithGetters.map(({ reader }) => ({
+        get: once(() => reader.next()),
+        reader,
+      })),
+      trail,
+    });
   }
 
   return {

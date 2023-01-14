@@ -40,6 +40,7 @@ export function join(
       } else if (action === 'fork') {
         yield {
           reader: (): CharacterReader => emptyReader(),
+          subType: null,
           type: characterReaderTypeSplit,
         };
       }
@@ -73,6 +74,7 @@ export function join(
                   },
                   _timeSinceEmittedSomething
                 ),
+              subType: value.subType,
               type: characterReaderTypeSplit,
             };
             break;
