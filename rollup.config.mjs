@@ -1,20 +1,22 @@
-import typescript from 'rollup-plugin-typescript2';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import packageJson from './package.json';
+import typescript from '@rollup/plugin-typescript';
+import fs from 'fs';
+import path from 'path';
+
+const packageJson = JSON.parse(
+  fs.readFileSync('./package.json', { encoding: 'utf-8' })
+);
 
 function buildConfig({ input, output, declaration = false }) {
   return {
     input,
     plugins: [
       typescript({
-        tsconfigOverride: declaration
-          ? {
-              compilerOptions: {
-                declaration: true,
-              },
-            }
-          : undefined,
+        compilerOptions: {
+          declaration,
+          declarationDir: declaration ? '/' : undefined,
+        },
       }),
       resolve(),
       commonjs(),
@@ -46,9 +48,9 @@ function buildConfig({ input, output, declaration = false }) {
       if (
         e.code === 'CIRCULAR_DEPENDENCY' &&
         [
-          'src/nodes/quantifier.ts',
-          'src/character-reader/character-reader-level-0.ts',
-        ].includes(e.cycle[0])
+          path.resolve('src/nodes/quantifier.ts'),
+          path.resolve('src/character-reader/character-reader-level-0.ts'),
+        ].includes(e.ids[0])
       ) {
         return;
       }
