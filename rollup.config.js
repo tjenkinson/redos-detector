@@ -1,7 +1,6 @@
 import typescript from 'rollup-plugin-typescript2';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
 import packageJson from './package.json';
 
 function buildConfig({ input, output, declaration = false }) {
@@ -17,7 +16,6 @@ function buildConfig({ input, output, declaration = false }) {
             }
           : undefined,
       }),
-      json(),
       resolve(),
       commonjs(),
       {
