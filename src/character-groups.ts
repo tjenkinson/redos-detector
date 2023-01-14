@@ -30,7 +30,7 @@ export function isEmptyCharacterGroups(group: CharacterGroups): boolean {
   );
 }
 
-export function intersectCharacterGroups(
+function intersectTwoCharacterGroups(
   a: CharacterGroups,
   b: CharacterGroups
 ): CharacterGroups {
@@ -162,4 +162,14 @@ export function intersectCharacterGroups(
     ranges: newRanges,
     unicodePropertyEscapes: newUnicodePropertyEscapes,
   };
+}
+
+export function intersectCharacterGroups(
+  groups: readonly CharacterGroups[]
+): CharacterGroups {
+  let res = groups[0];
+  for (let i = 1; i < groups.length; i++) {
+    res = intersectTwoCharacterGroups(res, groups[i]);
+  }
+  return res;
 }

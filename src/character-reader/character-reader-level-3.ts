@@ -22,6 +22,7 @@ import {
 } from 'regjsparser';
 import { Groups, LookaheadStack } from '../nodes/group';
 import { CharacterGroups } from '../character-groups';
+import { CharacterReaderValueSplitSubType } from './character-reader-level-0';
 import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
@@ -39,6 +40,7 @@ export const characterReaderLevel3TypeEntry: unique symbol = Symbol(
 export type CharacterReaderLevel3ValueSplit = {
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel3;
+  subType: CharacterReaderValueSplitSubType;
   type: typeof characterReaderLevel3TypeSplit;
 };
 
@@ -95,7 +97,7 @@ function isReaderAtEnd(
 
 /**
  * Returns a `CharacterReaderLevel3` which does the same as
- * `CharacterReaderLevel2` but adds a `unbounded` property.
+ * `CharacterReaderLevel2` but adds an `unbounded` property.
  */
 export function buildCharacterReaderLevel3(
   node: MyRootNode,
@@ -132,6 +134,7 @@ export function buildCharacterReaderLevel3(
           yield {
             reader: (): CharacterReaderLevel3 =>
               startThread(buildForkableReader(value.reader())),
+            subType: value.subType,
             type: characterReaderLevel3TypeSplit,
           };
           break;

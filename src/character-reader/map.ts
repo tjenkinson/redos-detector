@@ -26,6 +26,7 @@ export function map(
         case characterReaderTypeSplit: {
           yield {
             reader: (): CharacterReader => startThread(value.reader()),
+            subType: value.subType,
             type: characterReaderTypeSplit,
           };
           break;

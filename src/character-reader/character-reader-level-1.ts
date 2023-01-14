@@ -4,6 +4,7 @@ import {
   characterReaderTypeCharacterEntry,
   characterReaderTypeSplit,
   CharacterReaderValue,
+  CharacterReaderValueSplitSubType,
   Stack,
 } from './character-reader-level-0';
 import {
@@ -29,6 +30,7 @@ export const characterReaderLevel1TypeEntry: unique symbol = Symbol(
 export type CharacterReaderLevel1ValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel1;
+  subType: CharacterReaderValueSplitSubType;
   type: typeof characterReaderLevel1TypeSplit;
 }>;
 
@@ -43,28 +45,36 @@ export type ZeroWidthEntry = Readonly<
     }
 >;
 
+export type CharacterReaderLevel1ValueEntryBase = Readonly<{
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  stack: Stack;
+  type: typeof characterReaderLevel1TypeEntry;
+}>;
+
+export type CharacterReaderLevel1ValueEntryGroups = Readonly<
+  CharacterReaderLevel1ValueEntryBase & {
+    characterGroups: CharacterGroups;
+    node:
+      | CharacterClass
+      | CharacterClassEscape
+      | Dot
+      | UnicodePropertyEscape
+      | Value;
+    subType: 'groups';
+  }
+>;
+
+export type CharacterReaderLevel1ValueEntryReference = Readonly<
+  CharacterReaderLevel1ValueEntryBase & {
+    node: Reference;
+    referenceIndex: number;
+    subType: 'reference';
+  }
+>;
+
 export type CharacterReaderLevel1ValueEntry = Readonly<
-  {
-    preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-    stack: Stack;
-    type: typeof characterReaderLevel1TypeEntry;
-  } & (
-    | {
-        characterGroups: CharacterGroups;
-        node:
-          | CharacterClass
-          | CharacterClassEscape
-          | Dot
-          | UnicodePropertyEscape
-          | Value;
-        subType: 'groups';
-      }
-    | {
-        node: Reference;
-        referenceIndex: number;
-        subType: 'reference';
-      }
-  )
+  | CharacterReaderLevel1ValueEntryGroups
+  | CharacterReaderLevel1ValueEntryReference
 >;
 
 export type CharacterReaderLevel1Value = Readonly<
@@ -148,6 +158,7 @@ export function buildCharacterReaderLevel1(
           yield {
             reader: (): CharacterReaderLevel1 =>
               startThread(value.reader(), _preceedingZeroWidthEntries),
+            subType: value.subType,
             type: characterReaderLevel1TypeSplit,
           };
           break;

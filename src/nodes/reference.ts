@@ -5,6 +5,11 @@ import {
 import { MyFeatures } from '../parse';
 import { Reference } from 'regjsparser';
 
+export type StackReferenceEntry = Readonly<{
+  reference: Reference<MyFeatures>;
+  type: 'reference';
+}>;
+
 export function* buildReferenceCharacterReader(
   node: Reference<MyFeatures>
 ): CharacterReader {

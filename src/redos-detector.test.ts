@@ -400,6 +400,11 @@ describe('RedosDetector', () => {
         [/(a(?<!b+))*^\1?a*$/, true],
         [/(?=a?a?)/, true],
         [/(?=a?a?$)/, false],
+        [/(a)(\1)\2?a?$/, false],
+        [/(a)(\1)(\2)\3?a?$/, false],
+        [/($)\1/, true],
+        [/^(a)\1?\1?$/, false],
+        [/(^a)\1?\1?$/, true],
 
         // atomic group workaround detected
         [/(?=(a{0,1}))\1a?$/, true],
