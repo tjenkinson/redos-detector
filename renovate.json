@@ -1,6 +1,5 @@
 {
   "extends": ["config:base"],
-  "ignorePresets": ["group:nodeJs"],
   "labels": ["dependencies"],
   "prHourlyLimit": 0,
   "prCreation": "not-pending",
@@ -9,6 +8,10 @@
   "vulnerabilityAlerts": true,
   "rangeStrategy": "bump",
   "packageRules": [
+    {
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
     {
       "matchPackageNames": [
         "eslint-plugin-redos-detector",
