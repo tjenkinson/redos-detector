@@ -51,7 +51,7 @@
     "@typescript-eslint/eslint-plugin": "5.48.1",
     "@typescript-eslint/parser": "5.48.1",
     "commander": "9.5.0",
-    "eslint": "8.31.0",
+    "eslint": "8.32.0",
     "eslint-config-prettier": "8.6.0",
     "eslint-plugin-redos-detector": "2.0.14",
     "forkable-iterator": "1.1.2",
