@@ -52,7 +52,7 @@
     "@typescript-eslint/parser": "5.54.0",
     "commander": "10.0.0",
     "eslint": "8.35.0",
-    "eslint-config-prettier": "8.6.0",
+    "eslint-config-prettier": "8.7.0",
     "eslint-plugin-redos-detector": "2.0.14",
     "forkable-iterator": "1.1.2",
     "husky": "8.0.3",
