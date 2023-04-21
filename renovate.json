@@ -1,6 +1,6 @@
 {
   "extends": ["config:base"],
-  "labels": ["dependencies"],
+  "labels": ["dependencies", "skip-change-log"],
   "prHourlyLimit": 0,
   "prCreation": "not-pending",
   "internalChecksAsSuccess": true,
@@ -22,7 +22,8 @@
     },
     {
       "matchPackageNames": ["regjsparser"],
-      "rangeStrategy": "pin"
+      "rangeStrategy": "pin",
+      "labels": ["dependencies"]
     },
     {
       "matchDepTypes": ["devDependencies"],
