@@ -43,7 +43,7 @@
     "regjsparser": "0.9.1"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "24.0.1",
+    "@rollup/plugin-commonjs": "24.1.0",
     "@rollup/plugin-node-resolve": "15.0.2",
     "@rollup/plugin-typescript": "11.1.0",
     "@types/jest": "29.5.0",
