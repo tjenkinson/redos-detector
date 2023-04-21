@@ -6,6 +6,7 @@
   "internalChecksAsSuccess": true,
   "prConcurrentLimit": 0,
   "stabilityDays": 7,
+  "prNotPendingHours": 0,
   "vulnerabilityAlerts": true,
   "rangeStrategy": "bump",
   "packageRules": [
