@@ -3,6 +3,7 @@
   "labels": ["dependencies"],
   "prHourlyLimit": 0,
   "prCreation": "not-pending",
+  "internalChecksAsSuccess": true,
   "prConcurrentLimit": 0,
   "stabilityDays": 7,
   "vulnerabilityAlerts": true,
