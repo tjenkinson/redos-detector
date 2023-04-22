@@ -50,7 +50,7 @@
     "@types/node": "18.15.11",
     "@typescript-eslint/eslint-plugin": "5.58.0",
     "@typescript-eslint/parser": "5.58.0",
-    "commander": "10.0.0",
+    "commander": "10.0.1",
     "eslint": "8.38.0",
     "eslint-config-prettier": "8.8.0",
     "eslint-plugin-redos-detector": "2.0.14",
