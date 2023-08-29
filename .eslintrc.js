@@ -40,7 +40,6 @@ module.exports = {
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': ['error'],
     '@typescript-eslint/no-unnecessary-condition': ['error'],
     '@typescript-eslint/promise-function-async': ['error'],
-    '@typescript-eslint/sort-type-union-intersection-members': ['error'],
     '@typescript-eslint/switch-exhaustiveness-check': ['error'],
     '@typescript-eslint/no-loss-of-precision': ['error'],
     '@typescript-eslint/no-throw-literal': ['error'],
