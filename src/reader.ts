@@ -14,7 +14,7 @@ export type ForkableReader<T, TReturn = void> = ForkableIterator<T, TReturn>;
  * The source reader must not be read from directly.
  */
 export function buildForkableReader<T, TReturn = void>(
-  sourceReader: Reader<T, TReturn>
+  sourceReader: Reader<T, TReturn>,
 ): ForkableReader<T, TReturn> {
   return buildForkableIterator(sourceReader);
 }

@@ -1,7 +1,7 @@
 export function getOrCreate<TKey, TValue>(
   input: Map<TKey, TValue>,
   key: TKey,
-  buildDefaultValue: () => TValue
+  buildDefaultValue: () => TValue,
 ): TValue {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   if (input.has(key)) return input.get(key)!;
@@ -13,7 +13,7 @@ export function getOrCreate<TKey, TValue>(
 
 export function areMapsEqual<K, V>(
   a: ReadonlyMap<K, V>,
-  b: ReadonlyMap<K, V>
+  b: ReadonlyMap<K, V>,
 ): boolean {
   if (a.size !== b.size) return false;
   for (const [key, value] of a) {

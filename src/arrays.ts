@@ -10,7 +10,7 @@ export function areArraysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
 
 export function dropCommon<T>(
   a: readonly T[],
-  b: readonly T[]
+  b: readonly T[],
 ): { a: readonly T[]; b: readonly T[] } {
   let commonLevels: number;
   for (

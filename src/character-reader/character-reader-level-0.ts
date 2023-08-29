@@ -25,10 +25,10 @@ import { MyRootNode } from '../parse';
 import { Reader } from '../reader';
 
 export const characterReaderTypeCharacterEntry: unique symbol = Symbol(
-  'characterReaderTypeCharacterEntry'
+  'characterReaderTypeCharacterEntry',
 );
 export const characterReaderTypeSplit: unique symbol = Symbol(
-  'characterReaderTypeSplit'
+  'characterReaderTypeSplit',
 );
 
 export type CharacterReaderValueSplitSubType = 'lookahead' | null;

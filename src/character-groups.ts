@@ -32,7 +32,7 @@ export function isEmptyCharacterGroups(group: CharacterGroups): boolean {
 
 function intersectTwoCharacterGroups(
   a: CharacterGroups,
-  b: CharacterGroups
+  b: CharacterGroups,
 ): CharacterGroups {
   let newRanges: OurRange[];
   let newChracterClassEscapes: ReadonlySet<string>;
@@ -76,11 +76,11 @@ function intersectTwoCharacterGroups(
         });
         newChracterClassEscapes = mergeSets(
           a.characterClassEscapes,
-          b.characterClassEscapes
+          b.characterClassEscapes,
         );
         newUnicodePropertyEscapes = mergeSets(
           a.unicodePropertyEscapes,
-          b.unicodePropertyEscapes
+          b.unicodePropertyEscapes,
         );
       } else {
         newNegated = false;
@@ -101,11 +101,11 @@ function intersectTwoCharacterGroups(
         // except exact matches
         newChracterClassEscapes = subtractSets(
           a.characterClassEscapes,
-          b.characterClassEscapes
+          b.characterClassEscapes,
         );
         newUnicodePropertyEscapes = subtractSets(
           a.unicodePropertyEscapes,
-          b.unicodePropertyEscapes
+          b.unicodePropertyEscapes,
         );
       }
     } else {
@@ -128,11 +128,11 @@ function intersectTwoCharacterGroups(
         // except exact matches
         newChracterClassEscapes = subtractSets(
           b.characterClassEscapes,
-          a.characterClassEscapes
+          a.characterClassEscapes,
         );
         newUnicodePropertyEscapes = subtractSets(
           b.unicodePropertyEscapes,
-          a.unicodePropertyEscapes
+          a.unicodePropertyEscapes,
         );
       } else {
         newNegated = true;
@@ -145,11 +145,11 @@ function intersectTwoCharacterGroups(
         });
         newChracterClassEscapes = mergeSets(
           a.characterClassEscapes,
-          b.characterClassEscapes
+          b.characterClassEscapes,
         );
         newUnicodePropertyEscapes = mergeSets(
           a.unicodePropertyEscapes,
-          b.unicodePropertyEscapes
+          b.unicodePropertyEscapes,
         );
       }
     }
@@ -165,7 +165,7 @@ function intersectTwoCharacterGroups(
 }
 
 export function intersectCharacterGroups(
-  groups: readonly CharacterGroups[]
+  groups: readonly CharacterGroups[],
 ): CharacterGroups {
   let res = groups[0];
   for (let i = 1; i < groups.length; i++) {

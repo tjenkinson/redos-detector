@@ -29,7 +29,7 @@ export function toFriendly(
   {
     resultsLimit = defaultResultsLimit,
     alwaysIncludeTrails = false,
-  }: ToFriendlyConfig = {}
+  }: ToFriendlyConfig = {},
 ): string {
   if (resultsLimit < 0) {
     throw new Error('`resultsLimit` must be > 0.');
@@ -91,18 +91,18 @@ export function toFriendly(
         });
 
         const maxCol1Length = Math.max(
-          ...rowContents.map(([col]) => col.length)
+          ...rowContents.map(([col]) => col.length),
         );
         const maxCol2Length = Math.max(
-          ...rowContents.map(([, col]) => col.length)
+          ...rowContents.map(([, col]) => col.length),
         );
         const maxCol3Length = Math.max(
-          ...rowContents.map(([, , col]) => col.length)
+          ...rowContents.map(([, , col]) => col.length),
         );
 
         const rows = rowContents.map(([col1, col2, col3, col4]) => {
           return `${col1.padStart(maxCol1Length)}: ${col2.padEnd(
-            maxCol2Length
+            maxCol2Length,
           )} | ${col3.padStart(maxCol3Length)}: ${col4}`;
         });
 
@@ -143,7 +143,7 @@ export function toFriendly(
                 : []),
             ]
           : []),
-      ]
+      ],
     );
   }
 

@@ -7,7 +7,7 @@ import { buildArrayReader } from '../reader';
 import { UnicodePropertyEscape } from 'regjsparser';
 
 export function buildUnicodePropertyEscapeCharacterReader(
-  node: UnicodePropertyEscape
+  node: UnicodePropertyEscape,
 ): CharacterReader {
   return buildArrayReader<CharacterReaderValueGroups>([
     {

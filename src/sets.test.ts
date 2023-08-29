@@ -19,10 +19,10 @@ describe('Sets', () => {
         1, 2,
       ]);
       expect(
-        [...mergeSets(new Set([1, 2]), new Set([2]))].sort()
+        [...mergeSets(new Set([1, 2]), new Set([2]))].sort(),
       ).toStrictEqual([1, 2]);
       expect(
-        [...mergeSets(new Set([1, 2]), new Set([2, 3]))].sort()
+        [...mergeSets(new Set([1, 2]), new Set([2, 3]))].sort(),
       ).toStrictEqual([1, 2, 3]);
     });
   });
@@ -31,13 +31,13 @@ describe('Sets', () => {
     it('works', () => {
       expect([...subtractSets(new Set(), new Set())]).toStrictEqual([]);
       expect(
-        [...subtractSets(new Set([1]), new Set([2]))].sort()
+        [...subtractSets(new Set([1]), new Set([2]))].sort(),
       ).toStrictEqual([1]);
       expect(
-        [...subtractSets(new Set([1, 2]), new Set([2]))].sort()
+        [...subtractSets(new Set([1, 2]), new Set([2]))].sort(),
       ).toStrictEqual([1]);
       expect(
-        [...subtractSets(new Set([1, 2]), new Set([2, 3]))].sort()
+        [...subtractSets(new Set([1, 2]), new Set([2, 3]))].sort(),
       ).toStrictEqual([1]);
     });
   });

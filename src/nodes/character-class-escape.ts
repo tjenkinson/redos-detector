@@ -14,7 +14,7 @@ export function characterClassEscapeToRange(value: string): OurRange | null {
 }
 
 export function* buildCharacterClassEscapeReader(
-  node: CharacterClassEscape
+  node: CharacterClassEscape,
 ): CharacterReader {
   const range = characterClassEscapeToRange(node.value);
   yield {

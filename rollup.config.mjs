@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 
 const packageJson = JSON.parse(
-  fs.readFileSync('./package.json', { encoding: 'utf-8' })
+  fs.readFileSync('./package.json', { encoding: 'utf-8' }),
 );
 
 function buildConfig({ input, output, declaration = false }) {

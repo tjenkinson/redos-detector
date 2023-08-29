@@ -8,7 +8,7 @@ import { emptyReader, ReaderResult } from '../reader';
 
 export type JoinGetAction = (
   index: number,
-  emittedSomething: number
+  emittedSomething: number,
 ) => 'continue' | 'fork' | 'stop';
 
 /**
@@ -26,12 +26,12 @@ export type JoinGetAction = (
  */
 export function join(
   getAction: JoinGetAction,
-  getReader: (index: number) => CharacterReader
+  getReader: (index: number) => CharacterReader,
 ): CharacterReader {
   const _join = function* (
     _getAction: JoinGetAction,
     _getReader: (index: number) => CharacterReader,
-    timeSinceEmitSomething = 0
+    timeSinceEmitSomething = 0,
   ): CharacterReader {
     for (let i = 0; ; i++) {
       const action = _getAction(i, timeSinceEmitSomething);
@@ -64,7 +64,7 @@ export function join(
                       ? 'continue'
                       : _getAction(
                           innerIndex + _i,
-                          innerTimeSinceEmittedSomething
+                          innerTimeSinceEmittedSomething,
                         );
                   },
                   (innerIndex) => {
@@ -72,7 +72,7 @@ export function join(
                       ? value.reader()
                       : _getReader(innerIndex + _i);
                   },
-                  _timeSinceEmittedSomething
+                  _timeSinceEmittedSomething,
                 ),
               subType: value.subType,
               type: characterReaderTypeSplit,
@@ -108,11 +108,11 @@ export function join(
  * the next `CharacterReader` in the array will follow.
  */
 export function joinArray(
-  input: readonly (() => CharacterReader)[]
+  input: readonly (() => CharacterReader)[],
 ): CharacterReader {
   const length = input.length;
   return join(
     (i) => (i < length ? 'continue' : 'stop'),
-    (i) => input[i]()
+    (i) => input[i](),
   );
 }

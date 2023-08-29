@@ -237,7 +237,7 @@ function toRedosDetectorNode(node: AstNode<MyFeatures>): RedosDetectorNode {
 }
 
 function toRedosDetectorBackReferenceStack(
-  backreferenceStack: BackReferenceStack
+  backreferenceStack: BackReferenceStack,
 ): RedosDetectorBackReferenceStack {
   return backreferenceStack.map((reference) => {
     return {
@@ -248,7 +248,7 @@ function toRedosDetectorBackReferenceStack(
 }
 
 function toRedosDetectorQuantifierIterations(
-  stack: QuantifierStack
+  stack: QuantifierStack,
 ): RedosDetectorQuantifierIterations {
   return stack.map(({ quantifier, iteration }) => {
     return {
@@ -272,11 +272,11 @@ export function isSafePattern(
     timeout = defaultTimeout,
     unicode = defaultUnicode,
     downgradePattern = true,
-  }: IsSafePatternConfig = {}
+  }: IsSafePatternConfig = {},
 ): RedosDetectorResult {
   if (downgradePattern && atomicGroupOffsetsInput) {
     throw new Error(
-      '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.'
+      '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.',
     );
   }
   if (timeout <= 0) {
@@ -327,20 +327,20 @@ export function isSafePattern(
           const entry: RedosDetectorTrailEntry = {
             a: {
               backreferenceStack: toRedosDetectorBackReferenceStack(
-                right.backreferenceStack
+                right.backreferenceStack,
               ),
               node: toRedosDetectorNode(right.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                right.quantifierStack
+                right.quantifierStack,
               ),
             },
             b: {
               backreferenceStack: toRedosDetectorBackReferenceStack(
-                left.backreferenceStack
+                left.backreferenceStack,
               ),
               node: toRedosDetectorNode(left.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                left.quantifierStack
+                left.quantifierStack,
               ),
             },
           };
@@ -363,7 +363,7 @@ export function isSafePattern(
  */
 export function isSafe(
   regexp: RegExp,
-  config?: IsSafeConfig
+  config?: IsSafeConfig,
 ): RedosDetectorResult {
   let unicode = false;
   for (const flag of regexp.flags.split('')) {

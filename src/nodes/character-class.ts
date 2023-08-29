@@ -9,7 +9,7 @@ import { characterClassEscapeToRange } from './character-class-escape';
 import { MutableCharacterGroups } from '../character-groups';
 
 export function buildCharacterClassCharacterReader(
-  node: CharacterClass
+  node: CharacterClass,
 ): CharacterReader {
   const characterGroups: MutableCharacterGroups = {
     characterClassEscapes: new Set(),

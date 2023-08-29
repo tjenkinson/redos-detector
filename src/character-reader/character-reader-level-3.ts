@@ -30,11 +30,11 @@ import { QuantifierStack } from '../nodes/quantifier';
 import { ZeroWidthEntry } from './character-reader-level-1';
 
 export const characterReaderLevel3TypeSplit: unique symbol = Symbol(
-  'characterReaderLevel3TypeSplit'
+  'characterReaderLevel3TypeSplit',
 );
 
 export const characterReaderLevel3TypeEntry: unique symbol = Symbol(
-  'characterReaderLevel3TypeEntry'
+  'characterReaderLevel3TypeEntry',
 );
 
 export type CharacterReaderLevel3ValueSplit = {
@@ -77,7 +77,7 @@ function isReaderAtEnd(
   reader: ForkableReader<
     CharacterReaderLevel2Value,
     CharacterReaderLevel2ReturnValue
-  >
+  >,
 ): boolean {
   const isAtEndUnbounded = (innerReader: CharacterReaderLevel2): boolean => {
     const next = innerReader.next();
@@ -101,13 +101,13 @@ function isReaderAtEnd(
  */
 export function buildCharacterReaderLevel3(
   node: MyRootNode,
-  nodeExtra: NodeExtra
+  nodeExtra: NodeExtra,
 ): CharacterReaderLevel3 {
   const startThread = function* (
     reader: ForkableReader<
       CharacterReaderLevel2Value,
       CharacterReaderLevel2ReturnValue
-    >
+    >,
   ): CharacterReaderLevel3 {
     let next: ReaderResult<
       CharacterReaderLevel2Value,
@@ -145,6 +145,6 @@ export function buildCharacterReaderLevel3(
   };
 
   return startThread(
-    buildForkableReader(buildCharacterReaderLevel2(node, nodeExtra))
+    buildForkableReader(buildCharacterReaderLevel2(node, nodeExtra)),
   );
 }

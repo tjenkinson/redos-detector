@@ -42,11 +42,11 @@ import { NodeExtra } from '../node-extra';
 import { StackReferenceEntry } from '../nodes/reference';
 
 export const characterReaderLevel2TypeSplit: unique symbol = Symbol(
-  'characterReaderLevel2TypeSplit'
+  'characterReaderLevel2TypeSplit',
 );
 
 export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
-  'characterReaderLevel2TypeEntry'
+  'characterReaderLevel2TypeEntry',
 );
 
 export type CharacterReaderLevel2ValueSplit = Readonly<{
@@ -103,11 +103,11 @@ function internalStackToLevel1Stack(internalStack: InternalStack): Stack {
 // `InternalReader` is the same as `CharacteReaderLevel1`, except that the `stack` is `InternalStack`
 // which can represent references
 const internalReaderTypeSplit: unique symbol = Symbol(
-  'internalReaderTypeSplit'
+  'internalReaderTypeSplit',
 );
 
 const internalReaderTypeEntry: unique symbol = Symbol(
-  'internalReaderTypeEntry'
+  'internalReaderTypeEntry',
 );
 
 type InternalReaderValueSplit = Readonly<{
@@ -175,7 +175,7 @@ type State = Readonly<{
 }>;
 
 function* characterReaderLevel1ToInternalReader(
-  characterReaderLevel1: CharacterReaderLevel1
+  characterReaderLevel1: CharacterReaderLevel1,
 ): InternalReader {
   let next: ReaderResult<
     CharacterReaderLevel1Value,
@@ -207,7 +207,7 @@ function* characterReaderLevel1ToInternalReader(
 
 function haveHadCompleteIteration(
   before: QuantifierIterations,
-  now: QuantifierIterations
+  now: QuantifierIterations,
 ): boolean {
   for (const [quantifier, iterationsNow] of now) {
     const iterationsBefore = before.get(quantifier) || 0;
@@ -239,27 +239,27 @@ function* getGroupContentsReader({
 
   const { a: groupLookaheadStack } = dropCommon(
     mustGet(nodeExtra.nodeToLookaheadStack, groupContents.group),
-    mustGet(nodeExtra.nodeToLookaheadStack, value.node)
+    mustGet(nodeExtra.nodeToLookaheadStack, value.node),
   );
 
   if (groupLookaheadStack.length) {
     if (
       groupLookaheadStack.some(
         ({ behavior }) =>
-          behavior === 'negativeLookahead' || behavior === 'negativeLookbehind'
+          behavior === 'negativeLookahead' || behavior === 'negativeLookbehind',
       )
     ) {
       return { bounded: false, preceedingZeroWidthEntries: [] };
     }
 
     throw new Error(
-      `Unsupported reference (${value.referenceIndex} at position ${value.node.range[0]}). Pattern needs downgrading. See the \`downgradePattern\` option.`
+      `Unsupported reference (${value.referenceIndex} at position ${value.node.range[0]}). Pattern needs downgrading. See the \`downgradePattern\` option.`,
     );
   }
 
   if (
     groups.has(
-      groupContents.group
+      groupContents.group,
     ) /* reference is inside group being referenced */
   ) {
     return { bounded: false, preceedingZeroWidthEntries: [] };
@@ -267,7 +267,7 @@ function* getGroupContentsReader({
 
   if (groupsWithInfiniteSize.has(value.referenceIndex)) {
     throw new Error(
-      `Unsupported reference to group ${value.referenceIndex} as group is not a finite size. Pattern needs downgrading. See the \`downgradePattern\` option.`
+      `Unsupported reference to group ${value.referenceIndex} as group is not a finite size. Pattern needs downgrading. See the \`downgradePattern\` option.`,
     );
   }
 
@@ -298,7 +298,7 @@ function* getGroupContentsReader({
  */
 export function buildCharacterReaderLevel2(
   node: MyRootNode,
-  nodeExtra: NodeExtra
+  nodeExtra: NodeExtra,
 ): CharacterReaderLevel2 {
   const startThread = function* (state: State): CharacterReaderLevel2 {
     outer: for (;;) {
@@ -325,7 +325,7 @@ export function buildCharacterReaderLevel2(
             // but we should have stopped reading when the `$` was hit the first time
             // e.g `($)\1` should not reach the `\1`
             throw new Error(
-              'Internal error: end of reference reader cannot be bounded'
+              'Internal error: end of reference reader cannot be bounded',
             );
           }
           state = {
@@ -359,7 +359,7 @@ export function buildCharacterReaderLevel2(
           /* istanbul ignore next */
           if (referenceCharacterReaderWithReference) {
             throw new Error(
-              'Internal error: should not be seeing a split from a reference reader'
+              'Internal error: should not be seeing a split from a reference reader',
             );
           }
 
@@ -392,12 +392,12 @@ export function buildCharacterReaderLevel2(
           ];
 
           const quantifierStack = getQuantifierStack(
-            internalStackToLevel1Stack(value.stack)
+            internalStackToLevel1Stack(value.stack),
           );
           const quantifierIterations =
             buildQuantifierIterations(quantifierStack);
           const lookaheadStack = getLookaheadStack(
-            internalStackToLevel1Stack(value.stack)
+            internalStackToLevel1Stack(value.stack),
           );
 
           const groups = getGroups(internalStackToLevel1Stack(value.stack));
@@ -407,14 +407,14 @@ export function buildCharacterReaderLevel2(
               /* istanbul ignore next */
               if (referenceCharacterReaderWithReference) {
                 throw new Error(
-                  'Internal error: should not be seeing a reference from a reference reader'
+                  'Internal error: should not be seeing a reference from a reference reader',
                 );
               }
 
               if (
                 haveHadCompleteIteration(
                   quantifierIterationsAtLastGroup,
-                  quantifierIterations
+                  quantifierIterations,
                 )
               ) {
                 // bail as we're in a loop of empty references
@@ -431,7 +431,7 @@ export function buildCharacterReaderLevel2(
                   groupsWithInfiniteSize,
                   nodeExtra,
                   value,
-                })
+                }),
               );
 
               state = {
@@ -499,7 +499,7 @@ export function buildCharacterReaderLevel2(
 
                 if (groupInfiniteSize) {
                   const newGroupsWithInfiniteSize = new Set(
-                    groupsWithInfiniteSize
+                    groupsWithInfiniteSize,
                   );
                   newGroupsWithInfiniteSize.add(index);
                   groupsWithInfiniteSize = newGroupsWithInfiniteSize;
@@ -521,7 +521,8 @@ export function buildCharacterReaderLevel2(
                           ({ offset }) =>
                             // only include entries that are within the group
                             // e.g `^` in (^a) but not `^(a)`
-                            offset >= group.range[0] && offset <= group.range[1]
+                            offset >= group.range[0] &&
+                            offset <= group.range[1],
                         ),
                     },
                   ],
@@ -535,7 +536,7 @@ export function buildCharacterReaderLevel2(
                   .flatMap((stackEntry) =>
                     stackEntry.type === 'reference'
                       ? [stackEntry.reference]
-                      : []
+                      : [],
                   )
                   .reverse(),
                 characterGroups: value.characterGroups,
@@ -566,7 +567,7 @@ export function buildCharacterReaderLevel2(
 
   return startThread({
     characterReader: buildForkableReader(
-      characterReaderLevel1ToInternalReader(buildCharacterReaderLevel1(node))
+      characterReaderLevel1ToInternalReader(buildCharacterReaderLevel1(node)),
     ),
     groupContentsStore: new Map(),
     groupsWithInfiniteSize: new Set(),
