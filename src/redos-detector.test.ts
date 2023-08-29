@@ -460,7 +460,7 @@ describe('RedosDetector', () => {
                     };
                   }),
                 };
-              })
+              }),
             ).toMatchSnapshot();
             expect(toFriendly(result)).toMatchSnapshot();
           }
@@ -473,9 +473,9 @@ describe('RedosDetector', () => {
 
           if (neededDowngrade) {
             expect(() =>
-              isSafe(regex, { downgradePattern: false })
+              isSafe(regex, { downgradePattern: false }),
             ).toThrowError(
-              /^(Unsupported reference \(\d+ at position \d+\)\. Pattern needs downgrading\. See the `downgradePattern` option\.|Unsupported reference to group \d+ as group is not a finite size\. Pattern needs downgrading\. See the `downgradePattern` option\.)$/
+              /^(Unsupported reference \(\d+ at position \d+\)\. Pattern needs downgrading\. See the `downgradePattern` option\.|Unsupported reference to group \d+ as group is not a finite size\. Pattern needs downgrading\. See the `downgradePattern` option\.)$/,
             );
           }
         });
@@ -486,17 +486,17 @@ describe('RedosDetector', () => {
       expect(
         isSafe(/a?a?$/, {
           maxBacktracks: 1,
-        }).error
+        }).error,
       ).toBe(null);
       expect(
         isSafe(/a?a?$/, {
           maxBacktracks: 0,
-        }).error
+        }).error,
       ).toBe('hitMaxBacktracks');
       expect(
         isSafe(/a*a*$/, {
           maxBacktracks: Infinity,
-        }).error
+        }).error,
       ).toBe('hitMaxBacktracks');
     });
 
@@ -533,7 +533,7 @@ describe('RedosDetector', () => {
       expect(() =>
         isSafe(/a/, {
           maxBacktracks: -1,
-        })
+        }),
       ).toThrowError('`maxBacktracks` must be a positive number or 0.');
     });
 
@@ -541,7 +541,7 @@ describe('RedosDetector', () => {
       expect(() =>
         isSafe(/a/, {
           timeout: 0,
-        })
+        }),
       ).toThrowError('`timeout` must be a positive number.');
     });
 
@@ -549,7 +549,7 @@ describe('RedosDetector', () => {
       expect(() =>
         isSafe(/a/, {
           maxSteps: 0,
-        })
+        }),
       ).toThrowError('`maxSteps` must be a positive number.');
     });
 
@@ -565,7 +565,7 @@ describe('RedosDetector', () => {
 
     it('throws if the number of loops is above max safe integer', () => {
       expect(() =>
-        isSafePattern(`a{0,${Number.MAX_SAFE_INTEGER + 1}}`)
+        isSafePattern(`a{0,${Number.MAX_SAFE_INTEGER + 1}}`),
       ).toThrowError('iterations outside JS safe integer range');
     });
 
@@ -578,7 +578,7 @@ describe('RedosDetector', () => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
       }).toThrowError(
-        '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.'
+        '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.',
       );
     });
 
@@ -587,7 +587,7 @@ describe('RedosDetector', () => {
         isSafePattern('(a?)a?$', {
           atomicGroupOffsets: new Set([0]),
           downgradePattern: false,
-        }).trails
+        }).trails,
       ).toHaveLength(0);
     });
   });

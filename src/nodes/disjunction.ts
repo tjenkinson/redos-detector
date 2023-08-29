@@ -8,7 +8,7 @@ import { Disjunction } from 'regjsparser';
 import { MyFeatures } from '../parse';
 
 export function buildDisjunctionCharacterReader(
-  node: Disjunction<MyFeatures>
+  node: Disjunction<MyFeatures>,
 ): CharacterReader {
   return chainReaders([
     buildArrayReader(
@@ -18,7 +18,7 @@ export function buildDisjunctionCharacterReader(
           subType: null,
           type: characterReaderTypeSplit,
         };
-      })
+      }),
     ),
     buildCharacterReader(node.body[node.body.length - 1]),
   ]);

@@ -30,17 +30,17 @@ export function getQuantifierStack(stack: Stack): QuantifierStack {
 }
 
 export function buildQuantifiersInInfinitePortion(
-  stack: QuantifierStack
+  stack: QuantifierStack,
 ): QuantifiersInInfinitePortion {
   return new Set(
     stack
       .filter(({ inInfinitePortion }) => inInfinitePortion)
-      .map(({ quantifier }) => quantifier)
+      .map(({ quantifier }) => quantifier),
   );
 }
 
 export function buildQuantifierIterations(
-  stack: QuantifierStack
+  stack: QuantifierStack,
 ): QuantifierIterations {
   const res: Map<Quantifier<MyFeatures>, number> = new Map();
   stack.forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
@@ -50,7 +50,7 @@ export function buildQuantifierIterations(
 // "<node offset>:<iteration number or * if in infinite portion>,..."
 export function buildQuantifierTrail(
   stack: QuantifierStack,
-  asteriskInfinite: boolean
+  asteriskInfinite: boolean,
 ): string {
   return stack
     .map(({ quantifier, inInfinitePortion, iteration }) => {
@@ -62,7 +62,7 @@ export function buildQuantifierTrail(
 }
 
 export function buildQuantifierCharacterReader(
-  node: Quantifier<MyFeatures>
+  node: Quantifier<MyFeatures>,
 ): CharacterReader {
   const { min, max = Infinity } = node;
   return joinArray([
@@ -103,9 +103,9 @@ export function buildQuantifierCharacterReader(
                   ...value.stack,
                 ],
               };
-            }
+            },
           );
-        }
+        },
       ),
   ]);
 }

@@ -57,7 +57,7 @@ export function getLookaheadStack(stack: Stack): LookaheadStack {
 }
 
 export function buildGroupCharacterReader(
-  node: Group<MyFeatures>
+  node: Group<MyFeatures>,
 ): CharacterReader {
   switch (node.behavior) {
     case 'lookbehind':

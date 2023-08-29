@@ -76,10 +76,10 @@ export type TrailEntry = Readonly<{
 export type Trail = readonly TrailEntry[];
 
 export const checkerReaderTypeTrail: unique symbol = Symbol(
-  'checkerReaderTypeTrail'
+  'checkerReaderTypeTrail',
 );
 export const checkerReaderTypeInfiniteLoop: unique symbol = Symbol(
-  'checkerReaderTypeInfiniteLoop'
+  'checkerReaderTypeInfiniteLoop',
 );
 
 export type CheckerReaderValueTrail = Readonly<{
@@ -125,7 +125,7 @@ type StackFrame = Readonly<{
 
 const isNodeWithQuantifierTrailEqual = (
   left: NodeWithQuantifierTrail,
-  right: NodeWithQuantifierTrail
+  right: NodeWithQuantifierTrail,
 ): boolean =>
   left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
@@ -149,7 +149,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const stack: StackFrame[] = [
     {
       infiniteLoopTracker: new InfiniteLoopTracker(
-        isNodeWithQuantifierTrailEqual
+        isNodeWithQuantifierTrailEqual,
       ),
       streamReadersWithGetters: [
         {
@@ -197,7 +197,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
             ({ reader, get }, j) => ({
               get: j === i ? once(() => reader.next()) : get,
               reader,
-            })
+            }),
           ),
           trail,
         });
@@ -210,7 +210,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
               get: j < i ? get : once(() => newReader.next()),
               reader: newReader,
             };
-          }
+          },
         );
 
         stack.push({
@@ -246,10 +246,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     const rightValue = rightNextValue.value;
 
     const leftPassedStartAnchor = leftValue.preceedingZeroWidthEntries.some(
-      ({ type }) => type === 'start'
+      ({ type }) => type === 'start',
     );
     const rightPassedStartAnchor = rightValue.preceedingZeroWidthEntries.some(
-      ({ type }) => type === 'start'
+      ({ type }) => type === 'start',
     );
     const somethingPassedStartAnchor =
       leftPassedStartAnchor || rightPassedStartAnchor;
@@ -279,11 +279,11 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     if (
       setsOverlap(
         leftQuantifiersInInfiniteProportion,
-        rightQuantifiersInInfiniteProportion
+        rightQuantifiersInInfiniteProportion,
       )
     ) {
       const leftAndRightIdentical = trail.every(({ left, right }) =>
-        sidesEqualChecker.areSidesEqual(left, right)
+        sidesEqualChecker.areSidesEqual(left, right),
       );
       if (leftAndRightIdentical) {
         // left and right have been identical to each other, and we are now entering an infinite
@@ -301,20 +301,20 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           node: leftValue.node,
           quantifierTrail: buildQuantifierTrail(
             leftValue.quantifierStack,
-            true
+            true,
           ),
         },
         {
           node: rightValue.node,
           quantifierTrail: buildQuantifierTrail(
             rightValue.quantifierStack,
-            true
+            true,
           ),
-        }
+        },
       );
     } else {
       infiniteLoopTracker = new InfiniteLoopTracker(
-        isNodeWithQuantifierTrailEqual
+        isNodeWithQuantifierTrailEqual,
       );
     }
 
@@ -326,7 +326,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     }
 
     const intersection = intersectCharacterGroups(
-      [leftValue, rightValue].map(({ characterGroups }) => characterGroups)
+      [leftValue, rightValue].map(({ characterGroups }) => characterGroups),
     );
 
     if (isEmptyCharacterGroups(intersection)) {
@@ -335,13 +335,13 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const leftAtomicGroups = new Set(
       [...leftValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0])
-      )
+        input.atomicGroupOffsets.has(group.range[0]),
+      ),
     );
     const rightAtomicGroups = new Set(
       [...rightValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0])
-      )
+        input.atomicGroupOffsets.has(group.range[0]),
+      ),
     );
     if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
       // if we are not entering/leaving an atomic group in sync
@@ -383,23 +383,23 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
                 (existingEntry, i) =>
                   sidesEqualChecker.areSidesEqual(
                     existingEntry.left,
-                    trail[i].right
+                    trail[i].right,
                   ) &&
                   sidesEqualChecker.areSidesEqual(
                     existingEntry.right,
-                    trail[i].left
-                  )
+                    trail[i].left,
+                  ),
               ) ||
               existingTrail.every(
                 (existingEntry, i) =>
                   sidesEqualChecker.areSidesEqual(
                     existingEntry.left,
-                    trail[i].left
+                    trail[i].left,
                   ) &&
                   sidesEqualChecker.areSidesEqual(
                     existingEntry.right,
-                    trail[i].right
-                  )
+                    trail[i].right,
+                  ),
               )
             );
           });

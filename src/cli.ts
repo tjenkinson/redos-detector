@@ -35,31 +35,31 @@ program
     '--maxBacktracks <number>',
     'max number of backtracks to allow',
     toInt,
-    defaultMaxBacktracks
+    defaultMaxBacktracks,
   )
   .option(
     '--resultsLimit <number>',
     'the maximum number of results to print, ignored with --json',
     toInt,
-    defaultResultsLimit
+    defaultResultsLimit,
   )
   .option(
     '--maxSteps <number>',
     'max number of steps to take',
     toInt,
-    defaultMaxSteps
+    defaultMaxSteps,
   )
   .option('--timeout <number>', 'timeout in ms', toInt, -1)
   .option(
     '--alwaysIncludeTrails',
     'always include trails if some are found, even if the patten is considered safe',
-    false
+    false,
   )
   .option('--disableDowngrade', 'do not downgrade the regex if required', false)
   .option(
     '--json',
     'output the result as JSON. Unsafe regex will exit with code 0. Check the `safe` property',
-    false
+    false,
   )
   .action(
     (
@@ -82,7 +82,7 @@ program
         resultsLimit: number;
         timeout: number;
         unicode: boolean;
-      }
+      },
     ) => {
       try {
         const result = isSafePattern(pattern, {
@@ -101,7 +101,7 @@ program
             toFriendly(result, {
               alwaysIncludeTrails,
               resultsLimit: coerceInfinity(resultsLimit),
-            })
+            }),
           );
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
           process.exit(result.safe ? 0 : 1);
@@ -111,7 +111,7 @@ program
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,  @typescript-eslint/no-unsafe-call
         process.exit(1);
       }
-    }
+    },
   );
 
 program.parse();

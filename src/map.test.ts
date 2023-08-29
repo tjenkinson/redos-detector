@@ -40,7 +40,7 @@ describe('Map', () => {
 
       expect(mustGet(map, 'a')).toBe(1);
       expect(() => mustGet(map, 'b')).toThrowError(
-        'Internal error: map missing key'
+        'Internal error: map missing key',
       );
     });
   });

@@ -16,7 +16,7 @@ export class SidesEqualChecker {
       areArraysEqual(left.backreferenceStack, right.backreferenceStack) &&
       areMapsEqual(
         buildQuantifierIterations(left.quantifierStack),
-        buildQuantifierIterations(right.quantifierStack)
+        buildQuantifierIterations(right.quantifierStack),
       );
     this._cache.addResult(left, right, equal);
     return equal;

@@ -43,13 +43,13 @@ function replace(
   input: string,
   replacement: string,
   start: number,
-  end: number
+  end: number,
 ): string {
   return `${input.slice(0, start)}${replacement}${input.slice(end)}`;
 }
 
 function quantifierIterationsToString(
-  quantifier: Quantifier<MyFeatures>
+  quantifier: Quantifier<MyFeatures>,
 ): string {
   if (quantifier.symbol) {
     return `${quantifier.symbol}${quantifier.greedy ? '' : '?'}`;
@@ -68,7 +68,7 @@ export type RawWithoutCapturingGroupsOrLookaheads = Readonly<{
 }>;
 
 export function getRawWithoutCapturingGroupsOrLookaheads(
-  rootNode: MyRootNode
+  rootNode: MyRootNode,
 ): RawWithoutCapturingGroupsOrLookaheads {
   const referencesWithOffset = new Map<Reference<MyFeatures>, number>();
 
@@ -119,7 +119,7 @@ export function getRawWithoutCapturingGroupsOrLookaheads(
         return walkAll(node.body, offset);
       case 'quantifier': {
         return `${walk(node.body[0], offset)}${quantifierIterationsToString(
-          node
+          node,
         )}`;
       }
     }
@@ -156,7 +156,7 @@ export function downgradePattern({
   unicode,
 }: DowngradePatternConfig): DowngradedRegexPattern {
   const run = (
-    lastResult: DowngradedRegexPattern
+    lastResult: DowngradedRegexPattern,
   ): { needToRerun: boolean; result: DowngradedRegexPattern } => {
     const ast = parse(lastResult.pattern, unicode);
     const actions: Action[] = [];
@@ -173,7 +173,7 @@ export function downgradePattern({
 
     const lookaheadOnlyContainsGroup = (
       lookahead: NonCapturingGroup<MyFeatures>,
-      group: Group<MyFeatures>
+      group: Group<MyFeatures>,
     ): boolean => {
       if (lookahead.body.length !== 1) return false;
       const node = lookahead.body[0];
@@ -183,7 +183,7 @@ export function downgradePattern({
     const walkAll = (
       nodes: MyRootNode[],
       nodeStack: readonly MyRootNode[],
-      serial: boolean
+      serial: boolean,
     ): void => {
       let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
       nodes.forEach((expression) => {
@@ -204,7 +204,7 @@ export function downgradePattern({
     const walk = (
       node: MyRootNode,
       nodeStack: readonly MyRootNode[],
-      immediatelyPreceedingLookahead: NonCapturingGroup<MyFeatures> | null
+      immediatelyPreceedingLookahead: NonCapturingGroup<MyFeatures> | null,
     ): void => {
       switch (node.type) {
         case 'anchor':
@@ -263,19 +263,19 @@ export function downgradePattern({
               stackNode.type === 'group' &&
               lookaheadBehaviours.indexOf(stackNode.behavior) >= 0
                 ? [stackNode]
-                : []
+                : [],
             );
             const groupMayNotBeReached = localStack.some(
               (stackNode) =>
                 stackNode.type === 'disjunction' ||
-                (stackNode.type === 'quantifier' && stackNode.min === 0)
+                (stackNode.type === 'quantifier' && stackNode.min === 0),
             );
 
             const groupInLookahead = lookaheadStack.length > 0;
             const groupCouldBeSet = lookaheadStack.every(
               (value) =>
                 value.behavior !== 'negativeLookahead' &&
-                value.behavior !== 'negativeLookbehind'
+                value.behavior !== 'negativeLookbehind',
             );
 
             if (
@@ -290,7 +290,7 @@ export function downgradePattern({
                 !!immediatelyPreceedingLookahead &&
                 lookaheadOnlyContainsGroup(
                   immediatelyPreceedingLookahead,
-                  group
+                  group,
                 );
 
               const optional = groupInLookahead && groupMayNotBeReached;
@@ -316,7 +316,7 @@ export function downgradePattern({
 
     let newPattern = lastResult.pattern;
     let atomicGroupOffsets: Set<number> = new Set(
-      lastResult.atomicGroupOffsets
+      lastResult.atomicGroupOffsets,
     );
     let needToRerun = false;
 
@@ -345,7 +345,7 @@ export function downgradePattern({
           newPattern,
           replacement,
           referenceStart,
-          referenceEnd
+          referenceEnd,
         );
 
         const shiftAmount =
@@ -353,7 +353,7 @@ export function downgradePattern({
         atomicGroupOffsets = new Set(
           [...atomicGroupOffsets].map((offset) => {
             return offset > referenceStart ? offset + shiftAmount : offset;
-          })
+          }),
         );
 
         if (atomicOrOptional === 'atomic') {
@@ -371,7 +371,7 @@ export function downgradePattern({
                 atomicGroupOffsets.add(referenceStart + offset);
               }
             }
-          }
+          },
         );
       });
 

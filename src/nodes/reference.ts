@@ -11,7 +11,7 @@ export type StackReferenceEntry = Readonly<{
 }>;
 
 export function* buildReferenceCharacterReader(
-  node: Reference<MyFeatures>
+  node: Reference<MyFeatures>,
 ): CharacterReader {
   yield {
     node,

@@ -20,11 +20,11 @@ import { CharacterGroups } from '../character-groups';
 import { MyRootNode } from '../parse';
 
 export const characterReaderLevel1TypeSplit: unique symbol = Symbol(
-  'characterReaderLevel2TypeSplit'
+  'characterReaderLevel2TypeSplit',
 );
 
 export const characterReaderLevel1TypeEntry: unique symbol = Symbol(
-  'characterReaderLevel1TypeEntry'
+  'characterReaderLevel1TypeEntry',
 );
 
 export type CharacterReaderLevel1ValueSplit = Readonly<{
@@ -95,11 +95,11 @@ export type CharacterReaderLevel1 = Reader<
  * and makes every result map to a character.
  */
 export function buildCharacterReaderLevel1(
-  node: MyRootNode
+  node: MyRootNode,
 ): CharacterReaderLevel1 {
   const startThread = function* (
     reader: CharacterReader,
-    preceedingZeroWidthEntries: readonly ZeroWidthEntry[]
+    preceedingZeroWidthEntries: readonly ZeroWidthEntry[],
   ): CharacterReaderLevel1 {
     let next: ReaderResult<CharacterReaderValue>;
     while (!(next = reader.next()).done) {

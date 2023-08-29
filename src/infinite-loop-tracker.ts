@@ -19,7 +19,7 @@ export class InfiniteLoopTracker<T> {
 
   constructor(
     isEqual: (left: T, right: T) => boolean,
-    source?: InfiniteLoopTracker<T>
+    source?: InfiniteLoopTracker<T>,
   ) {
     this._isEqual = isEqual;
     if (source) {
@@ -43,7 +43,7 @@ export class InfiniteLoopTracker<T> {
         if (
           !this._isEntryEqual(
             this._history[candidateStart + i],
-            this._history[candidateStart + candidateSize + i]
+            this._history[candidateStart + candidateSize + i],
           )
         ) {
           continue outer;

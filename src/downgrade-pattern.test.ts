@@ -20,11 +20,11 @@ describe('DowngradePattern', () => {
       {
         atomicGroupOffsets = [],
         pattern,
-      }: { atomicGroupOffsets?: number[]; pattern: string }
+      }: { atomicGroupOffsets?: number[]; pattern: string },
     ): void => {
       expect(result.pattern).toBe(pattern);
       expect(
-        [...result.atomicGroupOffsets].sort((a, b) => a - b)
+        [...result.atomicGroupOffsets].sort((a, b) => a - b),
       ).toStrictEqual(atomicGroupOffsets);
     };
 
@@ -36,13 +36,13 @@ describe('DowngradePattern', () => {
         downgradePattern({ pattern: s(/a(b)c\1/), unicode: false }),
         {
           pattern: s(/a(b)c\1/),
-        }
+        },
       );
       expectResult(
         downgradePattern({ pattern: s(/a(?=(b)\1)c/), unicode: false }),
         {
           pattern: s(/a(?=(b)\1)c/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -51,7 +51,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b(?=(c\1))))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -60,7 +60,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/(a+\1)/),
-        }
+        },
       );
     });
 
@@ -72,7 +72,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b))c(?:b)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -81,7 +81,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b*))c(?:b*)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -90,7 +90,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b))c(?:b)+/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -99,7 +99,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b)\1)(?:b)c/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -108,7 +108,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b))(c(?:b))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -117,7 +117,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b))((c(?:b)))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -126,7 +126,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b))(c(?:b))\2/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -135,7 +135,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(b)(?=(c))(d\1)(?:c)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -145,7 +145,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [14],
           pattern: s(/a(?=(b(?=c)d))(?:bd)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -155,7 +155,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [17],
           pattern: s(/a(?=(b(?=(c\1))))(?:b)(?:c(?:b))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -164,7 +164,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b)?)c(?:(?:b)?)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -173,7 +173,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b)|c)d(?:(?:b)?)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -182,7 +182,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(?:(b)|c))d(?:(?:b)?)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -191,7 +191,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(?:(b))?)d(?:(?:b)?)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -200,7 +200,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b{1,}?))c(?:b{1,}?)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -210,7 +210,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [7, 19],
           pattern: s(/(?=(a))(?:a)(?=(b))(?:b)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -220,7 +220,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [10],
           pattern: s(/(?:(?=(a))(?:a))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -230,7 +230,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [8],
           pattern: s(/((?=(a))(?:a)){1,2}/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -240,7 +240,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [19],
           pattern: s(/(?=(a))(?=(b(?:a)))(?:b(?:a))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -250,7 +250,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [7],
           pattern: s(/(?=(a))(?:a)(?=(b))(?:a)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -260,7 +260,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [25],
           pattern: s(/(?=(a))(?=((?:a)))(?=(c))(?:c)(?:(?:a))/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -269,7 +269,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b(?!(c))))c(?:b)/),
-        }
+        },
       );
     });
 
@@ -282,7 +282,7 @@ describe('DowngradePattern', () => {
         {
           atomicGroupOffsets: [13, 23, 26],
           pattern: s(/^(?=((?=(a*))(?:a*)b*))(?:(?:a*)b*)c*$/),
-        }
+        },
       );
     });
 
@@ -294,7 +294,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?!(b))c\1/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -303,7 +303,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?=(b(?!(c))))c\2/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -312,7 +312,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/a(?!(b(?=(c))))c\2/),
-        }
+        },
       );
     });
 
@@ -324,7 +324,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/(a*)(?:a*)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -333,7 +333,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/(a+)(?:a+)/),
-        }
+        },
       );
       expectResult(
         downgradePattern({
@@ -342,7 +342,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/(a+(?=b+))(?:a+)/),
-        }
+        },
       );
     });
 
@@ -354,7 +354,7 @@ describe('DowngradePattern', () => {
         }),
         {
           pattern: s(/(a(?=b+))\1/),
-        }
+        },
       );
     });
   });
@@ -368,31 +368,31 @@ describe('DowngradePattern', () => {
       }: {
         references: Record<string, number>;
         result: string;
-      }
+      },
     ): void => {
       expect(result.result).toBe(resultResult);
       expect(
         Object.fromEntries(
           [...result.referencesWithOffset].map(([reference, offset]) => {
             return [reference.raw, offset];
-          })
-        )
+          }),
+        ),
       ).toStrictEqual(references);
     };
 
     it('works', () => {
       expectResult(
         getRawWithoutCapturingGroupsOrLookaheads(p(s(/(a)/), false)),
-        { references: {}, result: s(/(?:a)/) }
+        { references: {}, result: s(/(?:a)/) },
       );
       expectResult(
         getRawWithoutCapturingGroupsOrLookaheads(
           p(
             s(
-              /^(a)b{1}c+d{1,2}e+(?:f)(?=g)(?!h)(?<=i)(?<!j)(k|l).(m(n))o+?[a\d]\1$/
+              /^(a)b{1}c+d{1,2}e+(?:f)(?=g)(?!h)(?<=i)(?<!j)(k|l).(m(n))o+?[a\d]\1$/,
             ),
-            false
-          )
+            false,
+          ),
         ),
         {
           references: {
@@ -400,11 +400,11 @@ describe('DowngradePattern', () => {
             '\\1': 51,
           },
           result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
-        }
+        },
       );
       expectResult(
         getRawWithoutCapturingGroupsOrLookaheads(
-          p(s(/()()()()a(\1)c(d|\2|f)(?:\3)(?:\4)+/), false)
+          p(s(/()()()()a(\1)c(d|\2|f)(?:\3)(?:\4)+/), false),
         ),
         {
           /* eslint-disable @typescript-eslint/naming-convention */
@@ -416,7 +416,7 @@ describe('DowngradePattern', () => {
           },
           /* eslint-enable @typescript-eslint/naming-convention */
           result: s(/(?:)(?:)(?:)(?:)a(?:\1)c(?:d|\2|f)(?:\3)(?:\4)+/),
-        }
+        },
       );
     });
   });

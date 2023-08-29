@@ -32,7 +32,7 @@ export function buildNodeExtra(regexp: MyRootNode): NodeExtra {
 
   const visit = (
     node: AstNode<MyFeatures>,
-    lookaheadStack: readonly NonCapturingGroup<MyFeatures>[]
+    lookaheadStack: readonly NonCapturingGroup<MyFeatures>[],
   ): void => {
     switch (node.type) {
       case 'anchor':

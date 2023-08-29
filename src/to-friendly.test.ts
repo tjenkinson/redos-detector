@@ -335,8 +335,8 @@ describe('toFriendly', () => {
               trails: [],
               worstCaseBacktrackCount: { infinite: false, value: 1 },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -348,8 +348,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: false, value: 2 },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -362,8 +362,8 @@ describe('toFriendly', () => {
               // not really possible bug needed for coverage
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
       });
 
@@ -378,8 +378,8 @@ describe('toFriendly', () => {
               trails: [],
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -391,8 +391,8 @@ describe('toFriendly', () => {
               trails: [],
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -404,8 +404,8 @@ describe('toFriendly', () => {
               trails: [],
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -418,8 +418,8 @@ describe('toFriendly', () => {
               // not really possible but needed for coverage
               worstCaseBacktrackCount: { infinite: false, value: 0 },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
       });
 
@@ -434,8 +434,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -447,8 +447,8 @@ describe('toFriendly', () => {
               trails: [mockTrails[0]],
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -460,8 +460,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -473,8 +473,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -486,8 +486,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: false, value: 1 },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -499,8 +499,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: false, value: 2 },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -512,8 +512,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails }
-          )
+            { alwaysIncludeTrails },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -525,8 +525,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails, resultsLimit: 0 }
-          )
+            { alwaysIncludeTrails, resultsLimit: 0 },
+          ),
         ).toMatchSnapshot();
         expect(
           toFriendly(
@@ -538,8 +538,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails, resultsLimit: 1 }
-          )
+            { alwaysIncludeTrails, resultsLimit: 1 },
+          ),
         ).toMatchSnapshot();
       });
 
@@ -554,8 +554,8 @@ describe('toFriendly', () => {
               trails: mockTrails,
               worstCaseBacktrackCount: { infinite: true },
             },
-            { alwaysIncludeTrails, resultsLimit: -1 }
-          )
+            { alwaysIncludeTrails, resultsLimit: -1 },
+          ),
         ).toThrowError('`resultsLimit` must be > 0.');
       });
     });

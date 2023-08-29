@@ -14,10 +14,10 @@ import { ReaderResult } from '../reader';
  */
 export function map(
   reader: CharacterReader,
-  handle: (value: CharacterReaderValueGroups) => CharacterReaderValueGroups
+  handle: (value: CharacterReaderValueGroups) => CharacterReaderValueGroups,
 ): CharacterReader {
   const startThread = function* (
-    innerReader: CharacterReader
+    innerReader: CharacterReader,
   ): CharacterReader {
     let next: ReaderResult<CharacterReaderValue>;
     while (!(next = innerReader.next()).done) {

@@ -8,7 +8,7 @@ export type RangeIntersection = Readonly<{
 
 export function subtractRanges(
   source: OurRange,
-  toSubtract: OurRange
+  toSubtract: OurRange,
 ): readonly OurRange[] {
   const res: OurRange[] = [];
   if (source[0] < toSubtract[0]) {
@@ -22,7 +22,7 @@ export function subtractRanges(
 
 export function intersectRanges(
   a: OurRange,
-  b: OurRange
+  b: OurRange,
 ): RangeIntersection | null {
   const startShared = Math.max(a[0], b[0]);
   const endShared = Math.min(a[1], b[1]);
