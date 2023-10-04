@@ -7,19 +7,27 @@ import {
 import { Disjunction } from 'regjsparser';
 import { MyFeatures } from '../parse';
 
-export function buildDisjunctionCharacterReader(
-  node: Disjunction<MyFeatures>,
-): CharacterReader {
+export function buildDisjunctionCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: Disjunction<MyFeatures>;
+}): CharacterReader {
   return chainReaders([
     buildArrayReader(
       node.body.slice(0, -1).map((part) => {
         return {
-          reader: (): CharacterReader => buildCharacterReader(part),
+          reader: (): CharacterReader =>
+            buildCharacterReader({ caseInsensitive, node: part }),
           subType: null,
           type: characterReaderTypeSplit,
         };
       }),
     ),
-    buildCharacterReader(node.body[node.body.length - 1]),
+    buildCharacterReader({
+      caseInsensitive,
+      node: node.body[node.body.length - 1],
+    }),
   ]);
 }

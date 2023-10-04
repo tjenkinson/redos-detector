@@ -4,13 +4,19 @@ import {
   CharacterReaderValueGroups,
 } from '../character-reader/character-reader-level-0';
 import { buildArrayReader } from '../reader';
+import { buildCodePointRanges } from '../code-point';
 import { CharacterClass } from 'regjsparser';
 import { characterClassEscapeToRange } from './character-class-escape';
+import { codePointFromValue } from './value';
 import { MutableCharacterGroups } from '../character-groups';
 
-export function buildCharacterClassCharacterReader(
-  node: CharacterClass,
-): CharacterReader {
+export function buildCharacterClassCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: CharacterClass;
+}): CharacterReader {
   const characterGroups: MutableCharacterGroups = {
     characterClassEscapes: new Set(),
     dot: false,
@@ -22,21 +28,33 @@ export function buildCharacterClassCharacterReader(
   for (const expression of node.body) {
     switch (expression.type) {
       case 'value': {
-        characterGroups.ranges.push([
-          expression.codePoint,
-          expression.codePoint,
-        ]);
+        const codePoint = codePointFromValue({
+          caseInsensitive,
+          value: expression,
+        });
+        characterGroups.ranges.push([codePoint, codePoint]);
         break;
       }
       case 'characterClassRange': {
-        const { min, max } = expression;
-        characterGroups.ranges.push([min.codePoint, max.codePoint]);
+        characterGroups.ranges.push(
+          ...buildCodePointRanges({
+            caseInsensitive,
+            highCodePoint: expression.max.codePoint,
+            lowCodePoint: expression.min.codePoint,
+          }),
+        );
         break;
       }
       case 'characterClassEscape': {
         const range = characterClassEscapeToRange(expression.value);
         if (range) {
-          characterGroups.ranges.push(range);
+          characterGroups.ranges.push(
+            ...buildCodePointRanges({
+              caseInsensitive,
+              highCodePoint: range[1],
+              lowCodePoint: range[0],
+            }),
+          );
         } else {
           characterGroups.characterClassEscapes.add(expression.value);
         }

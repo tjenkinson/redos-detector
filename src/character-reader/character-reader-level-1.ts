@@ -94,9 +94,13 @@ export type CharacterReaderLevel1 = Reader<
  * `CharacterReaderLevel0` adds a `preceedingZeroWidthEntries` property
  * and makes every result map to a character.
  */
-export function buildCharacterReaderLevel1(
-  node: MyRootNode,
-): CharacterReaderLevel1 {
+export function buildCharacterReaderLevel1({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: MyRootNode;
+}): CharacterReaderLevel1 {
   const startThread = function* (
     reader: CharacterReader,
     preceedingZeroWidthEntries: readonly ZeroWidthEntry[],
@@ -168,5 +172,5 @@ export function buildCharacterReaderLevel1(
     return { bounded: false, preceedingZeroWidthEntries };
   };
 
-  return startThread(buildCharacterReader(node), []);
+  return startThread(buildCharacterReader({ caseInsensitive, node }), []);
 }

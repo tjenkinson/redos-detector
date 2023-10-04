@@ -75,12 +75,18 @@ export type CharacterReaderValue =
 
 export type CharacterReader = Reader<CharacterReaderValue>;
 
-export function buildCharacterReader(node: MyRootNode): CharacterReader {
+export function buildCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: MyRootNode;
+}): CharacterReader {
   switch (node.type) {
     case 'anchor':
       return buildAnchorReader(node);
     case 'characterClass':
-      return buildCharacterClassCharacterReader(node);
+      return buildCharacterClassCharacterReader({ caseInsensitive, node });
     case 'characterClassEscape':
       return buildCharacterClassEscapeReader(node);
     case 'unicodePropertyEscape':
@@ -88,16 +94,19 @@ export function buildCharacterReader(node: MyRootNode): CharacterReader {
     case 'reference':
       return buildReferenceCharacterReader(node);
     case 'value':
-      return buildValueCharacterReader(node);
+      return buildValueCharacterReader({ caseInsensitive, node });
     case 'dot':
       return buildDotCharacterReader(node);
     case 'alternative':
-      return buildSequenceCharacterReader(node.body);
+      return buildSequenceCharacterReader({
+        caseInsensitive,
+        nodes: node.body,
+      });
     case 'disjunction':
-      return buildDisjunctionCharacterReader(node);
+      return buildDisjunctionCharacterReader({ caseInsensitive, node });
     case 'group':
-      return buildGroupCharacterReader(node);
+      return buildGroupCharacterReader({ caseInsensitive, node });
     case 'quantifier':
-      return buildQuantifierCharacterReader(node);
+      return buildQuantifierCharacterReader({ caseInsensitive, node });
   }
 }

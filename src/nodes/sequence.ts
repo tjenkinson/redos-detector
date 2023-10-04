@@ -5,12 +5,17 @@ import {
 import { joinArray } from '../character-reader/join';
 import { MyRootNode } from '../parse';
 
-export function buildSequenceCharacterReader(
-  nodes: readonly MyRootNode[],
-): CharacterReader {
+export function buildSequenceCharacterReader({
+  caseInsensitive,
+  nodes,
+}: {
+  caseInsensitive: boolean;
+  nodes: readonly MyRootNode[];
+}): CharacterReader {
   return joinArray(
     nodes.map((node) => {
-      return (): CharacterReader => buildCharacterReader(node);
+      return (): CharacterReader =>
+        buildCharacterReader({ caseInsensitive, node });
     }),
   );
 }

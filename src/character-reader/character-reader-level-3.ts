@@ -99,10 +99,15 @@ function isReaderAtEnd(
  * Returns a `CharacterReaderLevel3` which does the same as
  * `CharacterReaderLevel2` but adds an `unbounded` property.
  */
-export function buildCharacterReaderLevel3(
-  node: MyRootNode,
-  nodeExtra: NodeExtra,
-): CharacterReaderLevel3 {
+export function buildCharacterReaderLevel3({
+  caseInsensitive,
+  node,
+  nodeExtra,
+}: {
+  caseInsensitive: boolean;
+  node: MyRootNode;
+  nodeExtra: NodeExtra;
+}): CharacterReaderLevel3 {
   const startThread = function* (
     reader: ForkableReader<
       CharacterReaderLevel2Value,
@@ -145,6 +150,8 @@ export function buildCharacterReaderLevel3(
   };
 
   return startThread(
-    buildForkableReader(buildCharacterReaderLevel2(node, nodeExtra)),
+    buildForkableReader(
+      buildCharacterReaderLevel2({ caseInsensitive, node, nodeExtra }),
+    ),
   );
 }

@@ -4,16 +4,36 @@ import {
   CharacterReaderValueGroups,
 } from '../character-reader/character-reader-level-0';
 import { buildArrayReader } from '../reader';
+import { toLowerCaseCodePoint } from '../code-point';
 import { Value } from 'regjsparser';
 
-export function buildValueCharacterReader(node: Value): CharacterReader {
+export function codePointFromValue({
+  caseInsensitive,
+  value,
+}: {
+  caseInsensitive: boolean;
+  value: Value;
+}): number {
+  const codePoint = value.codePoint;
+
+  return caseInsensitive ? toLowerCaseCodePoint(codePoint) : codePoint;
+}
+
+export function buildValueCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: Value;
+}): CharacterReader {
+  const codePoint = codePointFromValue({ caseInsensitive, value: node });
   return buildArrayReader<CharacterReaderValueGroups>([
     {
       characterGroups: {
         characterClassEscapes: new Set(),
         dot: false,
         negated: false,
-        ranges: [[node.codePoint, node.codePoint]],
+        ranges: [[codePoint, codePoint]],
         unicodePropertyEscapes: new Set(),
       },
       node,

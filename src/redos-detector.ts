@@ -212,6 +212,10 @@ export type RedosDetectorResult = {
 
 export type IsSafePatternConfig = IsSafeConfig & {
   /**
+   * Enable case insensitive mode.
+   */
+  readonly caseInsensitive?: boolean;
+  /**
    * Enable unicode mode.
    */
   readonly unicode?: boolean;
@@ -221,7 +225,14 @@ export const defaultTimeout = Infinity;
 export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
-const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 's', 'y']);
+export const defaultCaseInsensitive = false;
+const supportedJSFlags: ReadonlySet<string> = new Set([
+  'u',
+  'g',
+  's',
+  'y',
+  'i',
+]);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -270,10 +281,15 @@ export function isSafePattern(
     maxBacktracks = defaultMaxBacktracks,
     maxSteps = defaultMaxSteps,
     timeout = defaultTimeout,
+    caseInsensitive = defaultCaseInsensitive,
     unicode = defaultUnicode,
     downgradePattern = true,
   }: IsSafePatternConfig = {},
 ): RedosDetectorResult {
+  if (caseInsensitive && unicode) {
+    // https://mathiasbynens.be/notes/es6-unicode-regex
+    throw new Error('`caseInsensitive` cannot be used with `unicode`.');
+  }
   if (downgradePattern && atomicGroupOffsetsInput) {
     throw new Error(
       '`atomicGroupOffsets` cannot be used with `downgradePattern: true`.',
@@ -303,6 +319,7 @@ export function isSafePattern(
 
   const result = collectResults({
     atomicGroupOffsets,
+    caseInsensitive,
     maxBacktracks,
     maxSteps,
     node: ast,
@@ -366,6 +383,7 @@ export function isSafe(
   config?: IsSafeConfig,
 ): RedosDetectorResult {
   let unicode = false;
+  let caseInsensitive = false;
   for (const flag of regexp.flags.split('')) {
     if (!supportedJSFlags.has(flag)) {
       throw new Error(`Unsupported flag: ${flag}`);
@@ -373,7 +391,10 @@ export function isSafe(
     if (flag === 'u') {
       unicode = true;
     }
+    if (flag === 'i') {
+      caseInsensitive = true;
+    }
   }
 
-  return isSafePattern(regexp.source, { ...config, unicode });
+  return isSafePattern(regexp.source, { ...config, caseInsensitive, unicode });
 }

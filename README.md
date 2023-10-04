@@ -157,6 +157,7 @@ type Location = {
 
 The following options exist for both the library and CLI:
 
+- `caseInsensitive`: Enable case insensitive mode. _(Default: `false`)_
 - `unicode`: Enable unicode mode. _(Default: `false`)_
 - `maxBacktracks`: If worst case count of possible backtracks is above this number, the regex will be considered unsafe. _(Default: `200`)_
 - `maxSteps`: The maximum number of steps to make. Every time a new node is read from the pattern this counts as one step. If this limit is hit `error` will be `hitMaxSteps`. _(Default: `20000`)_

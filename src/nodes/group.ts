@@ -56,9 +56,13 @@ export function getLookaheadStack(stack: Stack): LookaheadStack {
   return lookaheadStack;
 }
 
-export function buildGroupCharacterReader(
-  node: Group<MyFeatures>,
-): CharacterReader {
+export function buildGroupCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: Group<MyFeatures>;
+}): CharacterReader {
   switch (node.behavior) {
     case 'lookbehind':
     case 'negativeLookbehind':
@@ -69,12 +73,18 @@ export function buildGroupCharacterReader(
           reader: (): CharacterReader =>
             joinArray([
               (): CharacterReader =>
-                map(buildSequenceCharacterReader(node.body), (value) => {
-                  return {
-                    ...value,
-                    stack: [{ group: node, type: 'group' }, ...value.stack],
-                  };
-                }),
+                map(
+                  buildSequenceCharacterReader({
+                    caseInsensitive,
+                    nodes: node.body,
+                  }),
+                  (value) => {
+                    return {
+                      ...value,
+                      stack: [{ group: node, type: 'group' }, ...value.stack],
+                    };
+                  },
+                ),
               (): CharacterReader => buildEndReader(node.range[1]),
             ]),
           subType: node.behavior === 'lookahead' ? 'lookahead' : null,
@@ -84,12 +94,15 @@ export function buildGroupCharacterReader(
     }
     case 'ignore':
     case 'normal': {
-      return map(buildSequenceCharacterReader(node.body), (value) => {
-        return {
-          ...value,
-          stack: [{ group: node, type: 'group' }, ...value.stack],
-        };
-      });
+      return map(
+        buildSequenceCharacterReader({ caseInsensitive, nodes: node.body }),
+        (value) => {
+          return {
+            ...value,
+            stack: [{ group: node, type: 'group' }, ...value.stack],
+          };
+        },
+      );
     }
   }
 }

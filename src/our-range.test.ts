@@ -1,4 +1,4 @@
-import { intersectRanges, subtractRanges } from './our-range';
+import { createRanges, intersectRanges, subtractRanges } from './our-range';
 
 describe('OurRange', () => {
   describe('intersectRanges', () => {
@@ -43,6 +43,23 @@ describe('OurRange', () => {
         [3, 3],
       ]);
       expect(subtractRanges([0, 5], [2, 3])).toStrictEqual([
+        [0, 1],
+        [4, 5],
+      ]);
+    });
+  });
+
+  describe('createRanges', () => {
+    it('works', () => {
+      expect(createRanges(new Set())).toStrictEqual([]);
+      expect(createRanges(new Set([1]))).toStrictEqual([[1, 1]]);
+      expect(createRanges(new Set([1, 2]))).toStrictEqual([[1, 2]]);
+      expect(createRanges(new Set([1, 3]))).toStrictEqual([
+        [1, 1],
+        [3, 3],
+      ]);
+      expect(createRanges(new Set([1, 2, 3]))).toStrictEqual([[1, 3]]);
+      expect(createRanges(new Set([5, 4, 1, 0]))).toStrictEqual([
         [0, 1],
         [4, 5],
       ]);

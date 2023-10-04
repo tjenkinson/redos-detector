@@ -61,9 +61,13 @@ export function buildQuantifierTrail(
     .join(',');
 }
 
-export function buildQuantifierCharacterReader(
-  node: Quantifier<MyFeatures>,
-): CharacterReader {
+export function buildQuantifierCharacterReader({
+  caseInsensitive,
+  node,
+}: {
+  caseInsensitive: boolean;
+  node: Quantifier<MyFeatures>;
+}): CharacterReader {
   const { min, max = Infinity } = node;
   return joinArray([
     // always emit the null first so that we always emit something in cases where the loop is empty
@@ -87,7 +91,8 @@ export function buildQuantifierCharacterReader(
                       buildNullCharacterReader(node.body[0].range[0]),
                   ]
                 : []),
-              (): CharacterReader => buildCharacterReader(node.body[0]),
+              (): CharacterReader =>
+                buildCharacterReader({ caseInsensitive, node: node.body[0] }),
             ]),
             (value) => {
               const inInfinitePortion = i >= min && i >= 1 && max === Infinity;

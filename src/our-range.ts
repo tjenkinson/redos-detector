@@ -37,3 +37,23 @@ export function intersectRanges(
     shared,
   };
 }
+
+export function createRanges(set: Set<number>): OurRange[] {
+  const ascending = [...set].sort((a, b) => a - b);
+
+  const ranges: OurRange[] = [];
+  let startIndex = 0;
+
+  for (let i = 0; i < ascending.length; i++) {
+    const startValue = ascending[startIndex];
+    const currentValue = ascending[i];
+    const nextValue = i + 1 < ascending.length ? ascending[i + 1] : null;
+
+    if (nextValue === null || nextValue - startValue !== i - startIndex + 1) {
+      ranges.push([startValue, currentValue]);
+      startIndex = i + 1;
+    }
+  }
+
+  return ranges;
+}
