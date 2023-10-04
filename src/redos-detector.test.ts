@@ -416,6 +416,13 @@ describe('RedosDetector', () => {
         // atomic group workaround not detected because group not entire lookahead
         [/(?=(a{0,1})b)\1a?$/, false],
         [/(?=(a{0,1})b)\1a?$/, false],
+
+        // case insensitive
+        [/[a-z]?[A-Z]?$/i, false],
+        [/a?A?$/i, false],
+        [/[E-c]?d?$/i, true],
+        [/[E-c]?e?$/i, false],
+        [/[^a]?A?$/i, true],
       ];
 
       cases.forEach(([regex, expectNoBacktracks]) => {
@@ -554,13 +561,19 @@ describe('RedosDetector', () => {
     });
 
     it('throws if an unsupported flag is passed', () => {
-      expect(() => isSafe(/a/i)).toThrowError('Unsupported flag: i');
+      expect(() => isSafe(/a/m)).toThrowError('Unsupported flag: m');
     });
 
-    ['u', 'g', 's', 'y'].forEach((flag) => {
+    ['u', 'g', 's', 'y', 'i'].forEach((flag) => {
       it(`supports the "${flag}" flag`, () => {
         expect(() => isSafe(new RegExp('a', flag))).not.toThrowError();
       });
+    });
+
+    it('throws if `caseInsensitive` used with `unicode`', () => {
+      expect(() =>
+        isSafePattern(`a`, { caseInsensitive: true, unicode: true }),
+      ).toThrowError('`caseInsensitive` cannot be used with `unicode`.');
     });
 
     it('throws if the number of loops is above max safe integer', () => {

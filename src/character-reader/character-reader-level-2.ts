@@ -296,10 +296,15 @@ function* getGroupContentsReader({
  * `CharacterReaderLevel1` but replaces references with their
  * contents and includes the backreference stack.
  */
-export function buildCharacterReaderLevel2(
-  node: MyRootNode,
-  nodeExtra: NodeExtra,
-): CharacterReaderLevel2 {
+export function buildCharacterReaderLevel2({
+  caseInsensitive,
+  node,
+  nodeExtra,
+}: {
+  caseInsensitive: boolean;
+  node: MyRootNode;
+  nodeExtra: NodeExtra;
+}): CharacterReaderLevel2 {
   const startThread = function* (state: State): CharacterReaderLevel2 {
     outer: for (;;) {
       let {
@@ -567,7 +572,9 @@ export function buildCharacterReaderLevel2(
 
   return startThread({
     characterReader: buildForkableReader(
-      characterReaderLevel1ToInternalReader(buildCharacterReaderLevel1(node)),
+      characterReaderLevel1ToInternalReader(
+        buildCharacterReaderLevel1({ caseInsensitive, node }),
+      ),
     ),
     groupContentsStore: new Map(),
     groupsWithInfiniteSize: new Set(),

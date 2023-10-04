@@ -30,6 +30,7 @@ program
   .version(version)
   .command('check')
   .argument('<regex pattern>', 'the regex pattern')
+  .option('--caseInsensitive', 'enable case insensitive mode', false)
   .option('--unicode', 'enable unicode mode', false)
   .option(
     '--maxBacktracks <number>',
@@ -72,9 +73,11 @@ program
         maxSteps,
         resultsLimit,
         timeout,
+        caseInsensitive,
         unicode,
       }: {
         alwaysIncludeTrails: boolean;
+        caseInsensitive: boolean;
         disableDowngrade: boolean;
         json: boolean;
         maxBacktracks: number;
@@ -86,6 +89,7 @@ program
     ) => {
       try {
         const result = isSafePattern(pattern, {
+          caseInsensitive,
           downgradePattern: !disableDowngrade,
           maxBacktracks: coerceInfinity(maxBacktracks),
           maxSteps: coerceInfinity(maxSteps),
