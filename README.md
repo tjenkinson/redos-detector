@@ -169,7 +169,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
+$ npx redos-detector check "<regex pattern>" (--caseInsensitive) (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or
@@ -195,7 +195,7 @@ $ npm install redos-detector
 The following functions are provided:
 
 - `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
-- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
+- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
 
 ## Useful Resources
