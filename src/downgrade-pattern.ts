@@ -135,7 +135,6 @@ type Action = Readonly<{
   // it's impossible for it to be both
   atomicOrOptional: 'atomic' | 'optional' | null;
   group: CapturingGroup<MyFeatures>;
-  optional: boolean;
   reference: Reference;
 }>;
 
@@ -302,7 +301,6 @@ export function downgradePattern({
                   ? 'optional'
                   : null,
                 group,
-                optional: groupInLookahead && groupMayNotBeReached,
                 reference: node,
               });
             }
