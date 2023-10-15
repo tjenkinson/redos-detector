@@ -48,13 +48,7 @@ export function buildCharacterClassCharacterReader({
       case 'characterClassEscape': {
         const range = characterClassEscapeToRange(expression.value);
         if (range) {
-          characterGroups.ranges.push(
-            ...buildCodePointRanges({
-              caseInsensitive,
-              highCodePoint: range[1],
-              lowCodePoint: range[0],
-            }),
-          );
+          characterGroups.ranges.push(range);
         } else {
           characterGroups.characterClassEscapes.add(expression.value);
         }
