@@ -25,7 +25,7 @@ export function buildCodePointRanges({
   caseInsensitive: boolean;
   highCodePoint: number;
   lowCodePoint: number;
-}): OurRange[] {
+}): readonly OurRange[] {
   if (!caseInsensitive) {
     return [[lowCodePoint, highCodePoint]];
   }

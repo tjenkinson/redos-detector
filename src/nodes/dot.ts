@@ -7,10 +7,13 @@ import { Dot } from 'regjsparser';
 export function* buildDotCharacterReader(node: Dot): CharacterReader {
   yield {
     characterGroups: {
-      characterClassEscapes: new Set(),
-      dot: true,
-      negated: false,
-      ranges: [],
+      negated: true,
+      // [\n\r\u2028-\u2029]
+      ranges: [
+        [10, 10],
+        [13, 13],
+        [8232, 8233],
+      ],
       unicodePropertyEscapes: new Set(),
     },
     node,

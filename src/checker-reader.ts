@@ -326,7 +326,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     }
 
     const intersection = intersectCharacterGroups(
-      [leftValue, rightValue].map(({ characterGroups }) => characterGroups),
+      leftValue.characterGroups,
+      rightValue.characterGroups,
     );
 
     if (isEmptyCharacterGroups(intersection)) {

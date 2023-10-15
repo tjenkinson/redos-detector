@@ -1,11 +1,5 @@
 export type OurRange = readonly [number, number];
 
-export type RangeIntersection = Readonly<{
-  a: readonly OurRange[];
-  b: readonly OurRange[];
-  shared: OurRange;
-}>;
-
 export function subtractRanges(
   source: OurRange,
   toSubtract: OurRange,
@@ -20,25 +14,17 @@ export function subtractRanges(
   return res;
 }
 
-export function intersectRanges(
-  a: OurRange,
-  b: OurRange,
-): RangeIntersection | null {
+export function intersectRanges(a: OurRange, b: OurRange): OurRange | null {
   const startShared = Math.max(a[0], b[0]);
   const endShared = Math.min(a[1], b[1]);
   if (startShared > endShared) {
     return null;
   }
 
-  const shared: OurRange = [startShared, endShared];
-  return {
-    a: subtractRanges(a, shared),
-    b: subtractRanges(b, shared),
-    shared,
-  };
+  return [startShared, endShared];
 }
 
-export function createRanges(set: Set<number>): OurRange[] {
+export function createRanges(set: ReadonlySet<number>): readonly OurRange[] {
   const ascending = [...set].sort((a, b) => a - b);
 
   const ranges: OurRange[] = [];
@@ -56,4 +42,23 @@ export function createRanges(set: Set<number>): OurRange[] {
   }
 
   return ranges;
+}
+
+/* note input ranges must be sorted and not overlap */
+export function invertRanges(ranges: readonly OurRange[]): readonly OurRange[] {
+  const result: OurRange[] = [];
+
+  for (let i = 0; i < ranges.length + 1; i++) {
+    const prev = i - 1 >= 0 ? ranges[i - 1] : null;
+    const current = i < ranges.length ? ranges[i] : null;
+
+    const start = prev ? prev[1] + 1 : -Infinity;
+    const end = current ? current[0] - 1 : +Infinity;
+    if (start - end === 1) continue;
+    if (start > end) throw new Error('Internal error: invalid ranges input');
+
+    result.push([start, end]);
+  }
+
+  return result;
 }
