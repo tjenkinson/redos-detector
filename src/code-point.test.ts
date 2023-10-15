@@ -1,58 +1,83 @@
 import { buildCodePointRanges, toCodePoint } from './code-point';
 
+function cp(input: string): number {
+  const codePoint = toCodePoint(input);
+  if (codePoint === null) throw new Error('Did not map to one code point');
+  return codePoint;
+}
+
 describe('CodePoint', () => {
   describe('buildRanges', () => {
     it('works', () => {
       expect(
         buildCodePointRanges({
           caseInsensitive: true,
-          highCodePoint: toCodePoint('a'),
-          lowCodePoint: toCodePoint('a'),
+          highCodePoint: cp('a'),
+          lowCodePoint: cp('a'),
         }),
-      ).toStrictEqual([[toCodePoint('a'), toCodePoint('a')]]);
+      ).toStrictEqual([[cp('A'), cp('A')]]);
 
       expect(
         buildCodePointRanges({
           caseInsensitive: true,
-          highCodePoint: toCodePoint('a'),
-          lowCodePoint: toCodePoint('A'),
+          highCodePoint: cp('a'),
+          lowCodePoint: cp('A'),
         }),
-      ).toStrictEqual([[toCodePoint('['), toCodePoint('z')]]);
+      ).toStrictEqual([[cp('A'), cp('`')]]);
 
       expect(
         buildCodePointRanges({
           caseInsensitive: true,
-          highCodePoint: toCodePoint('a'),
-          lowCodePoint: toCodePoint('C'),
+          highCodePoint: cp('a'),
+          lowCodePoint: cp('C'),
         }),
       ).toStrictEqual([
-        [toCodePoint('['), toCodePoint('a')],
-        [toCodePoint('c'), toCodePoint('z')],
+        [cp('A'), cp('A')],
+        [cp('C'), cp('`')],
       ]);
 
       expect(
         buildCodePointRanges({
           caseInsensitive: true,
-          highCodePoint: toCodePoint(']'),
-          lowCodePoint: toCodePoint('['),
+          highCodePoint: cp(']'),
+          lowCodePoint: cp('['),
         }),
-      ).toStrictEqual([[toCodePoint('['), toCodePoint(']')]]);
+      ).toStrictEqual([[cp('['), cp(']')]]);
 
       expect(
         buildCodePointRanges({
           caseInsensitive: true,
-          highCodePoint: toCodePoint('}'),
-          lowCodePoint: toCodePoint('Z'),
+          highCodePoint: cp('}'),
+          lowCodePoint: cp('Z'),
         }),
-      ).toStrictEqual([[toCodePoint('['), toCodePoint('}')]]);
+      ).toStrictEqual([
+        [cp('A'), cp('`')],
+        [cp('{'), cp('}')],
+      ]);
 
       expect(
         buildCodePointRanges({
           caseInsensitive: false,
-          highCodePoint: toCodePoint('}'),
-          lowCodePoint: toCodePoint('Z'),
+          highCodePoint: cp('}'),
+          lowCodePoint: cp('Z'),
         }),
-      ).toStrictEqual([[toCodePoint('Z'), toCodePoint('}')]]);
+      ).toStrictEqual([[cp('Z'), cp('}')]]);
+
+      expect(
+        buildCodePointRanges({
+          caseInsensitive: true,
+          highCodePoint: cp('Ω'),
+          lowCodePoint: cp('Ω'),
+        }),
+      ).toStrictEqual([[cp('Ω'), cp('Ω')]]);
+
+      expect(
+        buildCodePointRanges({
+          caseInsensitive: true,
+          highCodePoint: cp('ß'),
+          lowCodePoint: cp('ß'),
+        }),
+      ).toStrictEqual([[cp('ß'), cp('ß')]]);
     });
   });
 });

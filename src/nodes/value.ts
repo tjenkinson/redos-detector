@@ -4,7 +4,7 @@ import {
   CharacterReaderValueGroups,
 } from '../character-reader/character-reader-level-0';
 import { buildArrayReader } from '../reader';
-import { toLowerCaseCodePoint } from '../code-point';
+import { toUpperCaseCodePoint } from '../code-point';
 import { Value } from 'regjsparser';
 
 export function codePointFromValue({
@@ -16,7 +16,7 @@ export function codePointFromValue({
 }): number {
   const codePoint = value.codePoint;
 
-  return caseInsensitive ? toLowerCaseCodePoint(codePoint) : codePoint;
+  return caseInsensitive ? toUpperCaseCodePoint(codePoint) : codePoint;
 }
 
 export function buildValueCharacterReader({
