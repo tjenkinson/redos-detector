@@ -1,4 +1,8 @@
 import {
+  characterClassEscapeToRange,
+  CharacterClassEscapeValue,
+} from './character-class-escape';
+import {
   CharacterReader,
   characterReaderTypeCharacterEntry,
   CharacterReaderValueGroups,
@@ -6,7 +10,6 @@ import {
 import { buildArrayReader } from '../reader';
 import { buildCodePointRanges } from '../code-point';
 import { CharacterClass } from 'regjsparser';
-import { characterClassEscapeToRange } from './character-class-escape';
 import { codePointFromValue } from './value';
 import { MutableCharacterGroups } from '../character-groups';
 
@@ -18,7 +21,6 @@ export function buildCharacterClassCharacterReader({
   node: CharacterClass;
 }): CharacterReader {
   const characterGroups: MutableCharacterGroups = {
-    characterClassEscapes: new Set(),
     dot: false,
     negated: !!node.negative,
     ranges: [],
@@ -46,12 +48,9 @@ export function buildCharacterClassCharacterReader({
         break;
       }
       case 'characterClassEscape': {
-        const range = characterClassEscapeToRange(expression.value);
-        if (range) {
-          characterGroups.ranges.push(range);
-        } else {
-          characterGroups.characterClassEscapes.add(expression.value);
-        }
+        const value = expression.value as CharacterClassEscapeValue;
+        const ranges = characterClassEscapeToRange(value);
+        characterGroups.ranges.push(...ranges);
         break;
       }
       case 'unicodePropertyEscape': {

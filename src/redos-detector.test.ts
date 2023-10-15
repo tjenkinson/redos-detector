@@ -93,7 +93,11 @@ describe('RedosDetector', () => {
         [/[^]+a*$/, false],
         [/\d+[0-9]*$/, false],
         [/[^\d]+[0-9]*$/, true],
-        [/[^\w]+a*$/, false],
+        [/\D+[0-9]*$/, true],
+        [/[\D\d]+[0-9]*$/, false],
+        [/[\D1]+[0-9]*$/, false],
+        [/\D+\d*$/, true],
+        [/[^\w]+a*$/, true],
         [/\w+a*$/, false],
         [/[\w]+a*$/, false],
         [/[\w]+[^\w]a*$/, true],
@@ -423,6 +427,37 @@ describe('RedosDetector', () => {
         [/[E-c]?d?$/i, true],
         [/[E-c]?e?$/i, false],
         [/[^a]?A?$/i, true],
+
+        // character class escape expansions
+        [/.?a?$/, false],
+        [/.?[\n\r\u2028\u2029]?$/, true],
+        [/.?[\n\r\u2028\u2029]?$/, true],
+        [/\d?[^0-9]?$/, true],
+        [/\d?[0-9]?$/, false],
+        [/\D?[0-9]?$/, true],
+        [/\D?[^0-9]?$/, false],
+        [/\w?[^A-Za-z0-9_]?$/, true],
+        [/\w?[A-Za-z0-9_]?$/, false],
+        [/\W?[A-Za-z0-9_]?$/, true],
+        [/\W?[^A-Za-z0-9_]?$/, false],
+        [
+          /\s?[^\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028-\u2029\u202f\u205f\u3000\ufeff]?$/,
+          true,
+        ],
+        [
+          /\s?[\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028-\u2029\u202f\u205f\u3000\ufeff]?$/,
+          false,
+        ],
+        [
+          /\S?[\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028-\u2029\u202f\u205f\u3000\ufeff]?$/,
+          true,
+        ],
+        [
+          /\S?[^\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028-\u2029\u202f\u205f\u3000\ufeff]?$/,
+          false,
+        ],
+        [/.?[\n\r\u2028-\u2029]?$/, true],
+        [/.?[^\n\r\u2028-\u2029]?$/, false],
       ];
 
       cases.forEach(([regex, expectNoBacktracks]) => {

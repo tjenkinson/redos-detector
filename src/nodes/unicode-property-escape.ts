@@ -12,8 +12,6 @@ export function buildUnicodePropertyEscapeCharacterReader(
   return buildArrayReader<CharacterReaderValueGroups>([
     {
       characterGroups: {
-        characterClassEscapes: new Set(),
-        dot: false,
         negated: node.negative,
         ranges: [],
         unicodePropertyEscapes: new Set([node.value]),
