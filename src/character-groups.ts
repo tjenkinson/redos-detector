@@ -136,13 +136,7 @@ function intersectTwoCharacterGroups(
         );
       } else {
         newNegated = true;
-        newRanges = [];
-        a.ranges.forEach((aRange) => {
-          b.ranges.forEach((bRange) => {
-            newRanges.push(aRange);
-            newRanges.push(bRange);
-          });
-        });
+        newRanges = [...a.ranges, ...b.ranges];
         newChracterClassEscapes = mergeSets(
           a.characterClassEscapes,
           b.characterClassEscapes,
