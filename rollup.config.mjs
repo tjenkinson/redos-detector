@@ -44,17 +44,23 @@ function buildConfig({ input, output, declaration = false }) {
         },
       },
     ].filter(Boolean),
-    onwarn: (e) => {
+    onLog: (level, log, handler) => {
       if (
-        e.code === 'CIRCULAR_DEPENDENCY' &&
+        log.code === 'CIRCULAR_DEPENDENCY' &&
         [
           path.resolve('src/nodes/quantifier.ts'),
           path.resolve('src/character-reader/character-reader-level-0.ts'),
-        ].includes(e.ids[0])
+        ].includes(log.ids[0])
       ) {
         return;
       }
-      throw new Error(e);
+
+      if (level === 'warn') {
+        // treat warnings as errors
+        handler('error', log);
+      } else {
+        handler(level, log);
+      }
     },
     output,
   };
