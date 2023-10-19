@@ -194,7 +194,7 @@ $ npm install redos-detector
 
 The following functions are provided:
 
-- `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). Currently the only supported flag is `u`.
+- `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). The `i` and `u` flags are supported.
 - `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
 
