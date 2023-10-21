@@ -226,13 +226,7 @@ export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
 export const defaultCaseInsensitive = false;
-const supportedJSFlags: ReadonlySet<string> = new Set([
-  'u',
-  'g',
-  's',
-  'y',
-  'i',
-]);
+const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 'y', 'i']);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
