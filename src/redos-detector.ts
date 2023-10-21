@@ -216,6 +216,10 @@ export type IsSafePatternConfig = IsSafeConfig & {
    */
   readonly caseInsensitive?: boolean;
   /**
+   * Enable dot-all mode, which allows `.` to match new lines.
+   */
+  readonly dotAll?: boolean;
+  /**
    * Enable unicode mode.
    */
   readonly unicode?: boolean;
@@ -226,7 +230,14 @@ export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
 export const defaultUnicode = false;
 export const defaultCaseInsensitive = false;
-const supportedJSFlags: ReadonlySet<string> = new Set(['u', 'g', 'y', 'i']);
+export const defaultDotAll = false;
+const supportedJSFlags: ReadonlySet<string> = new Set([
+  'u',
+  'g',
+  's',
+  'y',
+  'i',
+]);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -276,6 +287,7 @@ export function isSafePattern(
     maxSteps = defaultMaxSteps,
     timeout = defaultTimeout,
     caseInsensitive = defaultCaseInsensitive,
+    dotAll = defaultDotAll,
     unicode = defaultUnicode,
     downgradePattern = true,
   }: IsSafePatternConfig = {},
@@ -314,6 +326,7 @@ export function isSafePattern(
   const result = collectResults({
     atomicGroupOffsets,
     caseInsensitive,
+    dotAll,
     maxBacktracks,
     maxSteps,
     node: ast,
@@ -378,6 +391,7 @@ export function isSafe(
 ): RedosDetectorResult {
   let unicode = false;
   let caseInsensitive = false;
+  let dotAll = false;
   for (const flag of regexp.flags.split('')) {
     if (!supportedJSFlags.has(flag)) {
       throw new Error(`Unsupported flag: ${flag}`);
@@ -388,7 +402,15 @@ export function isSafe(
     if (flag === 'i') {
       caseInsensitive = true;
     }
+    if (flag === 's') {
+      dotAll = true;
+    }
   }
 
-  return isSafePattern(regexp.source, { ...config, caseInsensitive, unicode });
+  return isSafePattern(regexp.source, {
+    ...config,
+    caseInsensitive,
+    dotAll,
+    unicode,
+  });
 }

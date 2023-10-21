@@ -298,10 +298,12 @@ function* getGroupContentsReader({
  */
 export function buildCharacterReaderLevel2({
   caseInsensitive,
+  dotAll,
   node,
   nodeExtra,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: MyRootNode;
   nodeExtra: NodeExtra;
 }): CharacterReaderLevel2 {
@@ -573,7 +575,7 @@ export function buildCharacterReaderLevel2({
   return startThread({
     characterReader: buildForkableReader(
       characterReaderLevel1ToInternalReader(
-        buildCharacterReaderLevel1({ caseInsensitive, node }),
+        buildCharacterReaderLevel1({ caseInsensitive, dotAll, node }),
       ),
     ),
     groupContentsStore: new Map(),

@@ -428,6 +428,10 @@ describe('RedosDetector', () => {
         [/[E-c]?e?$/i, false],
         [/[^a]?A?$/i, true],
 
+        // dotAll
+        [/.?[\r\n\u2028-\u2029].?$/, true],
+        [/.?[\r\n\u2028-\u2029].?$/s, false],
+
         // character class escape expansions
         [/.?a?$/, false],
         [/.?[\n\r\u2028\u2029]?$/, true],
@@ -611,7 +615,7 @@ describe('RedosDetector', () => {
       expect(() => isSafe(/a/m)).toThrowError('Unsupported flag: m');
     });
 
-    ['u', 'g', 'y', 'i'].forEach((flag) => {
+    ['u', 'g', 's', 'y', 'i'].forEach((flag) => {
       it(`supports the "${flag}" flag`, () => {
         expect(() => isSafe(new RegExp('a', flag))).not.toThrowError();
       });

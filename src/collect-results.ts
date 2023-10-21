@@ -22,6 +22,7 @@ export type WalkerResult = Readonly<{
 export type CollectResultsInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
   caseInsensitive: boolean;
+  dotAll: boolean;
   maxBacktracks: number;
   maxSteps: number;
   node: MyRootNode;
@@ -35,18 +36,17 @@ export function collectResults({
   maxSteps,
   timeout,
   caseInsensitive,
+  dotAll,
 }: CollectResultsInput): WalkerResult {
   const nodeExtra = buildNodeExtra(node);
-  const leftStreamReader = buildCharacterReaderLevel3({
+  const input = {
     caseInsensitive,
+    dotAll,
     node,
     nodeExtra,
-  });
-  const rightStreamReader = buildCharacterReaderLevel3({
-    caseInsensitive,
-    node,
-    nodeExtra,
-  });
+  };
+  const leftStreamReader = buildCharacterReaderLevel3(input);
+  const rightStreamReader = buildCharacterReaderLevel3(input);
   const reader = buildCheckerReader({
     atomicGroupOffsets,
     leftStreamReader,

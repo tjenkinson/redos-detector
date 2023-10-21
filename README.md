@@ -159,6 +159,7 @@ The following options exist for both the library and CLI:
 
 - `caseInsensitive`: Enable case insensitive mode. _(Default: `false`)_
 - `unicode`: Enable unicode mode. _(Default: `false`)_
+- `dotAll`: Enable dot-all mode, which allows `.` to match new lines. _(Default: `false`)_
 - `maxBacktracks`: If worst case count of possible backtracks is above this number, the regex will be considered unsafe. _(Default: `200`)_
 - `maxSteps`: The maximum number of steps to make. Every time a new node is read from the pattern this counts as one step. If this limit is hit `error` will be `hitMaxSteps`. _(Default: `20000`)_
 - `timeout`: The maximum amount of time (ms) to spend processing. Once this time is passed the trails found so far will be returned, and the `error` will be `timeout`. _(Default: `Infinity`)_
@@ -169,7 +170,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--caseInsensitive) (--unicode) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
+$ npx redos-detector check "<regex pattern>" (--caseInsensitive) (--unicode) (--dotAll) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or
@@ -195,7 +196,7 @@ $ npm install redos-detector
 The following functions are provided:
 
 - `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). The `i` and `u` flags are supported.
-- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
+- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean, dotAll?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
 
 ## Useful Resources

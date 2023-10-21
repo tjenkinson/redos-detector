@@ -165,10 +165,12 @@ function* isReaderUnbounded(
  */
 export function buildCharacterReaderLevel3({
   caseInsensitive,
+  dotAll,
   node,
   nodeExtra,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: MyRootNode;
   nodeExtra: NodeExtra;
 }): CharacterReaderLevel3 {
@@ -227,7 +229,7 @@ export function buildCharacterReaderLevel3({
 
   return startThread(
     buildForkableReader(
-      buildCharacterReaderLevel2({ caseInsensitive, node, nodeExtra }),
+      buildCharacterReaderLevel2({ caseInsensitive, dotAll, node, nodeExtra }),
     ),
   );
 }

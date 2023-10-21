@@ -9,9 +9,11 @@ import { MyFeatures } from '../parse';
 
 export function buildDisjunctionCharacterReader({
   caseInsensitive,
+  dotAll,
   node,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: Disjunction<MyFeatures>;
 }): CharacterReader {
   return chainReaders([
@@ -19,7 +21,7 @@ export function buildDisjunctionCharacterReader({
       node.body.slice(0, -1).map((part) => {
         return {
           reader: (): CharacterReader =>
-            buildCharacterReader({ caseInsensitive, node: part }),
+            buildCharacterReader({ caseInsensitive, dotAll, node: part }),
           subType: null,
           type: characterReaderTypeSplit,
         };
@@ -27,6 +29,7 @@ export function buildDisjunctionCharacterReader({
     ),
     buildCharacterReader({
       caseInsensitive,
+      dotAll,
       node: node.body[node.body.length - 1],
     }),
   ]);
