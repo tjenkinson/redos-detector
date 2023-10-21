@@ -77,9 +77,11 @@ export type CharacterReader = Reader<CharacterReaderValue>;
 
 export function buildCharacterReader({
   caseInsensitive,
+  dotAll,
   node,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: MyRootNode;
 }): CharacterReader {
   switch (node.type) {
@@ -96,17 +98,18 @@ export function buildCharacterReader({
     case 'value':
       return buildValueCharacterReader({ caseInsensitive, node });
     case 'dot':
-      return buildDotCharacterReader(node);
+      return buildDotCharacterReader({ dotAll, node });
     case 'alternative':
       return buildSequenceCharacterReader({
         caseInsensitive,
+        dotAll,
         nodes: node.body,
       });
     case 'disjunction':
-      return buildDisjunctionCharacterReader({ caseInsensitive, node });
+      return buildDisjunctionCharacterReader({ caseInsensitive, dotAll, node });
     case 'group':
-      return buildGroupCharacterReader({ caseInsensitive, node });
+      return buildGroupCharacterReader({ caseInsensitive, dotAll, node });
     case 'quantifier':
-      return buildQuantifierCharacterReader({ caseInsensitive, node });
+      return buildQuantifierCharacterReader({ caseInsensitive, dotAll, node });
   }
 }

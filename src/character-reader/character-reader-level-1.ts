@@ -96,9 +96,11 @@ export type CharacterReaderLevel1 = Reader<
  */
 export function buildCharacterReaderLevel1({
   caseInsensitive,
+  dotAll,
   node,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: MyRootNode;
 }): CharacterReaderLevel1 {
   const startThread = function* (
@@ -172,5 +174,8 @@ export function buildCharacterReaderLevel1({
     return { bounded: false, preceedingZeroWidthEntries };
   };
 
-  return startThread(buildCharacterReader({ caseInsensitive, node }), []);
+  return startThread(
+    buildCharacterReader({ caseInsensitive, dotAll, node }),
+    [],
+  );
 }

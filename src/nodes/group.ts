@@ -58,9 +58,11 @@ export function getLookaheadStack(stack: Stack): LookaheadStack {
 
 export function buildGroupCharacterReader({
   caseInsensitive,
+  dotAll,
   node,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: Group<MyFeatures>;
 }): CharacterReader {
   switch (node.behavior) {
@@ -76,6 +78,7 @@ export function buildGroupCharacterReader({
                 map(
                   buildSequenceCharacterReader({
                     caseInsensitive,
+                    dotAll,
                     nodes: node.body,
                   }),
                   (value) => {
@@ -95,7 +98,11 @@ export function buildGroupCharacterReader({
     case 'ignore':
     case 'normal': {
       return map(
-        buildSequenceCharacterReader({ caseInsensitive, nodes: node.body }),
+        buildSequenceCharacterReader({
+          caseInsensitive,
+          dotAll,
+          nodes: node.body,
+        }),
         (value) => {
           return {
             ...value,

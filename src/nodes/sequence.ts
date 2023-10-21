@@ -7,15 +7,17 @@ import { MyRootNode } from '../parse';
 
 export function buildSequenceCharacterReader({
   caseInsensitive,
+  dotAll,
   nodes,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   nodes: readonly MyRootNode[];
 }): CharacterReader {
   return joinArray(
     nodes.map((node) => {
       return (): CharacterReader =>
-        buildCharacterReader({ caseInsensitive, node });
+        buildCharacterReader({ caseInsensitive, dotAll, node });
     }),
   );
 }

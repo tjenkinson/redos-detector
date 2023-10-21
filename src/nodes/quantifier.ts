@@ -63,9 +63,11 @@ export function buildQuantifierTrail(
 
 export function buildQuantifierCharacterReader({
   caseInsensitive,
+  dotAll,
   node,
 }: {
   caseInsensitive: boolean;
+  dotAll: boolean;
   node: Quantifier<MyFeatures>;
 }): CharacterReader {
   const { min, max = Infinity } = node;
@@ -92,7 +94,11 @@ export function buildQuantifierCharacterReader({
                   ]
                 : []),
               (): CharacterReader =>
-                buildCharacterReader({ caseInsensitive, node: node.body[0] }),
+                buildCharacterReader({
+                  caseInsensitive,
+                  dotAll,
+                  node: node.body[0],
+                }),
             ]),
             (value) => {
               const inInfinitePortion = i >= min && i >= 1 && max === Infinity;
