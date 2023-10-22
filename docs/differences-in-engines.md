@@ -1,6 +1,6 @@
 # Differences In Engines
 
-Different regex engines behave in differeent ways.
+Different regex engines behave in different ways.
 
 ## Example 1
 
