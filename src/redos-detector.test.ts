@@ -571,6 +571,18 @@ describe('RedosDetector', () => {
       expect(res.error).toBe('stackOverflow');
     });
 
+    it('returns the `stackOverflow` error if too much branching checking if reader is bounded', () => {
+      const res = isSafePattern(`a(${'|'.repeat(999)})$`, {
+        maxSteps: Infinity,
+      });
+      expect(res.error).toBe('stackOverflow');
+    });
+
+    it('returns the `hitMaxSteps` error if too many steps checking if reader is bounded', () => {
+      const res = isSafePattern(`a(${'|'.repeat(141)})$`);
+      expect(res.error).toBe('hitMaxSteps');
+    });
+
     it('throws if `maxBacktracks` not positive or 0', () => {
       expect(() =>
         isSafe(/a/, {
