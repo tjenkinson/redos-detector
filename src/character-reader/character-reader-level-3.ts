@@ -26,6 +26,7 @@ import { CharacterReaderValueSplitSubType } from './character-reader-level-0';
 import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
+import { once } from '../once';
 import { QuantifierStack } from '../nodes/quantifier';
 import { ZeroWidthEntry } from './character-reader-level-1';
 
@@ -35,6 +36,14 @@ export const characterReaderLevel3TypeSplit: unique symbol = Symbol(
 
 export const characterReaderLevel3TypeEntry: unique symbol = Symbol(
   'characterReaderLevel3TypeEntry',
+);
+
+export const characterReaderLevel3TypeStack: unique symbol = Symbol(
+  'characterReaderLevel3TypeStack',
+);
+
+export const characterReaderLevel3TypeStep: unique symbol = Symbol(
+  'characterReaderLevel3TypeStep',
 );
 
 export type CharacterReaderLevel3ValueSplit = {
@@ -64,8 +73,20 @@ export type CharacterReaderLevel3ValueEntry = Readonly<{
   unbounded: boolean;
 }>;
 
+export type CharacterReaderLevel3ValueStack = {
+  increase: number;
+  type: typeof characterReaderLevel3TypeStack;
+};
+
+export type CharacterReaderLevel3ValueStep = {
+  type: typeof characterReaderLevel3TypeStep;
+};
+
 export type CharacterReaderLevel3Value = Readonly<
-  CharacterReaderLevel3ValueEntry | CharacterReaderLevel3ValueSplit
+  | CharacterReaderLevel3ValueEntry
+  | CharacterReaderLevel3ValueSplit
+  | CharacterReaderLevel3ValueStack
+  | CharacterReaderLevel3ValueStep
 >;
 export type CharacterReaderLevel3ReturnValue = CharacterReaderLevel2ReturnValue;
 export type CharacterReaderLevel3 = Reader<
@@ -73,26 +94,69 @@ export type CharacterReaderLevel3 = Reader<
   CharacterReaderLevel3ReturnValue
 >;
 
-function isReaderAtEnd(
-  reader: ForkableReader<
+type StackFrame = Readonly<{
+  get: () => ReaderResult<
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
+  >;
+  reader: CharacterReaderLevel2;
+}>;
+
+function* isReaderUnbounded(
+  inputReader: ForkableReader<
     CharacterReaderLevel2Value,
     CharacterReaderLevel2ReturnValue
   >,
-): boolean {
-  const isAtEndUnbounded = (innerReader: CharacterReaderLevel2): boolean => {
-    const next = innerReader.next();
-    if (next.done) {
-      return next.value.type === 'end' && !next.value.bounded;
-    }
-    if (next.value.type === characterReaderLevel2TypeSplit) {
-      return (
-        isAtEndUnbounded(next.value.reader()) || isAtEndUnbounded(innerReader)
-      );
-    }
-    return false;
+): Reader<
+  CharacterReaderLevel3ValueStack | CharacterReaderLevel3ValueStep,
+  boolean
+> {
+  const reader = fork(inputReader);
+
+  const stack: StackFrame[] = [{ get: once(() => reader.next()), reader }];
+  yield {
+    increase: 1,
+    type: characterReaderLevel3TypeStack,
   };
 
-  return isAtEndUnbounded(fork(reader));
+  for (;;) {
+    const frame = stack.pop();
+    if (!frame) break;
+    yield {
+      increase: -1,
+      type: characterReaderLevel3TypeStack,
+    };
+
+    const next = frame.get();
+    if (next.done && next.value.type === 'end' && !next.value.bounded) {
+      yield {
+        type: characterReaderLevel3TypeStep,
+      };
+      yield {
+        increase: -1 * stack.length,
+        type: characterReaderLevel3TypeStack,
+      };
+      return true;
+    }
+
+    if (next.value.type === characterReaderLevel2TypeSplit) {
+      const value = next.value;
+      const splitReader = value.reader();
+      stack.push({
+        get: once(() => splitReader.next()),
+        reader: splitReader,
+      });
+      stack.push({
+        get: once(() => frame.reader.next()),
+        reader: frame.reader,
+      });
+      yield {
+        increase: 2,
+        type: characterReaderLevel3TypeStack,
+      };
+    }
+  }
+  return false;
 }
 
 /**
@@ -121,7 +185,28 @@ export function buildCharacterReaderLevel3({
     while (!(next = reader.next()).done) {
       const value = next.value;
       switch (value.type) {
+        case characterReaderLevel2TypeSplit: {
+          yield {
+            reader: (): CharacterReaderLevel3 =>
+              startThread(buildForkableReader(value.reader())),
+            subType: value.subType,
+            type: characterReaderLevel3TypeSplit,
+          };
+          break;
+        }
         case characterReaderLevel2TypeEntry: {
+          const unboundedCheckReader = isReaderUnbounded(reader);
+          let unbounded: boolean;
+          for (;;) {
+            const unboundedCheckReaderNext = unboundedCheckReader.next();
+            if (unboundedCheckReaderNext.done) {
+              unbounded = unboundedCheckReaderNext.value;
+              break;
+            } else {
+              yield unboundedCheckReaderNext.value;
+            }
+          }
+
           yield {
             backreferenceStack: value.backreferenceStack,
             characterGroups: value.characterGroups,
@@ -131,16 +216,7 @@ export function buildCharacterReaderLevel3({
             preceedingZeroWidthEntries: value.preceedingZeroWidthEntries,
             quantifierStack: value.quantifierStack,
             type: characterReaderLevel3TypeEntry,
-            unbounded: isReaderAtEnd(reader),
-          };
-          break;
-        }
-        case characterReaderLevel2TypeSplit: {
-          yield {
-            reader: (): CharacterReaderLevel3 =>
-              startThread(buildForkableReader(value.reader())),
-            subType: value.subType,
-            type: characterReaderLevel3TypeSplit,
+            unbounded,
           };
           break;
         }

@@ -26,7 +26,10 @@ import {
 import {
   CharacterReaderLevel3,
   CharacterReaderLevel3ReturnValue,
+  characterReaderLevel3TypeEntry,
   characterReaderLevel3TypeSplit,
+  characterReaderLevel3TypeStack,
+  characterReaderLevel3TypeStep,
   CharacterReaderLevel3Value,
 } from './character-reader/character-reader-level-3';
 import { BackReferenceStack } from './character-reader/character-reader-level-2';
@@ -164,11 +167,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       trail: [],
     },
   ];
+  let additionalStackSize = 0;
 
   outer: for (;;) {
     timedOut = Date.now() > latestEndTime;
-    stackOverflow = stack.length > stackOverflowLimit;
-    if (timedOut || stackOverflow) {
+    stackOverflow = stack.length + additionalStackSize > stackOverflowLimit;
+    if (timedOut || stackOverflow || stepCount > input.maxSteps) {
       break;
     }
 
@@ -219,6 +223,30 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           trail,
         });
         continue outer;
+      } else if (
+        result.value.type === characterReaderLevel3TypeStack ||
+        result.value.type === characterReaderLevel3TypeStep
+      ) {
+        switch (result.value.type) {
+          case characterReaderLevel3TypeStack:
+            additionalStackSize += result.value.increase;
+            break;
+          case characterReaderLevel3TypeStep:
+            stepCount++;
+            break;
+        }
+
+        stack.push({
+          infiniteLoopTracker,
+          streamReadersWithGetters: streamReadersWithGetters.map(
+            ({ reader, get }, j) => ({
+              get: j === i ? once(() => reader.next()) : get,
+              reader,
+            }),
+          ),
+          trail,
+        });
+        continue outer;
       } else {
         nextValues.push(result);
       }
@@ -236,8 +264,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     /* istanbul ignore next */
     if (
-      leftNextValue.value.type === characterReaderLevel3TypeSplit ||
-      rightNextValue.value.type === characterReaderLevel3TypeSplit
+      leftNextValue.value.type !== characterReaderLevel3TypeEntry ||
+      rightNextValue.value.type !== characterReaderLevel3TypeEntry
     ) {
       throw new Error('Internal error: impossible leftValue/rightValue type');
     }
