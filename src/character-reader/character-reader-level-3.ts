@@ -42,10 +42,6 @@ export const characterReaderLevel3TypeStack: unique symbol = Symbol(
   'characterReaderLevel3TypeStack',
 );
 
-export const characterReaderLevel3TypeStep: unique symbol = Symbol(
-  'characterReaderLevel3TypeStep',
-);
-
 export type CharacterReaderLevel3ValueSplit = {
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel3;
@@ -78,15 +74,10 @@ export type CharacterReaderLevel3ValueStack = {
   type: typeof characterReaderLevel3TypeStack;
 };
 
-export type CharacterReaderLevel3ValueStep = {
-  type: typeof characterReaderLevel3TypeStep;
-};
-
 export type CharacterReaderLevel3Value = Readonly<
   | CharacterReaderLevel3ValueEntry
   | CharacterReaderLevel3ValueSplit
   | CharacterReaderLevel3ValueStack
-  | CharacterReaderLevel3ValueStep
 >;
 export type CharacterReaderLevel3ReturnValue = CharacterReaderLevel2ReturnValue;
 export type CharacterReaderLevel3 = Reader<
@@ -107,10 +98,7 @@ function* isReaderUnbounded(
     CharacterReaderLevel2Value,
     CharacterReaderLevel2ReturnValue
   >,
-): Reader<
-  CharacterReaderLevel3ValueStack | CharacterReaderLevel3ValueStep,
-  boolean
-> {
+): Reader<CharacterReaderLevel3ValueStack, boolean> {
   const reader = fork(inputReader);
 
   const stack: StackFrame[] = [{ get: once(() => reader.next()), reader }];
@@ -128,32 +116,31 @@ function* isReaderUnbounded(
     };
 
     const next = frame.get();
-    if (next.done && next.value.type === 'end' && !next.value.bounded) {
-      yield {
-        type: characterReaderLevel3TypeStep,
-      };
-      yield {
-        increase: -1 * stack.length,
-        type: characterReaderLevel3TypeStack,
-      };
-      return true;
-    }
-
-    if (next.value.type === characterReaderLevel2TypeSplit) {
-      const value = next.value;
-      const splitReader = value.reader();
-      stack.push({
-        get: once(() => splitReader.next()),
-        reader: splitReader,
-      });
-      stack.push({
-        get: once(() => frame.reader.next()),
-        reader: frame.reader,
-      });
-      yield {
-        increase: 2,
-        type: characterReaderLevel3TypeStack,
-      };
+    if (next.done) {
+      if (next.value.type === 'end' && !next.value.bounded) {
+        yield {
+          increase: -1 * stack.length,
+          type: characterReaderLevel3TypeStack,
+        };
+        return true;
+      }
+    } else {
+      if (next.value.type === characterReaderLevel2TypeSplit) {
+        const value = next.value;
+        const splitReader = value.reader();
+        stack.push({
+          get: once(() => splitReader.next()),
+          reader: splitReader,
+        });
+        stack.push({
+          get: once(() => frame.reader.next()),
+          reader: frame.reader,
+        });
+        yield {
+          increase: 2,
+          type: characterReaderLevel3TypeStack,
+        };
+      }
     }
   }
   return false;

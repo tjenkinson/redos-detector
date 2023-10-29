@@ -29,7 +29,6 @@ import {
   characterReaderLevel3TypeEntry,
   characterReaderLevel3TypeSplit,
   characterReaderLevel3TypeStack,
-  characterReaderLevel3TypeStep,
   CharacterReaderLevel3Value,
 } from './character-reader/character-reader-level-3';
 import { BackReferenceStack } from './character-reader/character-reader-level-2';
@@ -223,19 +222,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           trail,
         });
         continue outer;
-      } else if (
-        result.value.type === characterReaderLevel3TypeStack ||
-        result.value.type === characterReaderLevel3TypeStep
-      ) {
-        switch (result.value.type) {
-          case characterReaderLevel3TypeStack:
-            additionalStackSize += result.value.increase;
-            break;
-          case characterReaderLevel3TypeStep:
-            stepCount++;
-            break;
-        }
-
+      } else if (result.value.type === characterReaderLevel3TypeStack) {
+        additionalStackSize += result.value.increase;
         stack.push({
           infiniteLoopTracker,
           streamReadersWithGetters: streamReadersWithGetters.map(
