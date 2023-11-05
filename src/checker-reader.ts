@@ -28,10 +28,12 @@ import {
   CharacterReaderLevel3ReturnValue,
   characterReaderLevel3TypeEntry,
   characterReaderLevel3TypeSplit,
-  characterReaderLevel3UnboundedReaderTypeStack,
-  CharacterReaderLevel3UnboundReaderValue,
   CharacterReaderLevel3Value,
 } from './character-reader/character-reader-level-3';
+import {
+  isUnboundedReaderTypeStack,
+  IsUnboundReaderValue,
+} from './is-unbounded-reader';
 import { BackReferenceStack } from './character-reader/character-reader-level-2';
 import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
@@ -386,14 +388,14 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         let additionalStackSize = 0;
         const leftUnboundedReader = leftValue.isReaderUnbounded();
         let leftUnboundedCheckReaderNext: ReaderResult<
-          CharacterReaderLevel3UnboundReaderValue,
+          IsUnboundReaderValue,
           boolean
         >;
         while (
           !(leftUnboundedCheckReaderNext = leftUnboundedReader.next()).done
         ) {
           switch (leftUnboundedCheckReaderNext.value.type) {
-            case characterReaderLevel3UnboundedReaderTypeStack: {
+            case isUnboundedReaderTypeStack: {
               additionalStackSize +=
                 leftUnboundedCheckReaderNext.value.increase;
               /* istanbul ignore next */
@@ -414,14 +416,14 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         let additionalStackSize = 0;
         const rightUnboundedReader = rightValue.isReaderUnbounded();
         let rightUnboundedCheckReaderNext: ReaderResult<
-          CharacterReaderLevel3UnboundReaderValue,
+          IsUnboundReaderValue,
           boolean
         >;
         while (
           !(rightUnboundedCheckReaderNext = rightUnboundedReader.next()).done
         ) {
           switch (rightUnboundedCheckReaderNext.value.type) {
-            case characterReaderLevel3UnboundedReaderTypeStack: {
+            case isUnboundedReaderTypeStack: {
               additionalStackSize +=
                 rightUnboundedCheckReaderNext.value.increase;
               /* istanbul ignore next */
