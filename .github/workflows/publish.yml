@@ -21,7 +21,7 @@ jobs:
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: set version
