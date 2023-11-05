@@ -17,9 +17,9 @@ export type IsUnboundedReaderValueStack = {
   type: typeof isUnboundedReaderTypeStack;
 };
 
-export type IsUnboundReaderValue = Readonly<IsUnboundedReaderValueStack>;
+export type IsUnboundedReaderValue = Readonly<IsUnboundedReaderValueStack>;
 
-export type IsUnboundedReader = Reader<IsUnboundReaderValue, boolean>;
+export type IsUnboundedReader = Reader<IsUnboundedReaderValue, boolean>;
 
 type StackFrame = Readonly<{
   get: () => ReaderResult<
