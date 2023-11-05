@@ -8,6 +8,14 @@ import {
   Value,
 } from 'regjsparser';
 import {
+  BackReferenceStack,
+  CharacterReaderLevel2,
+  CharacterReaderLevel2ReturnValue,
+  characterReaderLevel2TypeEntry,
+  characterReaderLevel2TypeSplit,
+  CharacterReaderLevel2Value,
+} from './character-reader/character-reader-level-2';
+import {
   buildForkableReader,
   ForkableReader,
   Reader,
@@ -24,17 +32,10 @@ import {
   isEmptyCharacterGroups,
 } from './character-groups';
 import {
-  CharacterReaderLevel3,
-  CharacterReaderLevel3ReturnValue,
-  characterReaderLevel3TypeEntry,
-  characterReaderLevel3TypeSplit,
-  CharacterReaderLevel3Value,
-} from './character-reader/character-reader-level-3';
-import {
+  isUnboundedReader,
   isUnboundedReaderTypeStack,
   IsUnboundReaderValue,
 } from './is-unbounded-reader';
-import { BackReferenceStack } from './character-reader/character-reader-level-2';
 import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
@@ -44,9 +45,9 @@ import { SidesEqualChecker } from './sides-equal-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
-  leftStreamReader: CharacterReaderLevel3;
+  leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
-  rightStreamReader: CharacterReaderLevel3;
+  rightStreamReader: CharacterReaderLevel2;
   timeout: number;
 }>;
 
@@ -113,12 +114,12 @@ type NodeWithQuantifierTrail = Readonly<{
 
 type ReaderWithGetter = Readonly<{
   get: () => ReaderResult<
-    CharacterReaderLevel3Value,
-    CharacterReaderLevel3ReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
   reader: ForkableReader<
-    CharacterReaderLevel3Value,
-    CharacterReaderLevel3ReturnValue
+    CharacterReaderLevel2Value,
+    CharacterReaderLevel2ReturnValue
   >;
 }>;
 
@@ -135,7 +136,7 @@ const isNodeWithQuantifierTrailEqual = (
   left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
- * Takes a left and right `CharacterReaderLevel3` and runs them against each other.
+ * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
  *
  * Emits a trail when left and right differ, as it means there are 2 different ways of matching the same
  * trail up to that point.
@@ -184,15 +185,15 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     let { infiniteLoopTracker, trail } = entry;
 
     const nextValues: ReaderResult<
-      CharacterReaderLevel3Value,
-      CharacterReaderLevel3ReturnValue
+      CharacterReaderLevel2Value,
+      CharacterReaderLevel2ReturnValue
     >[] = [];
 
     for (let i = 0; i < streamReadersWithGetters.length; i++) {
       const result = streamReadersWithGetters[i].get();
       if (
         !result.done &&
-        result.value.type === characterReaderLevel3TypeSplit
+        result.value.type === characterReaderLevel2TypeSplit
       ) {
         const value = result.value;
 
@@ -241,8 +242,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     /* istanbul ignore next */
     if (
-      leftNextValue.value.type !== characterReaderLevel3TypeEntry ||
-      rightNextValue.value.type !== characterReaderLevel3TypeEntry
+      leftNextValue.value.type !== characterReaderLevel2TypeEntry ||
+      rightNextValue.value.type !== characterReaderLevel2TypeEntry
     ) {
       throw new Error('Internal error: impossible leftValue/rightValue type');
     }
@@ -386,7 +387,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       let leftUnbounded: boolean;
       {
         let additionalStackSize = 0;
-        const leftUnboundedReader = leftValue.isReaderUnbounded();
+        const leftUnboundedReader = isUnboundedReader(
+          fork(streamReadersWithGetters[0].reader),
+        );
         let leftUnboundedCheckReaderNext: ReaderResult<
           IsUnboundReaderValue,
           boolean
@@ -414,7 +417,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         leftAndRightUnbounded = false;
       } else {
         let additionalStackSize = 0;
-        const rightUnboundedReader = rightValue.isReaderUnbounded();
+        const rightUnboundedReader = isUnboundedReader(
+          fork(streamReadersWithGetters[1].reader),
+        );
         let rightUnboundedCheckReaderNext: ReaderResult<
           IsUnboundReaderValue,
           boolean
