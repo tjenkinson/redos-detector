@@ -20,10 +20,10 @@ jobs:
         run: >
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
-      - name: Use Node.js 18
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version-file: '.node-version'
       - name: set version
         run: |
           npm version --no-git-tag-version "$TAG"
