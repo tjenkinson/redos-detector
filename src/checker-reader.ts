@@ -28,7 +28,8 @@ import {
   CharacterReaderLevel3ReturnValue,
   characterReaderLevel3TypeEntry,
   characterReaderLevel3TypeSplit,
-  characterReaderLevel3TypeStack,
+  characterReaderLevel3UnboundedReaderTypeStack,
+  CharacterReaderLevel3UnboundReaderValue,
   CharacterReaderLevel3Value,
 } from './character-reader/character-reader-level-3';
 import { BackReferenceStack } from './character-reader/character-reader-level-2';
@@ -166,11 +167,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       trail: [],
     },
   ];
-  let additionalStackSize = 0;
 
   outer: for (;;) {
     timedOut = Date.now() > latestEndTime;
-    stackOverflow = stack.length + additionalStackSize > stackOverflowLimit;
+    stackOverflow = stack.length > stackOverflowLimit;
     if (timedOut || stackOverflow || stepCount > input.maxSteps) {
       break;
     }
@@ -219,19 +219,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         stack.push({
           infiniteLoopTracker: infiniteLoopTracker.clone(),
           streamReadersWithGetters: newStreamReadersWithGetters,
-          trail,
-        });
-        continue outer;
-      } else if (result.value.type === characterReaderLevel3TypeStack) {
-        additionalStackSize += result.value.increase;
-        stack.push({
-          infiniteLoopTracker,
-          streamReadersWithGetters: streamReadersWithGetters.map(
-            ({ reader, get }, j) => ({
-              get: j === i ? once(() => reader.next()) : get,
-              reader,
-            }),
-          ),
           trail,
         });
         continue outer;
@@ -383,13 +370,79 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     trail = [...trail, newEntry];
 
-    if (
+    let backtrackPossible: boolean;
+
+    const sidesEqual = sidesEqualChecker.areSidesEqual(
+      newEntry.left,
+      newEntry.right,
+    );
+
+    if (sidesEqual) {
+      backtrackPossible = false;
+    } else {
+      let leftAndRightUnbounded: boolean;
+      let leftUnbounded: boolean;
+      {
+        let additionalStackSize = 0;
+        const leftUnboundedReader = leftValue.isReaderUnbounded();
+        let leftUnboundedCheckReaderNext: ReaderResult<
+          CharacterReaderLevel3UnboundReaderValue,
+          boolean
+        >;
+        while (
+          !(leftUnboundedCheckReaderNext = leftUnboundedReader.next()).done
+        ) {
+          switch (leftUnboundedCheckReaderNext.value.type) {
+            case characterReaderLevel3UnboundedReaderTypeStack: {
+              additionalStackSize +=
+                leftUnboundedCheckReaderNext.value.increase;
+              /* istanbul ignore next */
+              if (stack.length + additionalStackSize > stackOverflowLimit) {
+                stackOverflow = true;
+                break outer;
+              }
+            }
+          }
+        }
+
+        leftUnbounded = leftUnboundedCheckReaderNext.value;
+      }
+
+      if (!leftUnbounded) {
+        leftAndRightUnbounded = false;
+      } else {
+        let additionalStackSize = 0;
+        const rightUnboundedReader = rightValue.isReaderUnbounded();
+        let rightUnboundedCheckReaderNext: ReaderResult<
+          CharacterReaderLevel3UnboundReaderValue,
+          boolean
+        >;
+        while (
+          !(rightUnboundedCheckReaderNext = rightUnboundedReader.next()).done
+        ) {
+          switch (rightUnboundedCheckReaderNext.value.type) {
+            case characterReaderLevel3UnboundedReaderTypeStack: {
+              additionalStackSize +=
+                rightUnboundedCheckReaderNext.value.increase;
+              /* istanbul ignore next */
+              if (stack.length + additionalStackSize > stackOverflowLimit) {
+                stackOverflow = true;
+                break outer;
+              }
+            }
+          }
+        }
+        const rightUnbounded = rightUnboundedCheckReaderNext.value;
+        leftAndRightUnbounded = rightUnbounded;
+      }
+
       // if both sides are unbounded then it means a backtrack won't occur
       // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
       // so don't emit the trail
-      (!leftValue.unbounded || !rightValue.unbounded) &&
-      !sidesEqualChecker.areSidesEqual(newEntry.left, newEntry.right)
-    ) {
+      backtrackPossible = !leftAndRightUnbounded;
+    }
+
+    if (backtrackPossible) {
       const shouldSendTrail = (): boolean => {
         if (!trails.has(trail)) {
           const alreadyExists = [...trails].some((existingTrail) => {
@@ -433,6 +486,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         yield { trail, type: checkerReaderTypeTrail };
       }
     }
+
     stack.push({
       infiniteLoopTracker,
       streamReadersWithGetters: streamReadersWithGetters.map(({ reader }) => ({
