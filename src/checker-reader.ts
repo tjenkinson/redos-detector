@@ -34,7 +34,7 @@ import {
 import {
   isUnboundedReader,
   isUnboundedReaderTypeStack,
-  IsUnboundReaderValue,
+  IsUnboundedReaderValue,
 } from './is-unbounded-reader';
 import { fork } from 'forkable-iterator';
 import { InfiniteLoopTracker } from './infinite-loop-tracker';
@@ -391,7 +391,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           fork(streamReadersWithGetters[0].reader),
         );
         let leftUnboundedCheckReaderNext: ReaderResult<
-          IsUnboundReaderValue,
+          IsUnboundedReaderValue,
           boolean
         >;
         while (
@@ -421,7 +421,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           fork(streamReadersWithGetters[1].reader),
         );
         let rightUnboundedCheckReaderNext: ReaderResult<
-          IsUnboundReaderValue,
+          IsUnboundedReaderValue,
           boolean
         >;
         while (
