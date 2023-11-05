@@ -1,7 +1,6 @@
 import {
   BackReferenceStack,
   buildCharacterReaderLevel2,
-  CharacterReaderLevel2,
   CharacterReaderLevel2ReturnValue,
   characterReaderLevel2TypeEntry,
   characterReaderLevel2TypeSplit,
@@ -21,12 +20,12 @@ import {
   Value,
 } from 'regjsparser';
 import { Groups, LookaheadStack } from '../nodes/group';
+import { isUnboundedReader, IsUnboundedReader } from '../is-unbounded-reader';
 import { CharacterGroups } from '../character-groups';
 import { CharacterReaderValueSplitSubType } from './character-reader-level-0';
 import { fork } from 'forkable-iterator';
 import { MyRootNode } from '../parse';
 import { NodeExtra } from '../node-extra';
-import { once } from '../once';
 import { QuantifierStack } from '../nodes/quantifier';
 import { ZeroWidthEntry } from './character-reader-level-1';
 
@@ -45,22 +44,6 @@ export type CharacterReaderLevel3ValueSplit = {
   type: typeof characterReaderLevel3TypeSplit;
 };
 
-export const characterReaderLevel3UnboundedReaderTypeStack: unique symbol =
-  Symbol('characterReaderLevel3UnboundedReaderTypeStack');
-
-export type CharacterReaderLevel3UnboundedReaderValueStack = {
-  increase: number;
-  type: typeof characterReaderLevel3UnboundedReaderTypeStack;
-};
-
-export type CharacterReaderLevel3UnboundReaderValue =
-  Readonly<CharacterReaderLevel3UnboundedReaderValueStack>;
-
-export type CharacterReaderLevel3UnboundedReader = Reader<
-  CharacterReaderLevel3UnboundReaderValue,
-  boolean
->;
-
 export type CharacterReaderLevel3ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
@@ -68,7 +51,7 @@ export type CharacterReaderLevel3ValueEntry = Readonly<{
   // reader returning `true` if this could be nothing following this.
   // I.e. anything that didn't match would fall outside the pattern
   // the `a+` in `^a+` because a `b` would just end the match
-  isReaderUnbounded: () => CharacterReaderLevel3UnboundedReader;
+  isReaderUnbounded: () => IsUnboundedReader;
   lookaheadStack: LookaheadStack;
   node:
     | CharacterClass
@@ -89,67 +72,6 @@ export type CharacterReaderLevel3 = Reader<
   CharacterReaderLevel3Value,
   CharacterReaderLevel3ReturnValue
 >;
-
-type StackFrame = Readonly<{
-  get: () => ReaderResult<
-    CharacterReaderLevel2Value,
-    CharacterReaderLevel2ReturnValue
-  >;
-  reader: CharacterReaderLevel2;
-}>;
-
-function* isReaderUnbounded(
-  inputReader: ForkableReader<
-    CharacterReaderLevel2Value,
-    CharacterReaderLevel2ReturnValue
-  >,
-): CharacterReaderLevel3UnboundedReader {
-  const reader = fork(inputReader);
-
-  const stack: StackFrame[] = [{ get: once(() => reader.next()), reader }];
-  yield {
-    increase: 1,
-    type: characterReaderLevel3UnboundedReaderTypeStack,
-  };
-
-  for (;;) {
-    const frame = stack.pop();
-    if (!frame) break;
-    yield {
-      increase: -1,
-      type: characterReaderLevel3UnboundedReaderTypeStack,
-    };
-
-    const next = frame.get();
-    if (next.done) {
-      if (next.value.type === 'end' && !next.value.bounded) {
-        yield {
-          increase: -1 * stack.length,
-          type: characterReaderLevel3UnboundedReaderTypeStack,
-        };
-        return true;
-      }
-    } else {
-      if (next.value.type === characterReaderLevel2TypeSplit) {
-        const value = next.value;
-        const splitReader = value.reader();
-        stack.push({
-          get: once(() => frame.reader.next()),
-          reader: frame.reader,
-        });
-        stack.push({
-          get: once(() => splitReader.next()),
-          reader: splitReader,
-        });
-        yield {
-          increase: 2,
-          type: characterReaderLevel3UnboundedReaderTypeStack,
-        };
-      }
-    }
-  }
-  return false;
-}
 
 /**
  * Returns a `CharacterReaderLevel3` which does the same as
@@ -195,7 +117,7 @@ export function buildCharacterReaderLevel3({
             backreferenceStack: value.backreferenceStack,
             characterGroups: value.characterGroups,
             groups: value.groups,
-            isReaderUnbounded: () => isReaderUnbounded(forked),
+            isReaderUnbounded: () => isUnboundedReader(forked),
             lookaheadStack: value.lookaheadStack,
             node: value.node,
             preceedingZeroWidthEntries: value.preceedingZeroWidthEntries,
