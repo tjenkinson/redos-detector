@@ -30,9 +30,10 @@ type StackFrame = Readonly<{
 }>;
 
 /*
- * A reader that returns `true` if this could be nothing the input reader.
+ * A reader that returns `true` if there could be nothing after the current
+ * point  from the input reader.
  * I.e. anything that didn't match would fall outside the pattern
- * the `a+` in `^a+` because a `b` would just end the match
+ * like the `b` in `aab` with pattern `^a+`
  */
 export function* isUnboundedReader(
   inputReader: ForkableReader<
