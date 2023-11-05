@@ -38,10 +38,6 @@ export const characterReaderLevel3TypeEntry: unique symbol = Symbol(
   'characterReaderLevel3TypeEntry',
 );
 
-export const characterReaderLevel3TypeStack: unique symbol = Symbol(
-  'characterReaderLevel3TypeStack',
-);
-
 export type CharacterReaderLevel3ValueSplit = {
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel3;
@@ -49,10 +45,30 @@ export type CharacterReaderLevel3ValueSplit = {
   type: typeof characterReaderLevel3TypeSplit;
 };
 
+export const characterReaderLevel3UnboundedReaderTypeStack: unique symbol =
+  Symbol('characterReaderLevel3UnboundedReaderTypeStack');
+
+export type CharacterReaderLevel3UnboundedReaderValueStack = {
+  increase: number;
+  type: typeof characterReaderLevel3UnboundedReaderTypeStack;
+};
+
+export type CharacterReaderLevel3UnboundReaderValue =
+  Readonly<CharacterReaderLevel3UnboundedReaderValueStack>;
+
+export type CharacterReaderLevel3UnboundedReader = Reader<
+  CharacterReaderLevel3UnboundReaderValue,
+  boolean
+>;
+
 export type CharacterReaderLevel3ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
+  // reader returning `true` if this could be nothing following this.
+  // I.e. anything that didn't match would fall outside the pattern
+  // the `a+` in `^a+` because a `b` would just end the match
+  isReaderUnbounded: () => CharacterReaderLevel3UnboundedReader;
   lookaheadStack: LookaheadStack;
   node:
     | CharacterClass
@@ -63,21 +79,10 @@ export type CharacterReaderLevel3ValueEntry = Readonly<{
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierStack: QuantifierStack;
   type: typeof characterReaderLevel3TypeEntry;
-  // `true` if this could be nothing following this.
-  // I.e. anything that didn't match would fall outside the pattern
-  // the `a+` in `^a+` because a `b` would just end the match
-  unbounded: boolean;
 }>;
 
-export type CharacterReaderLevel3ValueStack = {
-  increase: number;
-  type: typeof characterReaderLevel3TypeStack;
-};
-
 export type CharacterReaderLevel3Value = Readonly<
-  | CharacterReaderLevel3ValueEntry
-  | CharacterReaderLevel3ValueSplit
-  | CharacterReaderLevel3ValueStack
+  CharacterReaderLevel3ValueEntry | CharacterReaderLevel3ValueSplit
 >;
 export type CharacterReaderLevel3ReturnValue = CharacterReaderLevel2ReturnValue;
 export type CharacterReaderLevel3 = Reader<
@@ -98,13 +103,13 @@ function* isReaderUnbounded(
     CharacterReaderLevel2Value,
     CharacterReaderLevel2ReturnValue
   >,
-): Reader<CharacterReaderLevel3ValueStack, boolean> {
+): CharacterReaderLevel3UnboundedReader {
   const reader = fork(inputReader);
 
   const stack: StackFrame[] = [{ get: once(() => reader.next()), reader }];
   yield {
     increase: 1,
-    type: characterReaderLevel3TypeStack,
+    type: characterReaderLevel3UnboundedReaderTypeStack,
   };
 
   for (;;) {
@@ -112,7 +117,7 @@ function* isReaderUnbounded(
     if (!frame) break;
     yield {
       increase: -1,
-      type: characterReaderLevel3TypeStack,
+      type: characterReaderLevel3UnboundedReaderTypeStack,
     };
 
     const next = frame.get();
@@ -120,7 +125,7 @@ function* isReaderUnbounded(
       if (next.value.type === 'end' && !next.value.bounded) {
         yield {
           increase: -1 * stack.length,
-          type: characterReaderLevel3TypeStack,
+          type: characterReaderLevel3UnboundedReaderTypeStack,
         };
         return true;
       }
@@ -129,16 +134,16 @@ function* isReaderUnbounded(
         const value = next.value;
         const splitReader = value.reader();
         stack.push({
-          get: once(() => splitReader.next()),
-          reader: splitReader,
-        });
-        stack.push({
           get: once(() => frame.reader.next()),
           reader: frame.reader,
         });
+        stack.push({
+          get: once(() => splitReader.next()),
+          reader: splitReader,
+        });
         yield {
           increase: 2,
-          type: characterReaderLevel3TypeStack,
+          type: characterReaderLevel3UnboundedReaderTypeStack,
         };
       }
     }
@@ -184,28 +189,18 @@ export function buildCharacterReaderLevel3({
           break;
         }
         case characterReaderLevel2TypeEntry: {
-          const unboundedCheckReader = isReaderUnbounded(reader);
-          let unbounded: boolean;
-          for (;;) {
-            const unboundedCheckReaderNext = unboundedCheckReader.next();
-            if (unboundedCheckReaderNext.done) {
-              unbounded = unboundedCheckReaderNext.value;
-              break;
-            } else {
-              yield unboundedCheckReaderNext.value;
-            }
-          }
+          const forked = fork(reader);
 
           yield {
             backreferenceStack: value.backreferenceStack,
             characterGroups: value.characterGroups,
             groups: value.groups,
+            isReaderUnbounded: () => isReaderUnbounded(forked),
             lookaheadStack: value.lookaheadStack,
             node: value.node,
             preceedingZeroWidthEntries: value.preceedingZeroWidthEntries,
             quantifierStack: value.quantifierStack,
             type: characterReaderLevel3TypeEntry,
-            unbounded,
           };
           break;
         }
