@@ -2,7 +2,9 @@
   "name": "redos-detector",
   "description": "A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks.",
   "main": "dist/redos-detector.js",
-  "bin": "bin.js",
+  "bin": {
+    "redos-detector": "bin.js"
+  },
   "module": "dist/redos-detector.es.js",
   "types": "dist/redos-detector.d.ts",
   "files": [
