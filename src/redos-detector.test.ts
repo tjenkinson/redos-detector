@@ -603,7 +603,7 @@ describe('RedosDetector', () => {
       expect(() => isSafe(/a/m)).toThrowError('Unsupported flag: m');
     });
 
-    ['u', 'g', 's', 'y', 'i'].forEach((flag) => {
+    ['u', 'g', 's', 'y', 'i', 'd'].forEach((flag) => {
       it(`supports the "${flag}" flag`, () => {
         expect(() => isSafe(new RegExp('a', flag))).not.toThrowError();
       });

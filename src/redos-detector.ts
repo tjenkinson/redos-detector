@@ -237,6 +237,7 @@ const supportedJSFlags: ReadonlySet<string> = new Set([
   's',
   'y',
   'i',
+  'd',
 ]);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
