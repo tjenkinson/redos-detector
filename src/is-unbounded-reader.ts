@@ -8,16 +8,15 @@ import { ForkableReader, Reader, ReaderResult } from './reader';
 import { fork } from 'forkable-iterator';
 import { once } from './once';
 
-export const isUnboundedReaderTypeStack: unique symbol = Symbol(
-  'isUnboundedReaderTypeStack',
+export const isUnboundedReaderTypeStep: unique symbol = Symbol(
+  'isUnboundedReaderTypeStep',
 );
 
-export type IsUnboundedReaderValueStack = {
-  increase: number;
-  type: typeof isUnboundedReaderTypeStack;
+export type IsUnboundedReaderValueStep = {
+  type: typeof isUnboundedReaderTypeStep;
 };
 
-export type IsUnboundedReaderValue = Readonly<IsUnboundedReaderValueStack>;
+export type IsUnboundedReaderValue = Readonly<IsUnboundedReaderValueStep>;
 
 export type IsUnboundedReader = Reader<IsUnboundedReaderValue, boolean>;
 
@@ -44,26 +43,18 @@ export function* isUnboundedReader(
   const reader = fork(inputReader);
 
   const stack: StackFrame[] = [{ get: once(() => reader.next()), reader }];
-  yield {
-    increase: 1,
-    type: isUnboundedReaderTypeStack,
-  };
 
   for (;;) {
     const frame = stack.pop();
     if (!frame) break;
+
     yield {
-      increase: -1,
-      type: isUnboundedReaderTypeStack,
+      type: isUnboundedReaderTypeStep,
     };
 
     const next = frame.get();
     if (next.done) {
       if (next.value.type === 'end' && !next.value.bounded) {
-        yield {
-          increase: -1 * stack.length,
-          type: isUnboundedReaderTypeStack,
-        };
         return true;
       }
     } else {
@@ -78,10 +69,6 @@ export function* isUnboundedReader(
           get: once(() => splitReader.next()),
           reader: splitReader,
         });
-        yield {
-          increase: 2,
-          type: isUnboundedReaderTypeStack,
-        };
       }
     }
   }

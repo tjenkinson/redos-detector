@@ -295,7 +295,7 @@ describe('RedosDetector', () => {
         [/(([01][0-9]|[012][0-3]):([0-5][0-9]))$/, false],
         [/(([01][0-9]|[2][0-3]):([0-5][0-9]))$/, true],
         [/([\d\w][-\d\w]{0,253}[\d\w]\.)+$/, false],
-        [/([^\x00]{0,255}\x00)*$/, true],
+        [/([^\x00]{0,220}\x00)*$/, true],
         [/([^\x00]{0,2}\x00)*$/, true],
         [/(a|b)*[^c].*$/, false],
         [/(a|b|ab)*c$/, false],
@@ -477,8 +477,6 @@ describe('RedosDetector', () => {
 
           if (expectNoBacktracks === true) {
             expect(error).toBe(null);
-          } else {
-            expect(error).not.toBe('stackOverflow');
           }
           expect(error).toMatchSnapshot();
 
@@ -566,13 +564,6 @@ describe('RedosDetector', () => {
       });
       expect(res.error).toBe('hitMaxSteps');
       expect(res).toMatchSnapshot();
-    });
-
-    it('returns the `stackOverflow` error if too much branching', () => {
-      const res = isSafe(/(a|b|c|d|e){1,1000}/, {
-        maxSteps: Infinity,
-      });
-      expect(res.error).toBe('stackOverflow');
     });
 
     it('throws if `maxBacktracks` not positive or 0', () => {

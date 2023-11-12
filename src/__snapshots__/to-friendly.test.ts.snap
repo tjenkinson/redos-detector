@@ -142,9 +142,7 @@ exports[`toFriendly with alwaysIncludeTrails=false returns the correct string wh
 
 exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
 
-exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
-
-exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 4`] = `
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 3`] = `
 "Regex is not safe.
 
 The following trails show how the same input can be matched multiple ways.
@@ -310,9 +308,7 @@ exports[`toFriendly with alwaysIncludeTrails=true returns the correct string whe
 
 exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 3`] = `"Regex may not be safe. Stack overflow. The pattern may have too many variations."`;
-
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 4`] = `
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 3`] = `
 "Regex is not safe.
 
 The following trails show how the same input can be matched multiple ways.
