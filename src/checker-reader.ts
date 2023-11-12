@@ -33,7 +33,7 @@ import {
 } from './character-groups';
 import {
   isUnboundedReader,
-  isUnboundedReaderTypeStack,
+  isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
 import { fork } from 'forkable-iterator';
@@ -102,10 +102,8 @@ export type CheckerReaderValue =
 // eslint-disable-next-line no-use-before-define
 export type CheckerReader = Reader<CheckerReaderValue, CheckerReaderReturn>;
 export type CheckerReaderReturn = Readonly<{
-  error: 'hitMaxSteps' | 'stackOverflow' | 'timedOut' | null;
+  error: 'hitMaxSteps' | 'timedOut' | null;
 }>;
-
-const stackOverflowLimit = 1000;
 
 type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
@@ -147,7 +145,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
-  let stackOverflow = false;
 
   const initialLeftStreamReader = buildForkableReader(input.leftStreamReader);
   const initialRightStreamReader = buildForkableReader(input.rightStreamReader);
@@ -173,8 +170,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
   outer: for (;;) {
     timedOut = Date.now() > latestEndTime;
-    stackOverflow = stack.length > stackOverflowLimit;
-    if (timedOut || stackOverflow || stepCount > input.maxSteps) {
+    if (timedOut || stepCount > input.maxSteps) {
       break;
     }
 
@@ -190,6 +186,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     >[] = [];
 
     for (let i = 0; i < streamReadersWithGetters.length; i++) {
+      stepCount += 0.5;
       const result = streamReadersWithGetters[i].get();
       if (
         !result.done &&
@@ -233,7 +230,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     const [leftNextValue, rightNextValue] = nextValues;
 
     if (
-      ++stepCount > input.maxSteps ||
+      stepCount > input.maxSteps ||
       leftNextValue.done ||
       rightNextValue.done
     ) {
@@ -386,7 +383,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       let leftAndRightUnbounded: boolean;
       let leftUnbounded: boolean;
       {
-        let additionalStackSize = 0;
         const leftUnboundedReader = isUnboundedReader(
           fork(streamReadersWithGetters[0].reader),
         );
@@ -398,12 +394,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           !(leftUnboundedCheckReaderNext = leftUnboundedReader.next()).done
         ) {
           switch (leftUnboundedCheckReaderNext.value.type) {
-            case isUnboundedReaderTypeStack: {
-              additionalStackSize +=
-                leftUnboundedCheckReaderNext.value.increase;
-              /* istanbul ignore next */
-              if (stack.length + additionalStackSize > stackOverflowLimit) {
-                stackOverflow = true;
+            case isUnboundedReaderTypeStep: {
+              stepCount += 0.5;
+              if (stepCount > input.maxSteps) {
                 break outer;
               }
             }
@@ -416,7 +409,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       if (!leftUnbounded) {
         leftAndRightUnbounded = false;
       } else {
-        let additionalStackSize = 0;
         const rightUnboundedReader = isUnboundedReader(
           fork(streamReadersWithGetters[1].reader),
         );
@@ -428,12 +420,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           !(rightUnboundedCheckReaderNext = rightUnboundedReader.next()).done
         ) {
           switch (rightUnboundedCheckReaderNext.value.type) {
-            case isUnboundedReaderTypeStack: {
-              additionalStackSize +=
-                rightUnboundedCheckReaderNext.value.increase;
+            case isUnboundedReaderTypeStep: {
+              stepCount += 0.5;
               /* istanbul ignore next */
-              if (stack.length + additionalStackSize > stackOverflowLimit) {
-                stackOverflow = true;
+              if (stepCount > input.maxSteps) {
                 break outer;
               }
             }
@@ -511,9 +501,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         : // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         timedOut
         ? ('timedOut' as const)
-        : // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        stackOverflow
-        ? ('stackOverflow' as const)
         : null,
   };
 }

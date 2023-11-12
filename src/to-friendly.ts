@@ -70,9 +70,6 @@ export function toFriendly(
     if (result.error === 'hitMaxSteps') {
       parts.push(`Reached steps limit.`);
     }
-    if (result.error === 'stackOverflow') {
-      parts.push(`Stack overflow.`);
-    }
     if (!result.safe) {
       parts.push(`The pattern may have too many variations.`);
     }
@@ -118,8 +115,6 @@ export function toFriendly(
         'Hit maximum number of backtracks so there may be more results than shown here.',
       hitMaxSteps:
         'Hit maximum number of steps so there may be more results than shown here.',
-      stackOverflow:
-        'Stack overflow occurred. Regex may have too much branching.',
       timedOut: 'Timed out so there may be more results than shown here.',
     };
 

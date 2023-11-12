@@ -99,8 +99,7 @@ export type IsSafeConfig = {
    */
   readonly maxBacktracks?: number;
   /**
-   * The maximum number of steps to make. Every time a new node is read
-   * from the pattern this counts as one step. If this limit is hit `error`
+   * The maximum number of steps to make. If this limit is hit `error`
    * will be `hitMaxSteps`.
    *
    * Note it's possible for there to be a infinite number of results,
@@ -149,7 +148,6 @@ export type IsSafeConfig = {
 export type RedosDetectorError =
   | 'hitMaxBacktracks'
   | 'hitMaxSteps'
-  | 'stackOverflow'
   | 'timedOut';
 
 export type BacktrackCount =

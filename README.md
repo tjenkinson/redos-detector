@@ -88,12 +88,7 @@ The following is the structure of the result you will get from both `isSafe`, `i
 ```ts
 type Root = {
   safe: boolean;
-  error:
-    | null
-    | 'hitMaxBacktracks'
-    | 'hitMaxSteps'
-    | 'stackOverflow'
-    | 'timedOut';
+  error: null | 'hitMaxBacktracks' | 'hitMaxSteps' | 'timedOut';
   trails: Trail[];
   patternDowngraded: boolean;
   pattern: string;
@@ -161,7 +156,7 @@ The following options exist for both the library and CLI:
 - `unicode`: Enable unicode mode. _(Default: `false`)_
 - `dotAll`: Enable dot-all mode, which allows `.` to match new lines. _(Default: `false`)_
 - `maxBacktracks`: If worst case count of possible backtracks is above this number, the regex will be considered unsafe. _(Default: `200`)_
-- `maxSteps`: The maximum number of steps to make. Every time a new node is read from the pattern this counts as one step. If this limit is hit `error` will be `hitMaxSteps`. _(Default: `20000`)_
+- `maxSteps`: The maximum number of steps to make. If this limit is hit `error` will be `hitMaxSteps`. You probably don't need to change this. _(Default: `20000`)_
 - `timeout`: The maximum amount of time (ms) to spend processing. Once this time is passed the trails found so far will be returned, and the `error` will be `timeout`. _(Default: `Infinity`)_
 - `downgradePattern`: Automatically downgrade the pattern if it's not supported as is. If this happens `patternDowngraded` will be `true` and `pattern` will contain the downgraded version. An exception may be thrown if the pattern needed to be downgraded and it wasn't. _(Default: `true`)_
 

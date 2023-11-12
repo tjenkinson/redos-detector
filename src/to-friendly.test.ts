@@ -397,19 +397,6 @@ describe('toFriendly', () => {
         expect(
           toFriendly(
             {
-              error: 'stackOverflow',
-              pattern: 'pattern',
-              patternDowngraded: false,
-              safe: false,
-              trails: [],
-              worstCaseBacktrackCount: { infinite: true },
-            },
-            { alwaysIncludeTrails },
-          ),
-        ).toMatchSnapshot();
-        expect(
-          toFriendly(
-            {
               error: 'hitMaxSteps',
               pattern: 'pattern',
               patternDowngraded: false,
