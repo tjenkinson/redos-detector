@@ -462,6 +462,9 @@ describe('RedosDetector', () => {
         ],
         [/.?[\n\r\u2028-\u2029]?$/, true],
         [/.?[^\n\r\u2028-\u2029]?$/, false],
+        [/a?a?[\n\r\u2028-\u2029]{2}/, false],
+        [/a?a?[\n\r\u2028-\u2029]{2}/m, true],
+        [/a?a?[\n\r\u2028-\u2029]{2}$/m, false],
       ];
 
       cases.forEach(([regex, expectNoBacktracks]) => {
@@ -591,10 +594,12 @@ describe('RedosDetector', () => {
     });
 
     it('throws if an unsupported flag is passed', () => {
-      expect(() => isSafe(/a/m)).toThrowError('Unsupported flag: m');
+      expect(() => isSafe({ flags: 'z' } as RegExp)).toThrowError(
+        'Unsupported flag: z',
+      );
     });
 
-    ['u', 'g', 's', 'y', 'i', 'd'].forEach((flag) => {
+    ['u', 'g', 's', 'y', 'i', 'd', 'm'].forEach((flag) => {
       it(`supports the "${flag}" flag`, () => {
         expect(() => isSafe(new RegExp('a', flag))).not.toThrowError();
       });

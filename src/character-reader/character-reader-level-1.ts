@@ -72,14 +72,14 @@ export type CharacterReaderLevel1ValueEntryReference = Readonly<
   }
 >;
 
-export type CharacterReaderLevel1ValueEntry = Readonly<
+export type CharacterReaderLevel1ValueEntry =
   | CharacterReaderLevel1ValueEntryGroups
-  | CharacterReaderLevel1ValueEntryReference
->;
+  | CharacterReaderLevel1ValueEntryReference;
 
-export type CharacterReaderLevel1Value = Readonly<
-  CharacterReaderLevel1ValueEntry | CharacterReaderLevel1ValueSplit
->;
+export type CharacterReaderLevel1Value =
+  | CharacterReaderLevel1ValueEntry
+  | CharacterReaderLevel1ValueSplit;
+
 export type CharacterReaderLevel1ReturnValue = Readonly<{
   bounded: boolean;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];

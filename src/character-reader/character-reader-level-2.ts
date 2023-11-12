@@ -73,9 +73,9 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
   type: typeof characterReaderLevel2TypeEntry;
 }>;
 
-export type CharacterReaderLevel2Value = Readonly<
-  CharacterReaderLevel2ValueEntry | CharacterReaderLevel2ValueSplit
->;
+export type CharacterReaderLevel2Value =
+  | CharacterReaderLevel2ValueEntry
+  | CharacterReaderLevel2ValueSplit;
 export type CharacterReaderLevel2ReturnValue = Readonly<
   | {
       bounded: boolean;

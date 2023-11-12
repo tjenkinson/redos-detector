@@ -25,6 +25,7 @@ export type CollectResultsInput = Readonly<{
   dotAll: boolean;
   maxBacktracks: number;
   maxSteps: number;
+  multiLine: boolean;
   node: MyRootNode;
   timeout: number;
 }>;
@@ -34,6 +35,7 @@ export function collectResults({
   node,
   maxBacktracks,
   maxSteps,
+  multiLine,
   timeout,
   caseInsensitive,
   dotAll,
@@ -51,6 +53,7 @@ export function collectResults({
     atomicGroupOffsets,
     leftStreamReader,
     maxSteps,
+    multiLine,
     rightStreamReader,
     timeout,
   });

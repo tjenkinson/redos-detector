@@ -31,8 +31,9 @@ program
   .command('check')
   .argument('<regex pattern>', 'the regex pattern')
   .option('--caseInsensitive', 'enable case insensitive mode', false)
-  .option('--dotAll', 'enable dot-all mode', false)
   .option('--unicode', 'enable unicode mode', false)
+  .option('--dotAll', 'enable dot-all mode', false)
+  .option('--multiLine', 'enable multiline mode', false)
   .option(
     '--maxBacktracks <number>',
     'max number of backtracks to allow',
@@ -77,6 +78,7 @@ program
         caseInsensitive,
         dotAll,
         unicode,
+        multiLine,
       }: {
         alwaysIncludeTrails: boolean;
         caseInsensitive: boolean;
@@ -85,6 +87,7 @@ program
         json: boolean;
         maxBacktracks: number;
         maxSteps: number;
+        multiLine: boolean;
         resultsLimit: number;
         timeout: number;
         unicode: boolean;
@@ -97,6 +100,7 @@ program
           downgradePattern: !disableDowngrade,
           maxBacktracks: coerceInfinity(maxBacktracks),
           maxSteps: coerceInfinity(maxSteps),
+          multiLine,
           timeout: coerceInfinity(timeout),
           unicode,
         });
