@@ -27,11 +27,15 @@ export function getGroups(stack: Stack): Groups {
   const quantifierStack: StackQuantifierEntry[] = [];
   const groups: GroupsMutable = new Map();
   for (const entry of stack) {
-    if (entry.type === 'quantifier') {
-      quantifierStack.push(entry);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    } else if (entry.type === 'group') {
-      groups.set(entry.group, { quantifierStack: [...quantifierStack] });
+    switch (entry.type) {
+      case 'quantifier': {
+        quantifierStack.push(entry);
+        break;
+      }
+      case 'group': {
+        groups.set(entry.group, { quantifierStack: [...quantifierStack] });
+        break;
+      }
     }
   }
   return groups;
