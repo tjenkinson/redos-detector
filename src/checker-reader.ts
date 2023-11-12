@@ -47,6 +47,7 @@ export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
   leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
+  multiLine: boolean;
   rightStreamReader: CharacterReaderLevel2;
   timeout: number;
 }>;
@@ -383,9 +384,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       let leftAndRightUnbounded: boolean;
       let leftUnbounded: boolean;
       {
-        const leftUnboundedReader = isUnboundedReader(
-          fork(streamReadersWithGetters[0].reader),
-        );
+        const leftUnboundedReader = isUnboundedReader({
+          multiLine: input.multiLine,
+          reader: fork(streamReadersWithGetters[0].reader),
+        });
         let leftUnboundedCheckReaderNext: ReaderResult<
           IsUnboundedReaderValue,
           boolean
@@ -399,6 +401,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
               if (stepCount > input.maxSteps) {
                 break outer;
               }
+              break;
             }
           }
         }
@@ -409,9 +412,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       if (!leftUnbounded) {
         leftAndRightUnbounded = false;
       } else {
-        const rightUnboundedReader = isUnboundedReader(
-          fork(streamReadersWithGetters[1].reader),
-        );
+        const rightUnboundedReader = isUnboundedReader({
+          multiLine: input.multiLine,
+          reader: fork(streamReadersWithGetters[1].reader),
+        });
         let rightUnboundedCheckReaderNext: ReaderResult<
           IsUnboundedReaderValue,
           boolean
@@ -426,6 +430,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
               if (stepCount > input.maxSteps) {
                 break outer;
               }
+              break;
             }
           }
         }
@@ -498,8 +503,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     error:
       stepCount > input.maxSteps
         ? ('hitMaxSteps' as const)
-        : // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        timedOut
+        : timedOut
         ? ('timedOut' as const)
         : null,
   };

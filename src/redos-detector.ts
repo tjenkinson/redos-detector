@@ -219,6 +219,11 @@ export type IsSafePatternConfig = IsSafeConfig & {
    */
   readonly dotAll?: boolean;
   /**
+   * Enable multi-line mode which changes `^` and `$` to
+   * match the start or end of any line within the string.
+   */
+  readonly multiLine?: boolean;
+  /**
    * Enable unicode mode.
    */
   readonly unicode?: boolean;
@@ -227,6 +232,7 @@ export type IsSafePatternConfig = IsSafeConfig & {
 export const defaultTimeout = Infinity;
 export const defaultMaxBacktracks = 200;
 export const defaultMaxSteps = 20000;
+export const defaultMultiLine = false;
 export const defaultUnicode = false;
 export const defaultCaseInsensitive = false;
 export const defaultDotAll = false;
@@ -237,6 +243,7 @@ const supportedJSFlags: ReadonlySet<string> = new Set([
   'y',
   'i',
   'd',
+  'm',
 ]);
 
 type PatternWithAtomicGroupOffsets = Readonly<{
@@ -285,6 +292,7 @@ export function isSafePattern(
     atomicGroupOffsets: atomicGroupOffsetsInput,
     maxBacktracks = defaultMaxBacktracks,
     maxSteps = defaultMaxSteps,
+    multiLine = defaultMultiLine,
     timeout = defaultTimeout,
     caseInsensitive = defaultCaseInsensitive,
     dotAll = defaultDotAll,
@@ -329,6 +337,7 @@ export function isSafePattern(
     dotAll,
     maxBacktracks,
     maxSteps,
+    multiLine,
     node: ast,
     timeout,
   });
@@ -392,25 +401,22 @@ export function isSafe(
   let unicode = false;
   let caseInsensitive = false;
   let dotAll = false;
+  let multiLine = false;
   for (const flag of regexp.flags.split('')) {
     if (!supportedJSFlags.has(flag)) {
       throw new Error(`Unsupported flag: ${flag}`);
     }
-    if (flag === 'u') {
-      unicode = true;
-    }
-    if (flag === 'i') {
-      caseInsensitive = true;
-    }
-    if (flag === 's') {
-      dotAll = true;
-    }
+    if (flag === 'u') unicode = true;
+    if (flag === 'i') caseInsensitive = true;
+    if (flag === 's') dotAll = true;
+    if (flag === 'm') multiLine = true;
   }
 
   return isSafePattern(regexp.source, {
     ...config,
     caseInsensitive,
     dotAll,
+    multiLine,
     unicode,
   });
 }
