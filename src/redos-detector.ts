@@ -1,4 +1,5 @@
 import { MyFeatures, parse } from './parse';
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
 import { BackReferenceStack } from './character-reader/character-reader-level-2';
