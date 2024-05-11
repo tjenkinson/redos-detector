@@ -56,6 +56,7 @@ export type CharacterReaderLevel2ValueSplit = Readonly<{
   type: typeof characterReaderLevel2TypeSplit;
 }>;
 
+//TODO backreference?
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel2ValueEntry = Readonly<{
   backreferenceStack: BackReferenceStack;

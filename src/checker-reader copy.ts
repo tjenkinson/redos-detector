@@ -23,6 +23,7 @@ import {
 } from './reader';
 import {
   buildQuantifiersInInfinitePortion,
+  buildQuantifierTrail,
   QuantifierStack,
 } from './nodes/quantifier';
 import {
@@ -44,6 +45,7 @@ import { SidesEqualChecker } from './sides-equal-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
+  inputLength: number;
   leftStreamReader: CharacterReaderLevel2;
   maxSteps: number;
   multiLine: boolean;
@@ -105,8 +107,7 @@ export type CheckerReaderReturn = Readonly<{
   error: 'hitMaxSteps' | 'timedOut' | null;
 }>;
 
-type InfiniteLoopTrackerEntry = Readonly<{
-  backreferenceTrail: string;
+type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
   quantifierTrail: string;
 }>;
@@ -123,42 +124,16 @@ type ReaderWithGetter = Readonly<{
 }>;
 
 type StackFrame = Readonly<{
-  infiniteLoopTracker: InfiniteLoopTracker<InfiniteLoopTrackerEntry>;
+  infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   streamReadersWithGetters: ReaderWithGetter[];
   trail: Trail;
 }>;
 
-const areInfiniteLoopTrackerEntriesEqual = (
-  left: InfiniteLoopTrackerEntry,
-  right: InfiniteLoopTrackerEntry,
-): boolean => {
-  return (
-    left.node === right.node &&
-    left.quantifierTrail === right.quantifierTrail &&
-    left.backreferenceTrail === right.backreferenceTrail
-  );
-};
-
-function buildBackreferenceTrail(stack: BackReferenceStack): string {
-  return stack.map(({ matchIndex }) => matchIndex).join(',');
-}
-
-// TODO remove other one
-function buildQuantifierTrail(stack: QuantifierStack): string {
-  return stack
-    .map(({ quantifier, iteration }) => {
-      return `${quantifier.range[0]}:${
-        quantifier.max === undefined &&
-        iteration >= quantifier.min &&
-        // TODO remove
-        iteration >= 1
-          ? // quantifier.max === undefined && iteration >= quantifier.min
-            '*'
-          : `${iteration}`
-      }`;
-    })
-    .join(',');
-}
+const isNodeWithQuantifierTrailEqual = (
+  left: NodeWithQuantifierTrail,
+  right: NodeWithQuantifierTrail,
+): boolean =>
+  left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
  * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
@@ -179,7 +154,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const stack: StackFrame[] = [
     {
       infiniteLoopTracker: new InfiniteLoopTracker(
-        areInfiniteLoopTrackerEntriesEqual,
+        isNodeWithQuantifierTrailEqual,
       ),
       streamReadersWithGetters: [
         {
@@ -206,6 +181,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const { streamReadersWithGetters } = entry;
     let { infiniteLoopTracker, trail } = entry;
+
+    if (trail.length >= input.inputLength) continue;
 
     const nextValues: ReaderResult<
       CharacterReaderLevel2Value,
@@ -284,10 +261,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     const somethingPassedStartAnchor =
       leftPassedStartAnchor || rightPassedStartAnchor;
 
-    if (
-      (trail.length > 0 && somethingPassedStartAnchor) ||
-      leftPassedStartAnchor !== rightPassedStartAnchor
-    ) {
+    if (trail.length > 0 && somethingPassedStartAnchor) {
       continue;
     }
 
@@ -318,43 +292,49 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       if (leftAndRightIdentical) {
         // left and right have been identical to each other, and we are now entering an infinite
         // portion, so bail
+        // TODO this is essentially an optimisation. If everything to now is identical then we know we're not going to find anything if we go around again
         continue;
       }
     }
 
-    // TODO remove the >= 1 check from these
-    if (
-      leftQuantifiersInInfiniteProportion.size &&
-      rightQuantifiersInInfiniteProportion.size
-    ) {
-      infiniteLoopTracker.append(
-        {
-          backreferenceTrail: buildBackreferenceTrail(
-            leftValue.backreferenceStack,
-          ),
-          node: leftValue.node,
-          quantifierTrail: buildQuantifierTrail(leftValue.quantifierStack),
-        },
-        {
-          backreferenceTrail: buildBackreferenceTrail(
-            rightValue.backreferenceStack,
-          ),
-          node: rightValue.node,
-          quantifierTrail: buildQuantifierTrail(rightValue.quantifierStack),
-        },
-      );
-    // } else {
-    //   // TODO why does removing this cause failures?
-    //   infiniteLoopTracker = new InfiniteLoopTracker(
-    //     areInfiniteLoopTrackerEntriesEqual,
-    //   );
-    // }
-
-    if (infiniteLoopTracker.getRepeatingEntries()) {
-      if (leftValue.node === rightValue.node) {
-        yield { type: checkerReaderTypeInfiniteLoop };
+    if (input.inputLength === Infinity) {
+      if (
+        leftQuantifiersInInfiniteProportion.size &&
+        rightQuantifiersInInfiniteProportion.size
+      ) {
+        // TODO store the entry separately and put in set when trail emitted to compare from history
+        infiniteLoopTracker.append(
+          {
+            node: leftValue.node,
+            // TODO if asterisk on the last compulsory loop then more efficient as will stop just before infinite bit?
+            quantifierTrail: buildQuantifierTrail(
+              leftValue.quantifierStack,
+              true,
+            ),
+          },
+          {
+            node: rightValue.node,
+            quantifierTrail: buildQuantifierTrail(
+              rightValue.quantifierStack,
+              true,
+            ),
+          },
+        );
+      } else {
+        infiniteLoopTracker = new InfiniteLoopTracker(
+          isNodeWithQuantifierTrailEqual,
+        );
       }
-      continue;
+
+      if (infiniteLoopTracker.isLooping()) {
+        // TODO this check means we're not flagging loop as problem if it doesn't end on same node. seems strange
+        if (leftValue.node === rightValue.node) {
+          // TODO might not need this if emit from other place?
+          // TODO check plan in notes
+          yield { type: checkerReaderTypeInfiniteLoop };
+        }
+        continue;
+      }
     }
 
     const intersection = intersectCharacterGroups(
@@ -513,6 +493,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       if (shouldSendTrail()) {
         trails.add(trail);
+        // TODO emit inifinite here if there was an infinite quantifier in the path on different iterations
         yield { trail, type: checkerReaderTypeTrail };
       }
     }

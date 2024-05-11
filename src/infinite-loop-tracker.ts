@@ -31,6 +31,30 @@ export class InfiniteLoopTracker<T> {
     return [...this._history];
   }
 
+  public getRepeatingEntries(): ReadonlyArray<Entry<T>> | null {
+    const length = this._history.length;
+    outer: for (
+      let candidateSize = 1;
+      candidateSize <= length / 2;
+      candidateSize++
+    ) {
+      const candidateStart = length - candidateSize * 2;
+      for (let i = 0; i < candidateSize; i++) {
+        if (
+          !this._isEntryEqual(
+            this._history[candidateStart + i],
+            this._history[candidateStart + candidateSize + i],
+          )
+        ) {
+          continue outer;
+        }
+      }
+      return this._history.slice(length - candidateSize);
+    }
+    return null;
+  }
+
+  // TODO remove?
   public isLooping(): boolean {
     const length = this._history.length;
     outer: for (

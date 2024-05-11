@@ -106,6 +106,7 @@ export function buildQuantifierCharacterReader({
                 ...value,
                 stack: [
                   {
+                    // TODO remove?
                     inInfinitePortion,
                     iteration: i,
                     quantifier: node,
