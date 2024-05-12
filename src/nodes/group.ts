@@ -8,6 +8,7 @@ import { QuantifierStack, StackQuantifierEntry } from './quantifier';
 import { buildArrayReader } from '../reader';
 import { buildEndReader } from './end';
 import { buildSequenceCharacterReader } from './sequence';
+import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 import { joinArray } from '../character-reader/join';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
@@ -23,7 +24,7 @@ export type Groups = ReadonlyMap<Group<MyFeatures>, GroupEntry>;
 export type GroupsMutable = Map<Group<MyFeatures>, GroupEntry>;
 export type LookaheadStack = readonly NonCapturingGroup<MyFeatures>[];
 
-export function getGroups(stack: Stack): Groups {
+export function getGroups(stack: CharacterReaderLevel2Stack): Groups {
   const quantifierStack: StackQuantifierEntry[] = [];
   const groups: GroupsMutable = new Map();
   for (const entry of stack) {
@@ -36,12 +37,16 @@ export function getGroups(stack: Stack): Groups {
         groups.set(entry.group, { quantifierStack: [...quantifierStack] });
         break;
       }
+      case 'reference':
+        break;
     }
   }
   return groups;
 }
 
-export function getLookaheadStack(stack: Stack): LookaheadStack {
+export function getLookaheadStack(
+  stack: CharacterReaderLevel2Stack,
+): LookaheadStack {
   const lookaheadStack: NonCapturingGroup<MyFeatures>[] = [];
   for (const entry of stack) {
     if (entry.type === 'group') {

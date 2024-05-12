@@ -11,6 +11,7 @@ import {
   BackReferenceStack,
   CharacterReaderLevel2,
   CharacterReaderLevel2ReturnValue,
+  CharacterReaderLevel2Stack,
   characterReaderLevel2TypeEntry,
   characterReaderLevel2TypeSplit,
   CharacterReaderLevel2Value,
@@ -41,6 +42,7 @@ import { last } from './arrays';
 import { MyFeatures } from './parse';
 import { once } from './once';
 import { SidesEqualChecker } from './sides-equal-checker';
+import { Stack } from './character-reader/character-reader-level-0';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -106,9 +108,10 @@ export type CheckerReaderReturn = Readonly<{
 }>;
 
 type InfiniteLoopTrackerEntry = Readonly<{
-  backreferenceTrail: string;
+  contextTrail: string;
   node: AstNode<MyFeatures>;
-  quantifierTrail: string;
+  // TODO remove
+  stack: CharacterReaderLevel2Stack;
 }>;
 
 type ReaderWithGetter = Readonly<{
@@ -132,30 +135,29 @@ const areInfiniteLoopTrackerEntriesEqual = (
   left: InfiniteLoopTrackerEntry,
   right: InfiniteLoopTrackerEntry,
 ): boolean => {
-  return (
-    left.node === right.node &&
-    left.quantifierTrail === right.quantifierTrail &&
-    left.backreferenceTrail === right.backreferenceTrail
-  );
+  // TODO problem with `(a{2})b\\1?(aa)?$` because stack does not contain quantifier for the look back
+  return left.node === right.node && left.contextTrail === right.contextTrail;
 };
 
-function buildBackreferenceTrail(stack: BackReferenceStack): string {
-  return stack.map(({ matchIndex }) => matchIndex).join(',');
-}
-
 // TODO remove other one
-function buildQuantifierTrail(stack: QuantifierStack): string {
+// TODO need to merge quantifier and backtracks together?
+function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
   return stack
-    .map(({ quantifier, iteration }) => {
-      return `${quantifier.range[0]}:${
-        quantifier.max === undefined &&
-        iteration >= quantifier.min &&
-        // TODO remove
-        iteration >= 1
-          ? // quantifier.max === undefined && iteration >= quantifier.min
-            '*'
-          : `${iteration}`
-      }`;
+    .map((entry) => {
+      if (entry.type === 'quantifier') {
+        return `q:${entry.quantifier.range[0]}:${
+          entry.quantifier.max === undefined &&
+          entry.iteration >= entry.quantifier.min &&
+          // TODO remove
+          entry.iteration >= 1
+            ? // quantifier.max === undefined && iteration >= quantifier.min
+              '*'
+            : `${entry.iteration}`
+        }`;
+      }
+      if (entry.type === 'reference') {
+        return `r:${entry.reference.matchIndex}`;
+      }
     })
     .join(',');
 }
@@ -329,28 +331,26 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     ) {
       infiniteLoopTracker.append(
         {
-          backreferenceTrail: buildBackreferenceTrail(
-            leftValue.backreferenceStack,
-          ),
+          contextTrail: buildContextTrail(leftValue.stack),
           node: leftValue.node,
-          quantifierTrail: buildQuantifierTrail(leftValue.quantifierStack),
+          stack: leftValue.stack,
         },
         {
-          backreferenceTrail: buildBackreferenceTrail(
-            rightValue.backreferenceStack,
-          ),
+          contextTrail: buildContextTrail(rightValue.stack),
           node: rightValue.node,
-          quantifierTrail: buildQuantifierTrail(rightValue.quantifierStack),
+          stack: rightValue.stack,
         },
       );
-    // } else {
-    //   // TODO why does removing this cause failures?
-    //   infiniteLoopTracker = new InfiniteLoopTracker(
-    //     areInfiniteLoopTrackerEntriesEqual,
-    //   );
-    // }
+    } else {
+      // TODO why does removing this cause failures?
+      infiniteLoopTracker = new InfiniteLoopTracker(
+        areInfiniteLoopTrackerEntriesEqual,
+      );
+    }
 
     if (infiniteLoopTracker.getRepeatingEntries()) {
+      // console.log('!!!! infinite');
+      // debugger;
       if (leftValue.node === rightValue.node) {
         yield { type: checkerReaderTypeInfiniteLoop };
       }

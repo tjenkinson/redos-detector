@@ -49,6 +49,10 @@ export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
   'characterReaderLevel2TypeEntry',
 );
 
+export type CharacterReaderLevel2StackEntry = StackEntry | StackReferenceEntry;
+export type CharacterReaderLevel2Stack =
+  readonly CharacterReaderLevel2StackEntry[];
+
 export type CharacterReaderLevel2ValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel2;
@@ -56,9 +60,10 @@ export type CharacterReaderLevel2ValueSplit = Readonly<{
   type: typeof characterReaderLevel2TypeSplit;
 }>;
 
-//TODO backreference?
+// TODO backreference?
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel2ValueEntry = Readonly<{
+  // TODO put stack in here too, and remove others?
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
@@ -71,6 +76,7 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierStack: QuantifierStack;
+  stack: CharacterReaderLevel2Stack;
   type: typeof characterReaderLevel2TypeEntry;
 }>;
 
@@ -90,18 +96,8 @@ export type CharacterReaderLevel2 = Reader<
   CharacterReaderLevel2ReturnValue
 >;
 
-type InternalStackEntry = StackEntry | StackReferenceEntry;
-type InternalStack = readonly InternalStackEntry[];
-
-function internalStackToLevel1Stack(internalStack: InternalStack): Stack {
-  const stack: StackEntry[] = [];
-  for (const entry of internalStack) {
-    if (entry.type !== 'reference') stack.push(entry);
-  }
-  return stack;
-}
-
-// `InternalReader` is the same as `CharacteReaderLevel1`, except that the `stack` is `InternalStack`
+// TODO
+// `InternalReader` is the same as `CharacterReaderLevel1`, except that the `stack` is `InternalStack`
 // which can represent references
 const internalReaderTypeSplit: unique symbol = Symbol(
   'internalReaderTypeSplit',
@@ -120,7 +116,7 @@ type InternalReaderValueSplit = Readonly<{
 
 type InternalReaderValueEntryBase = Readonly<{
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  stack: InternalStack;
+  stack: CharacterReaderLevel2Stack;
   type: typeof internalReaderTypeEntry;
 }>;
 
@@ -158,6 +154,7 @@ type InternalReaderReturnValue = CharacterReaderLevel1ReturnValue;
 type InternalReader = Reader<InternalReaderValue, InternalReaderReturnValue>;
 
 type GroupContentsStoreEntry = Readonly<{
+  // TODO put the stack in this for each entry so get quantifiers for the contents of the reference
   contents: readonly InternalReaderValueEntryGroups[];
   group: CapturingGroup<MyFeatures>;
 }>;
@@ -278,11 +275,12 @@ function* getGroupContentsReader({
       node: groupEntry.node,
       preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
       stack: [
+        // ...groupEntry.stack,
+        ...groupEntry.stack.filter(({ type }) => type === `reference`),
         {
           reference: value.node,
           type: `reference`,
         },
-        ...groupEntry.stack.filter(({ type }) => type === `reference`),
         ...value.stack,
       ],
       subType: 'groups',
@@ -399,16 +397,12 @@ export function buildCharacterReaderLevel2({
             ...value.preceedingZeroWidthEntries,
           ];
 
-          const quantifierStack = getQuantifierStack(
-            internalStackToLevel1Stack(value.stack),
-          );
+          const quantifierStack = getQuantifierStack(value.stack);
           const quantifierIterations =
             buildQuantifierIterations(quantifierStack);
-          const lookaheadStack = getLookaheadStack(
-            internalStackToLevel1Stack(value.stack),
-          );
+          const lookaheadStack = getLookaheadStack(value.stack);
 
-          const groups = getGroups(internalStackToLevel1Stack(value.stack));
+          const groups = getGroups(value.stack);
 
           switch (value.subType) {
             case 'reference': {
@@ -553,6 +547,7 @@ export function buildCharacterReaderLevel2({
                 node: value.node,
                 preceedingZeroWidthEntries,
                 quantifierStack,
+                stack: value.stack,
                 type: characterReaderLevel2TypeEntry,
               };
               preceedingZeroWidthEntries = [];

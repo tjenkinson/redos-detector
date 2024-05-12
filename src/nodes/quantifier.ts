@@ -8,6 +8,7 @@ import { buildNullCharacterReader } from './null';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
 import { Quantifier } from 'regjsparser';
+import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
 export type StackQuantifierEntry = Readonly<{
@@ -19,7 +20,9 @@ export type StackQuantifierEntry = Readonly<{
 export type QuantifierStack = readonly StackQuantifierEntry[];
 export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
 
-export function getQuantifierStack(stack: Stack): QuantifierStack {
+export function getQuantifierStack(
+  stack: CharacterReaderLevel2Stack,
+): QuantifierStack {
   const quantifierStack: StackQuantifierEntry[] = [];
   for (const entry of stack) {
     if (entry.type === 'quantifier') {
