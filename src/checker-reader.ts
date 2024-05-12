@@ -156,7 +156,7 @@ function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
         }`;
       }
       if (entry.type === 'reference') {
-        return `r:${entry.reference.matchIndex}`;
+        return `r:${entry.reference.range[0]}`;
       }
     })
     .join(',');
@@ -325,22 +325,22 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     }
 
     // TODO remove the >= 1 check from these
-    if (
-      leftQuantifiersInInfiniteProportion.size &&
-      rightQuantifiersInInfiniteProportion.size
-    ) {
-      infiniteLoopTracker.append(
-        {
-          contextTrail: buildContextTrail(leftValue.stack),
-          node: leftValue.node,
-          stack: leftValue.stack,
-        },
-        {
-          contextTrail: buildContextTrail(rightValue.stack),
-          node: rightValue.node,
-          stack: rightValue.stack,
-        },
-      );
+    // if (
+    //   leftQuantifiersInInfiniteProportion.size &&
+    //   rightQuantifiersInInfiniteProportion.size
+    // ) {
+    infiniteLoopTracker.append(
+      {
+        contextTrail: buildContextTrail(leftValue.stack),
+        node: leftValue.node,
+        stack: leftValue.stack,
+      },
+      {
+        contextTrail: buildContextTrail(rightValue.stack),
+        node: rightValue.node,
+        stack: rightValue.stack,
+      },
+    );
     // } else {
     //   // TODO why does removing this cause failures?
     //   infiniteLoopTracker = new InfiniteLoopTracker(

@@ -275,9 +275,7 @@ function* getGroupContentsReader({
       node: groupEntry.node,
       preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
       stack: [
-        // TODO
         ...groupEntry.stack,
-        // ...groupEntry.stack.filter(({ type }) => type === `reference`),
         {
           reference: value.node,
           type: `reference`,
