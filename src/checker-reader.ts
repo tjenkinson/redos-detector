@@ -135,12 +135,9 @@ const areInfiniteLoopTrackerEntriesEqual = (
   left: InfiniteLoopTrackerEntry,
   right: InfiniteLoopTrackerEntry,
 ): boolean => {
-  // TODO problem with `(a{2})b\\1?(aa)?$` because stack does not contain quantifier for the look back
   return left.node === right.node && left.contextTrail === right.contextTrail;
 };
 
-// TODO remove other one
-// TODO need to merge quantifier and backtracks together?
 function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
   return stack
     .map((entry) => {
@@ -321,7 +318,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
     }
 
-    // TODO remove the >= 1 check from these
+    // TODO bring back something like this for performance? if not inside a quantifier then there is no point tracking
     // if (
     //   leftQuantifiersInInfiniteProportion.size &&
     //   rightQuantifiersInInfiniteProportion.size

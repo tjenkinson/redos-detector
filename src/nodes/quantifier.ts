@@ -50,6 +50,7 @@ export function buildQuantifierIterations(
   return res;
 }
 
+// TODO remove if not used anywhere
 // "<node offset>:<iteration number or * if in infinite portion>,..."
 export function buildQuantifierTrail(
   stack: QuantifierStack,
