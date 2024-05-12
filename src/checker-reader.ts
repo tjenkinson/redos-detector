@@ -147,11 +147,8 @@ function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
       if (entry.type === 'quantifier') {
         return `q:${entry.quantifier.range[0]}:${
           entry.quantifier.max === undefined &&
-          entry.iteration >= entry.quantifier.min &&
-          // TODO remove
-          entry.iteration >= 1
-            ? // quantifier.max === undefined && iteration >= quantifier.min
-              '*'
+          entry.iteration >= entry.quantifier.min
+            ? '*'
             : `${entry.iteration}`
         }`;
       }
