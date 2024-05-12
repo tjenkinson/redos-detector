@@ -341,12 +341,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           stack: rightValue.stack,
         },
       );
-    } else {
-      // TODO why does removing this cause failures?
-      infiniteLoopTracker = new InfiniteLoopTracker(
-        areInfiniteLoopTrackerEntriesEqual,
-      );
-    }
+    // } else {
+    //   // TODO why does removing this cause failures?
+    //   infiniteLoopTracker = new InfiniteLoopTracker(
+    //     areInfiniteLoopTrackerEntriesEqual,
+    //   );
+    // }
 
     if (infiniteLoopTracker.getRepeatingEntries()) {
       // console.log('!!!! infinite');

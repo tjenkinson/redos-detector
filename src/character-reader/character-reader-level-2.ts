@@ -275,8 +275,9 @@ function* getGroupContentsReader({
       node: groupEntry.node,
       preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
       stack: [
-        // ...groupEntry.stack,
-        ...groupEntry.stack.filter(({ type }) => type === `reference`),
+        // TODO
+        ...groupEntry.stack,
+        // ...groupEntry.stack.filter(({ type }) => type === `reference`),
         {
           reference: value.node,
           type: `reference`,
@@ -470,7 +471,17 @@ export function buildCharacterReaderLevel2({
               }
 
               let groupInfiniteSize = false;
-              for (const stackEntry of [...value.stack].reverse()) {
+              // TODO explain
+              const reversedStack = [...value.stack].reverse();
+              const referenceStackIndex = reversedStack.findIndex(
+                ({ type }) => type === 'reference',
+              );
+              for (const stackEntry of reversedStack.slice(
+                0,
+                referenceStackIndex >= 0
+                  ? referenceStackIndex
+                  : value.stack.length,
+              )) {
                 if (
                   stackEntry.type === 'quantifier' &&
                   stackEntry.quantifier.max === undefined
