@@ -31,18 +31,17 @@ import {
   intersectCharacterGroups,
   isEmptyCharacterGroups,
 } from './character-groups';
+import { Entry, InfiniteLoopTracker } from './infinite-loop-tracker';
 import {
   isUnboundedReader,
   isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
 import { fork } from 'forkable-iterator';
-import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
 import { once } from './once';
 import { SidesEqualChecker } from './sides-equal-checker';
-import { Stack } from './character-reader/character-reader-level-0';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -94,24 +93,20 @@ export type CheckerReaderValueTrail = Readonly<{
   trail: Trail;
   type: typeof checkerReaderTypeTrail;
 }>;
-export type CheckerReaderValueInfiniteLoop = Readonly<{
-  type: typeof checkerReaderTypeInfiniteLoop;
-}>;
-export type CheckerReaderValue =
-  | CheckerReaderValueInfiniteLoop
-  | CheckerReaderValueTrail;
+export type CheckerReaderValue = CheckerReaderValueTrail;
 
 // eslint-disable-next-line no-use-before-define
 export type CheckerReader = Reader<CheckerReaderValue, CheckerReaderReturn>;
-export type CheckerReaderReturn = Readonly<{
-  error: 'hitMaxSteps' | 'timedOut' | null;
-}>;
+export type CheckerReaderReturn = Readonly<
+  | { error: null; infinite: boolean }
+  | {
+      error: 'hitMaxSteps' | 'timedOut';
+    }
+>;
 
 type InfiniteLoopTrackerEntry = Readonly<{
   contextTrail: string;
   node: AstNode<MyFeatures>;
-  // TODO remove
-  stack: CharacterReaderLevel2Stack;
 }>;
 
 type ReaderWithGetter = Readonly<{
@@ -165,6 +160,11 @@ function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const sidesEqualChecker = new SidesEqualChecker();
   const trails = new Set<Trail>();
+  const trailEntriesAtStartOfLoop = new Set<TrailEntry>();
+  const infiniteLoopTrackerEntryToTrailEntry = new Map<
+    Entry<InfiniteLoopTrackerEntry>,
+    TrailEntry
+  >();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
@@ -201,7 +201,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     if (!entry) break;
 
     const { streamReadersWithGetters } = entry;
-    let { infiniteLoopTracker, trail } = entry;
+    const { infiniteLoopTracker } = entry;
+    let { trail } = entry;
 
     const nextValues: ReaderResult<
       CharacterReaderLevel2Value,
@@ -318,36 +319,27 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
     }
 
-    // TODO bring back something like this for performance? if not inside a quantifier then there is no point tracking
-    // if (
-    //   leftQuantifiersInInfiniteProportion.size &&
-    //   rightQuantifiersInInfiniteProportion.size
-    // ) {
-    infiniteLoopTracker.append(
-      {
+    const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
+      left: {
         contextTrail: buildContextTrail(leftValue.stack),
         node: leftValue.node,
-        stack: leftValue.stack,
       },
-      {
+      right: {
         contextTrail: buildContextTrail(rightValue.stack),
         node: rightValue.node,
-        stack: rightValue.stack,
       },
-    );
-    // } else {
-    //   // TODO why does removing this cause failures?
-    //   infiniteLoopTracker = new InfiniteLoopTracker(
-    //     areInfiniteLoopTrackerEntriesEqual,
-    //   );
-    // }
+    };
+    infiniteLoopTracker.append(infiniteLoopTrackerEntry);
 
-    if (infiniteLoopTracker.getRepeatingEntries()) {
-      // console.log('!!!! infinite');
-      // debugger;
-      if (leftValue.node === rightValue.node) {
-        yield { type: checkerReaderTypeInfiniteLoop };
+    const repeatingEntries = infiniteLoopTracker.getRepeatingEntries();
+    if (repeatingEntries) {
+      const entryAtStartOfLoop = infiniteLoopTrackerEntryToTrailEntry.get(
+        repeatingEntries[0],
+      );
+      if (!entryAtStartOfLoop) {
+        throw new Error('Internal error: missing entry at start of loop');
       }
+      trailEntriesAtStartOfLoop.add(entryAtStartOfLoop);
       continue;
     }
 
@@ -390,6 +382,11 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         quantifierStack: rightValue.quantifierStack,
       },
     };
+
+    infiniteLoopTrackerEntryToTrailEntry.set(
+      infiniteLoopTrackerEntry,
+      newEntry,
+    );
 
     trail = [...trail, newEntry];
 
@@ -521,12 +518,26 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     });
   }
 
-  return {
-    error:
-      stepCount > input.maxSteps
-        ? ('hitMaxSteps' as const)
-        : timedOut
-        ? ('timedOut' as const)
-        : null,
-  };
+  let infinite = false;
+  if (trailEntriesAtStartOfLoop.size > 0) {
+    for (const trail of trails) {
+      if (trail.some((entry) => trailEntriesAtStartOfLoop.has(entry))) {
+        infinite = true;
+        break;
+      }
+    }
+  }
+
+  const error =
+    stepCount > input.maxSteps
+      ? ('hitMaxSteps' as const)
+      : timedOut
+      ? ('timedOut' as const)
+      : null;
+
+  return error
+    ? {
+        error,
+      }
+    : { error: null, infinite };
 }

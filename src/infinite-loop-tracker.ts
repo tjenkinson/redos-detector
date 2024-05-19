@@ -9,8 +9,8 @@ export class InfiniteLoopTracker<T> {
 
   private readonly _isEqual: (left: T, right: T) => boolean;
 
-  public append(left: T, right: T): void {
-    this._history.push({ left, right });
+  public append(entry: Entry<T>): void {
+    this._history.push(entry);
   }
 
   public clone(): InfiniteLoopTracker<T> {
@@ -49,32 +49,11 @@ export class InfiniteLoopTracker<T> {
           continue outer;
         }
       }
-      return this._history.slice(length - candidateSize);
+      return this._history.slice(
+        candidateStart,
+        candidateStart + candidateSize,
+      );
     }
     return null;
-  }
-
-  // TODO remove?
-  public isLooping(): boolean {
-    const length = this._history.length;
-    outer: for (
-      let candidateSize = 1;
-      candidateSize <= length / 2;
-      candidateSize++
-    ) {
-      const candidateStart = length - candidateSize * 2;
-      for (let i = 0; i < candidateSize; i++) {
-        if (
-          !this._isEntryEqual(
-            this._history[candidateStart + i],
-            this._history[candidateStart + candidateSize + i],
-          )
-        ) {
-          continue outer;
-        }
-      }
-      return true;
-    }
-    return false;
   }
 }

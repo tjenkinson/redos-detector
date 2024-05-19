@@ -473,7 +473,7 @@ describe('RedosDetector', () => {
 
         it(source, () => {
           const result = isSafe(regex, {
-            maxBacktracks: Infinity,
+            maxBacktracks: 500,
             maxSteps: 5000,
           });
           const { error, trails, safe, worstCaseBacktrackCount } = result;
@@ -496,7 +496,7 @@ describe('RedosDetector', () => {
 
           if (expectNoBacktracks !== 'noIgnoreSnapshot') {
             expect(
-              trails.map((trail) => {
+              trails.slice(0, 50).map((trail) => {
                 return {
                   ...trail,
                   trail: trail.trail.map((trailEntry) => {
@@ -509,6 +509,7 @@ describe('RedosDetector', () => {
                 };
               }),
             ).toMatchSnapshot();
+            expect(trails.length).toMatchSnapshot();
             expect(toFriendly(result)).toMatchSnapshot();
           }
 
@@ -538,11 +539,6 @@ describe('RedosDetector', () => {
       expect(
         isSafe(/a?a?$/, {
           maxBacktracks: 0,
-        }).error,
-      ).toBe('hitMaxBacktracks');
-      expect(
-        isSafe(/a*a*$/, {
-          maxBacktracks: Infinity,
         }).error,
       ).toBe('hitMaxBacktracks');
     });

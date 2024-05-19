@@ -1,7 +1,6 @@
 import {
   buildCheckerReader,
   CheckerReaderReturn,
-  checkerReaderTypeInfiniteLoop,
   checkerReaderTypeTrail,
   CheckerReaderValue,
   Trail,
@@ -60,27 +59,13 @@ export function collectResults({
 
   let trails: Trail[] = [];
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
-  let infiniteBacktracks = false;
 
   outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {
-      case checkerReaderTypeInfiniteLoop: {
-        infiniteBacktracks = true;
-        if (trails.length > 0) {
-          break outer;
-        }
-        break;
-      }
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
-        trails = trails.filter((existingTrail) => {
-          const samePrefix =
-            trail.length >= existingTrail.length &&
-            areArraysEqual(trail.slice(0, existingTrail.length), existingTrail);
-          return !samePrefix;
-        });
         trails = [...trails, trail];
-        if (infiniteBacktracks || trails.length > maxBacktracks) {
+        if (trails.length > maxBacktracks) {
           break outer;
         }
         break;
@@ -88,15 +73,16 @@ export function collectResults({
     }
   }
 
-  let worstCaseBacktrackCount = infiniteBacktracks ? Infinity : trails.length;
+  let worstCaseBacktrackCount = trails.length;
 
   let error: RedosDetectorError | null = null;
   if (next.done) {
     if (next.value.error) {
       worstCaseBacktrackCount = Infinity;
       error = next.value.error;
-    } else if (!trails.length) {
-      worstCaseBacktrackCount = 0;
+    } else if (next.value.infinite) {
+      worstCaseBacktrackCount = Infinity;
+      error = 'hitMaxBacktracks';
     }
   } else {
     worstCaseBacktrackCount = Infinity;
