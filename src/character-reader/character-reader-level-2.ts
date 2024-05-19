@@ -25,7 +25,6 @@ import {
 } from 'regjsparser';
 import {
   CharacterReaderValueSplitSubType,
-  Stack,
   StackEntry,
 } from './character-reader-level-0';
 import {

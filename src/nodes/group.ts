@@ -1,7 +1,6 @@
 import {
   CharacterReader,
   characterReaderTypeSplit,
-  Stack,
 } from '../character-reader/character-reader-level-0';
 import { Group, NonCapturingGroup } from 'regjsparser';
 import { QuantifierStack, StackQuantifierEntry } from './quantifier';

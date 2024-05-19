@@ -1,4 +1,3 @@
-import { areSetsEqual, setsOverlap } from './sets';
 import {
   AstNode,
   CharacterClass,
@@ -37,6 +36,7 @@ import {
   isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
+import { areSetsEqual } from './sets';
 import { fork } from 'forkable-iterator';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
@@ -65,6 +65,7 @@ export type CharacterGroupsOrReference = Readonly<
 
 export type TrailEntrySide = Readonly<{
   backreferenceStack: BackReferenceStack;
+  contextTrail: string;
   node:
     | CharacterClass
     | CharacterClassEscape
@@ -72,7 +73,6 @@ export type TrailEntrySide = Readonly<{
     | UnicodePropertyEscape
     | Value;
   quantifierStack: QuantifierStack;
-  contextTrail: string;
 }>;
 
 export type TrailEntry = Readonly<{
@@ -134,7 +134,6 @@ const areInfiniteLoopTrackerEntriesEqual = (
   return left.node === right.node && left.contextTrail === right.contextTrail;
 };
 
-// TODO move
 function buildContextTrail(
   stack: CharacterReaderLevel2Stack,
   asteriskInfinite: boolean,
@@ -320,7 +319,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
       left: {
-        // TODO make names clear that these are infinite and others aren't?
         contextTrail: buildContextTrail(leftValue.stack, true),
         node: leftValue.node,
       },
@@ -373,15 +371,15 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       intersection,
       left: {
         backreferenceStack: leftValue.backreferenceStack,
+        contextTrail: buildContextTrail(leftValue.stack, false),
         node: leftValue.node,
         quantifierStack: leftValue.quantifierStack,
-        contextTrail: buildContextTrail(leftValue.stack, false),
       },
       right: {
         backreferenceStack: rightValue.backreferenceStack,
+        contextTrail: buildContextTrail(rightValue.stack, false),
         node: rightValue.node,
         quantifierStack: rightValue.quantifierStack,
-        contextTrail: buildContextTrail(rightValue.stack, false),
       },
     };
 

@@ -273,6 +273,8 @@ function toRedosDetectorBackReferenceStack(
 function toRedosDetectorQuantifierIterations(
   stack: QuantifierStack,
 ): RedosDetectorQuantifierIterations {
+  // TODO or strip out after references here to not break api
+  // TODO or just remove quntifier stack and backreference stack and calculate here on the fly
   return stack.map(({ quantifier, iteration }) => {
     return {
       iteration,

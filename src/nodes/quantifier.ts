@@ -1,18 +1,16 @@
 import {
   buildCharacterReader,
   CharacterReader,
-  Stack,
 } from '../character-reader/character-reader-level-0';
 import { join, joinArray } from '../character-reader/join';
 import { buildNullCharacterReader } from './null';
+import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
 import { Quantifier } from 'regjsparser';
-import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
 export type StackQuantifierEntry = Readonly<{
-  inInfinitePortion: boolean;
   iteration: number;
   quantifier: Quantifier<MyFeatures>;
   type: 'quantifier';
@@ -20,6 +18,7 @@ export type StackQuantifierEntry = Readonly<{
 export type QuantifierStack = readonly StackQuantifierEntry[];
 export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
 
+// TODO previously this would not be included for references. so remove for those? Exposed on api only?
 export function getQuantifierStack(
   stack: CharacterReaderLevel2Stack,
 ): QuantifierStack {
@@ -32,12 +31,18 @@ export function getQuantifierStack(
   return quantifierStack;
 }
 
+// TODO previously this would not be included for references. so remove for those? maybe could not happen in reality because refernces can't have infinite lopps?
 export function buildQuantifiersInInfinitePortion(
   stack: QuantifierStack,
 ): QuantifiersInInfinitePortion {
   return new Set(
     stack
-      .filter(({ inInfinitePortion }) => inInfinitePortion)
+      .filter(
+        ({ iteration, quantifier }) =>
+          iteration >= 1 &&
+          iteration >= quantifier.min &&
+          quantifier.max === undefined,
+      )
       .map(({ quantifier }) => quantifier),
   );
 }
@@ -48,21 +53,6 @@ export function buildQuantifierIterations(
   const res: Map<Quantifier<MyFeatures>, number> = new Map();
   stack.forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
   return res;
-}
-
-// TODO remove if not used anywhere
-// "<node offset>:<iteration number or * if in infinite portion>,..."
-export function buildQuantifierTrail(
-  stack: QuantifierStack,
-  asteriskInfinite: boolean,
-): string {
-  return stack
-    .map(({ quantifier, inInfinitePortion, iteration }) => {
-      return `${quantifier.range[0]}:${
-        asteriskInfinite && inInfinitePortion ? '*' : `${iteration}`
-      }`;
-    })
-    .join(',');
 }
 
 export function buildQuantifierCharacterReader({
@@ -105,13 +95,10 @@ export function buildQuantifierCharacterReader({
                 }),
             ]),
             (value) => {
-              const inInfinitePortion = i >= min && i >= 1 && max === Infinity;
               return {
                 ...value,
                 stack: [
                   {
-                    // TODO remove?
-                    inInfinitePortion,
                     iteration: i,
                     quantifier: node,
                     type: 'quantifier',

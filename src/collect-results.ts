@@ -5,12 +5,12 @@ import {
   CheckerReaderValue,
   Trail,
 } from './checker-reader';
+import { areArraysEqual } from './arrays';
 import { buildCharacterReaderLevel2 } from './character-reader/character-reader-level-2';
 import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
-import { areArraysEqual } from './arrays';
 
 export type WalkerResult = Readonly<{
   error: RedosDetectorError | null;
