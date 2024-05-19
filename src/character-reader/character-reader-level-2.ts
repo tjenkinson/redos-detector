@@ -60,10 +60,8 @@ export type CharacterReaderLevel2ValueSplit = Readonly<{
   type: typeof characterReaderLevel2TypeSplit;
 }>;
 
-// TODO backreference?
 export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel2ValueEntry = Readonly<{
-  // TODO put stack in here too, and remove others?
   backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
@@ -96,9 +94,8 @@ export type CharacterReaderLevel2 = Reader<
   CharacterReaderLevel2ReturnValue
 >;
 
-// TODO
-// `InternalReader` is the same as `CharacterReaderLevel1`, except that the `stack` is `InternalStack`
-// which can represent references
+// `InternalReader` is the same as `CharacterReaderLevel1`, except that the `stack` is `CharacterReaderLevel2Stack`
+// which can include references
 const internalReaderTypeSplit: unique symbol = Symbol(
   'internalReaderTypeSplit',
 );
@@ -154,7 +151,6 @@ type InternalReaderReturnValue = CharacterReaderLevel1ReturnValue;
 type InternalReader = Reader<InternalReaderValue, InternalReaderReturnValue>;
 
 type GroupContentsStoreEntry = Readonly<{
-  // TODO put the stack in this for each entry so get quantifiers for the contents of the reference
   contents: readonly InternalReaderValueEntryGroups[];
   group: CapturingGroup<MyFeatures>;
 }>;
@@ -469,17 +465,17 @@ export function buildCharacterReaderLevel2({
               }
 
               let groupInfiniteSize = false;
-              // TODO explain
               const reversedStack = [...value.stack].reverse();
               const referenceStackIndex = reversedStack.findIndex(
                 ({ type }) => type === 'reference',
               );
-              for (const stackEntry of reversedStack.slice(
+              const noneReferenceStackPortion = reversedStack.slice(
                 0,
                 referenceStackIndex >= 0
                   ? referenceStackIndex
                   : value.stack.length,
-              )) {
+              );
+              for (const stackEntry of noneReferenceStackPortion) {
                 if (
                   stackEntry.type === 'quantifier' &&
                   stackEntry.quantifier.max === undefined
