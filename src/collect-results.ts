@@ -10,6 +10,7 @@ import { buildNodeExtra } from './node-extra';
 import { MyRootNode } from './parse';
 import { ReaderResult } from './reader';
 import { RedosDetectorError } from './redos-detector';
+import { areArraysEqual } from './arrays';
 
 export type WalkerResult = Readonly<{
   error: RedosDetectorError | null;
@@ -63,6 +64,12 @@ export function collectResults({
     switch (next.value.type) {
       case checkerReaderTypeTrail: {
         const trail = next.value.trail;
+        trails = trails.filter((existingTrail) => {
+          const samePrefix =
+            trail.length >= existingTrail.length &&
+            areArraysEqual(trail.slice(0, existingTrail.length), existingTrail);
+          return !samePrefix;
+        });
         trails = [...trails, trail];
         if (trails.length > maxBacktracks) {
           break outer;

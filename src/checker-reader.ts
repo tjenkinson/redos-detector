@@ -72,6 +72,7 @@ export type TrailEntrySide = Readonly<{
     | UnicodePropertyEscape
     | Value;
   quantifierStack: QuantifierStack;
+  contextTrail: string;
 }>;
 
 export type TrailEntry = Readonly<{
@@ -133,11 +134,16 @@ const areInfiniteLoopTrackerEntriesEqual = (
   return left.node === right.node && left.contextTrail === right.contextTrail;
 };
 
-function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
+// TODO move
+function buildContextTrail(
+  stack: CharacterReaderLevel2Stack,
+  asteriskInfinite: boolean,
+): string {
   return stack
     .map((entry) => {
       if (entry.type === 'quantifier') {
         return `q:${entry.quantifier.range[0]}:${
+          asteriskInfinite &&
           entry.quantifier.max === undefined &&
           entry.iteration >= entry.quantifier.min
             ? '*'
@@ -148,6 +154,7 @@ function buildContextTrail(stack: CharacterReaderLevel2Stack): string {
         return `r:${entry.reference.range[0]}`;
       }
     })
+    .filter(Boolean)
     .join(',');
 }
 
@@ -300,15 +307,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const leftQuantifiersInInfiniteProportion =
       buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
-    const rightQuantifiersInInfiniteProportion =
-      buildQuantifiersInInfinitePortion(rightValue.quantifierStack);
-
-    if (
-      setsOverlap(
-        leftQuantifiersInInfiniteProportion,
-        rightQuantifiersInInfiniteProportion,
-      )
-    ) {
+    if (leftQuantifiersInInfiniteProportion.size > 0) {
       const leftAndRightIdentical = trail.every(({ left, right }) =>
         sidesEqualChecker.areSidesEqual(left, right),
       );
@@ -321,11 +320,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
       left: {
-        contextTrail: buildContextTrail(leftValue.stack),
+        // TODO make names clear that these are infinite and others aren't?
+        contextTrail: buildContextTrail(leftValue.stack, true),
         node: leftValue.node,
       },
       right: {
-        contextTrail: buildContextTrail(rightValue.stack),
+        contextTrail: buildContextTrail(rightValue.stack, true),
         node: rightValue.node,
       },
     };
@@ -375,11 +375,13 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         backreferenceStack: leftValue.backreferenceStack,
         node: leftValue.node,
         quantifierStack: leftValue.quantifierStack,
+        contextTrail: buildContextTrail(leftValue.stack, false),
       },
       right: {
         backreferenceStack: rightValue.backreferenceStack,
         node: rightValue.node,
         quantifierStack: rightValue.quantifierStack,
+        contextTrail: buildContextTrail(rightValue.stack, false),
       },
     };
 
