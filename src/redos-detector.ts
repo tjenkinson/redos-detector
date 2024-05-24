@@ -2,10 +2,12 @@ import { MyFeatures, parse } from './parse';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
-import { BackReferenceStack } from './character-reader/character-reader-level-2';
+import {
+  BackReferenceStack,
+  CharacterReaderLevel2Stack,
+} from './character-reader/character-reader-level-2';
 import { collectResults } from './collect-results';
 import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
-import { QuantifierStack } from './nodes/quantifier';
 
 export { downgradePattern, DowngradePatternConfig } from './downgrade-pattern';
 export * from './to-friendly';
@@ -271,16 +273,19 @@ function toRedosDetectorBackReferenceStack(
 }
 
 function toRedosDetectorQuantifierIterations(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): RedosDetectorQuantifierIterations {
   // TODO or strip out after references here to not break api
   // TODO or just remove quntifier stack and backreference stack and calculate here on the fly
-  return stack.map(({ quantifier, iteration }) => {
-    return {
-      iteration,
-      node: toRedosDetectorNode(quantifier),
-    };
-  });
+  // TODO deprecate these and add an actual `stack` property. Then use getter to calc others on fly
+  return stack
+    .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
+    .map(({ quantifier, iteration }) => {
+      return {
+        iteration,
+        node: toRedosDetectorNode(quantifier),
+      };
+    });
 }
 
 /**
@@ -366,7 +371,7 @@ export function isSafePattern(
               ),
               node: toRedosDetectorNode(right.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                right.quantifierStack,
+                right.stack,
               ),
             },
             b: {
@@ -375,7 +380,7 @@ export function isSafePattern(
               ),
               node: toRedosDetectorNode(left.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                left.quantifierStack,
+                left.stack,
               ),
             },
           };

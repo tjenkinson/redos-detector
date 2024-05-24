@@ -22,10 +22,6 @@ import {
   ReaderResult,
 } from './reader';
 import {
-  buildQuantifiersInInfinitePortion,
-  QuantifierStack,
-} from './nodes/quantifier';
-import {
   CharacterGroups,
   intersectCharacterGroups,
   isEmptyCharacterGroups,
@@ -36,7 +32,8 @@ import {
   isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
-import { areSetsEqual, setsOverlap } from './sets';
+import { areSetsEqual } from './sets';
+import { buildQuantifiersInInfinitePortion } from './nodes/quantifier';
 import { fork } from 'forkable-iterator';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
@@ -72,7 +69,7 @@ export type TrailEntrySide = Readonly<{
     | Dot
     | UnicodePropertyEscape
     | Value;
-  quantifierStack: QuantifierStack;
+  stack: CharacterReaderLevel2Stack;
 }>;
 
 export type TrailEntry = Readonly<{
@@ -319,20 +316,20 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         backreferenceStack: leftValue.backreferenceStack,
         contextTrail: buildContextTrail(leftValue.stack, false),
         node: leftValue.node,
-        quantifierStack: leftValue.quantifierStack,
+        stack: leftValue.stack,
       },
       right: {
         backreferenceStack: rightValue.backreferenceStack,
         contextTrail: buildContextTrail(rightValue.stack, false),
         node: rightValue.node,
-        quantifierStack: rightValue.quantifierStack,
+        stack: rightValue.stack,
       },
     };
 
     trail = [...trail, newEntry];
 
     const leftQuantifiersInInfiniteProportion =
-      buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
+      buildQuantifiersInInfinitePortion(leftValue.stack);
 
     if (leftQuantifiersInInfiniteProportion.size > 0) {
       const leftAndRightIdentical = trail.every(({ left, right }) =>

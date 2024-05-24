@@ -10,9 +10,7 @@ import {
 import { buildForkableReader, Reader, ReaderResult } from '../reader';
 import {
   buildQuantifierIterations,
-  getQuantifierStack,
   QuantifierIterations,
-  QuantifierStack,
 } from '../nodes/quantifier';
 import {
   CapturingGroup,
@@ -72,7 +70,6 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | UnicodePropertyEscape
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  quantifierStack: QuantifierStack;
   stack: CharacterReaderLevel2Stack;
   type: typeof characterReaderLevel2TypeEntry;
 }>;
@@ -391,9 +388,7 @@ export function buildCharacterReaderLevel2({
             ...value.preceedingZeroWidthEntries,
           ];
 
-          const quantifierStack = getQuantifierStack(value.stack);
-          const quantifierIterations =
-            buildQuantifierIterations(quantifierStack);
+          const quantifierIterations = buildQuantifierIterations(value.stack);
           const lookaheadStack = getLookaheadStack(value.stack);
 
           const groups = getGroups(value.stack);
@@ -550,7 +545,6 @@ export function buildCharacterReaderLevel2({
                 lookaheadStack,
                 node: value.node,
                 preceedingZeroWidthEntries,
-                quantifierStack,
                 stack: value.stack,
                 type: characterReaderLevel2TypeEntry,
               };

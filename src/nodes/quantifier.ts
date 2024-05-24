@@ -15,28 +15,14 @@ export type StackQuantifierEntry = Readonly<{
   quantifier: Quantifier<MyFeatures>;
   type: 'quantifier';
 }>;
-export type QuantifierStack = readonly StackQuantifierEntry[];
 export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
 
-// TODO previously this would not be included for references. so remove for those? Exposed on api only?
-export function getQuantifierStack(
-  stack: CharacterReaderLevel2Stack,
-): QuantifierStack {
-  const quantifierStack: StackQuantifierEntry[] = [];
-  for (const entry of stack) {
-    if (entry.type === 'quantifier') {
-      quantifierStack.push(entry);
-    }
-  }
-  return quantifierStack;
-}
-
-// TODO previously this would not be included for references. so remove for those? maybe could not happen in reality because refernces can't have infinite lopps?
 export function buildQuantifiersInInfinitePortion(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): QuantifiersInInfinitePortion {
   return new Set(
     stack
+      .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
       .filter(
         ({ iteration, quantifier }) =>
           iteration >= 1 &&
@@ -48,10 +34,12 @@ export function buildQuantifiersInInfinitePortion(
 }
 
 export function buildQuantifierIterations(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): QuantifierIterations {
   const res: Map<Quantifier<MyFeatures>, number> = new Map();
-  stack.forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
+  stack
+    .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
+    .forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
   return res;
 }
 
