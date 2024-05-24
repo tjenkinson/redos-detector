@@ -36,7 +36,7 @@ import {
   isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
-import { areSetsEqual } from './sets';
+import { areSetsEqual, setsOverlap } from './sets';
 import { fork } from 'forkable-iterator';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
@@ -304,66 +304,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
-    const leftQuantifiersInInfiniteProportion =
-      buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
-    if (leftQuantifiersInInfiniteProportion.size > 0) {
-      const leftAndRightIdentical = trail.every(({ left, right }) =>
-        sidesEqualChecker.areSidesEqual(left, right),
-      );
-      if (leftAndRightIdentical) {
-        // left and right have been identical to each other, and we are now entering an infinite
-        // portion, so bail
-        continue;
-      }
-    }
-
-    const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
-      left: {
-        contextTrail: buildContextTrail(leftValue.stack, true),
-        node: leftValue.node,
-      },
-      right: {
-        contextTrail: buildContextTrail(rightValue.stack, true),
-        node: rightValue.node,
-      },
-    };
-    infiniteLoopTracker.append(infiniteLoopTrackerEntry);
-
-    const repeatingEntries = infiniteLoopTracker.getRepeatingEntries();
-    if (repeatingEntries) {
-      const entryAtStartOfLoop = infiniteLoopTrackerEntryToTrailEntry.get(
-        repeatingEntries[0],
-      );
-      if (!entryAtStartOfLoop) {
-        throw new Error('Internal error: missing entry at start of loop');
-      }
-      trailEntriesAtStartOfLoop.add(entryAtStartOfLoop);
-      continue;
-    }
-
     const intersection = intersectCharacterGroups(
       leftValue.characterGroups,
       rightValue.characterGroups,
     );
 
     if (isEmptyCharacterGroups(intersection)) {
-      continue;
-    }
-
-    const leftAtomicGroups = new Set(
-      [...leftValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0]),
-      ),
-    );
-    const rightAtomicGroups = new Set(
-      [...rightValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0]),
-      ),
-    );
-    if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
-      // if we are not entering/leaving an atomic group in sync
-      // then bail, as atomic groups can't give something up to be
-      // consumed somewhere else
       continue;
     }
 
@@ -383,12 +329,69 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       },
     };
 
+    trail = [...trail, newEntry];
+
+    const leftQuantifiersInInfiniteProportion =
+      buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
+
+    if (leftQuantifiersInInfiniteProportion.size > 0) {
+      const leftAndRightIdentical = trail.every(({ left, right }) =>
+        sidesEqualChecker.areSidesEqual(left, right),
+      );
+      if (leftAndRightIdentical) {
+        // left and right have been identical to each other, and we are now entering an infinite
+        // portion, so bail
+        continue;
+      }
+    }
+
+    // TODO just use trail entry now?
+    const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
+      left: {
+        contextTrail: buildContextTrail(leftValue.stack, true),
+        node: leftValue.node,
+      },
+      right: {
+        contextTrail: buildContextTrail(rightValue.stack, true),
+        node: rightValue.node,
+      },
+    };
+    infiniteLoopTracker.append(infiniteLoopTrackerEntry);
+
+    // TODO this still needed?
     infiniteLoopTrackerEntryToTrailEntry.set(
       infiniteLoopTrackerEntry,
       newEntry,
     );
 
-    trail = [...trail, newEntry];
+    const repeatingEntries = infiniteLoopTracker.getRepeatingEntries();
+    if (repeatingEntries) {
+      const entryAtStartOfLoop = infiniteLoopTrackerEntryToTrailEntry.get(
+        repeatingEntries[0],
+      );
+      if (!entryAtStartOfLoop) {
+        throw new Error('Internal error: missing entry at start of loop');
+      }
+      trailEntriesAtStartOfLoop.add(entryAtStartOfLoop);
+      continue;
+    }
+
+    const leftAtomicGroups = new Set(
+      [...leftValue.groups.keys()].filter((group) =>
+        input.atomicGroupOffsets.has(group.range[0]),
+      ),
+    );
+    const rightAtomicGroups = new Set(
+      [...rightValue.groups.keys()].filter((group) =>
+        input.atomicGroupOffsets.has(group.range[0]),
+      ),
+    );
+    if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
+      // if we are not entering/leaving an atomic group in sync
+      // then bail, as atomic groups can't give something up to be
+      // consumed somewhere else
+      continue;
+    }
 
     let backtrackPossible: boolean;
 
