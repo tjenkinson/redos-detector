@@ -63,7 +63,7 @@
     "micromatch": "4.0.7",
     "prettier": "3.0.3",
     "rollup": "4.18.1",
-    "ts-jest": "29.2.1",
+    "ts-jest": "29.2.2",
     "tslib": "2.6.3",
     "typescript": "5.4.5"
   }
