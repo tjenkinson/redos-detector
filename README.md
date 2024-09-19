@@ -75,7 +75,7 @@ This tool will generate all the combinations of input strings that would match t
 
 ## Usage
 
-This can be used via the CLI, or as a library. It's [on npm](https://www.npmjs.com/package/redos-detector).
+This can be used via the CLI, in a GitHub Action or as a library. It's [on npm](https://www.npmjs.com/package/redos-detector).
 
 There's also an ESLint plugin "[eslint-plugin-redos-detector](https://github.com/tjenkinson/eslint-plugin-redos-detector)".
 
@@ -182,6 +182,27 @@ By default this will output the result in a text format, and the exit status wil
 Only the first 15 results will be shown in the text output, but this can be changed with the `--resultsLimit` option. This option is ignored with `--json`.
 
 The `--json` option will result in JSON being outputted containing more information. The structure of this will follow semantic versioning. When this option is used the exit status will always be `0` (unless an exception occurred), so you should always check the `safe` property to determine if the pattern is safe.
+
+### GitHub Action
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          cache-dependency-path: ''
+      - name: Run redos-detector
+        run: |
+          while read -r regex; do
+            npx redos-detector check "$regex" --caseInsensitive --resultsLimit 0
+          done < file
+```
+
+to cache the package and check a file with one pattern on each line. The exit status translates into passing (`0`) or failure (non-`0`) on a status badge.
 
 ### Library
 
