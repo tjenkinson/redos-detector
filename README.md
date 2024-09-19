@@ -198,6 +198,7 @@ jobs:
       - name: Run redos-detector
         run: |
           while read -r regex; do
+            echo "$regex"
             npx redos-detector check "$regex" --caseInsensitive --resultsLimit 0
           done < file
 ```
