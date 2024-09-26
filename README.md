@@ -197,10 +197,8 @@ jobs:
           cache-dependency-path: ''
       - name: Run redos-detector
         run: |
-          while read -r regex; do
-            echo "$regex"
-            npx redos-detector check "$regex" --caseInsensitive --resultsLimit 0
-          done < file
+          cat file | parallel -j+0 echo {} '&&' \
+          npx redos-detector check "{}" --caseInsensitive --resultsLimit 0
 ```
 
 to cache the package and check a file with one pattern on each line. The exit status translates into passing (`0`) or failure (non-`0`) on a status badge.
