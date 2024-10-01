@@ -48,6 +48,22 @@ function replace(
   return `${input.slice(0, start)}${replacement}${input.slice(end)}`;
 }
 
+function shiftOffsets({
+  after,
+  offsets,
+  shiftAmount,
+}: {
+  after: number;
+  offsets: ReadonlySet<number>;
+  shiftAmount: number;
+}): Set<number> {
+  return new Set(
+    [...offsets].map((offset) => {
+      return offset > after ? offset + shiftAmount : offset;
+    }),
+  );
+}
+
 function quantifierIterationsToString(
   quantifier: Quantifier<MyFeatures>,
 ): string {
@@ -66,6 +82,62 @@ export type RawWithoutCapturingGroupsOrLookaheads = Readonly<{
   referencesWithOffset: ReadonlyMap<Reference<MyFeatures>, number>;
   result: string;
 }>;
+
+function alreadyHasStartAnchorReplacement(node: MyRootNode): boolean {
+  if (node.type !== 'alternative') return false;
+
+  const body = node.body;
+  /* istanbul ignore next */
+  if (body.length < 1) return false;
+  const [maybeQuantifier] = body;
+  if (maybeQuantifier.type !== 'quantifier') return false;
+  if (maybeQuantifier.min !== 0) return false;
+  if (maybeQuantifier.max !== undefined) return false;
+  if (maybeQuantifier.greedy) return false;
+  const maybeCharacterClass = maybeQuantifier.body[0];
+  if (maybeCharacterClass.type !== 'characterClass') return false;
+  maybeCharacterClass.kind satisfies 'union';
+  if (maybeCharacterClass.body.length !== 0) return false;
+  if (!maybeCharacterClass.negative) return false;
+  return true;
+}
+
+export function isMissingStartAnchor(rootNode: MyRootNode): boolean {
+  if (alreadyHasStartAnchorReplacement(rootNode)) return false;
+
+  const check = (node: MyRootNode): 'anchor' | 'consumingNode' | null => {
+    if (node.type === 'anchor') {
+      if (node.kind === 'start') return 'anchor';
+      return null;
+    }
+    if (node.type === 'quantifier' && node.max === 0) return null;
+    if (
+      node.type === 'alternative' ||
+      node.type === 'group' ||
+      node.type === 'quantifier'
+    ) {
+      const mayBeSkipped = node.type === 'quantifier' && node.min === 0;
+      for (const child of node.body) {
+        const res = check(child);
+        if (res === 'consumingNode') return 'consumingNode';
+        if (res === 'anchor') {
+          if (!mayBeSkipped) return 'anchor';
+          return null;
+        }
+      }
+      return null;
+    }
+    if (node.type === 'disjunction') {
+      const res = node.body.map((child) => check(child));
+      if (res.some((a) => a === 'consumingNode')) return 'consumingNode';
+      if (res.every((a) => a === 'anchor')) return 'anchor';
+      return null;
+    }
+    return 'consumingNode';
+  };
+
+  return check(rootNode) === 'consumingNode';
+}
 
 export function getRawWithoutCapturingGroupsOrLookaheads(
   rootNode: MyRootNode,
@@ -139,8 +211,7 @@ type Action = Readonly<{
 }>;
 
 /**
- * Downgrade the provided pattern if needed so that it is supported
- * for checking.
+ * Downgrade the provided pattern if needed so that it is supported for checking.
  *
  * A downgraded pattern may introduce false positives.
  *
@@ -149,6 +220,8 @@ type Action = Readonly<{
  *   the reference will be replaced with a non-capturing group that contains referenced group.
  * - If the pattern contains a reference to a group that is a non-finite size,
  *   the reference will be replaced with a non-capturing group that contains the referenced group.
+ * - If the pattern does not contain a start anchor then `[^]*` will be prepended, and the remainder
+ *   wrapped in a none capturing group if needed.
  */
 export function downgradePattern({
   pattern,
@@ -159,6 +232,9 @@ export function downgradePattern({
   ): { needToRerun: boolean; result: DowngradedRegexPattern } => {
     const ast = parse(lastResult.pattern, unicode);
     const actions: Action[] = [];
+
+    let needsStartAnchorReplacement = false as boolean;
+    const needsWrappingInGroup = ast.type === 'disjunction';
 
     const groups: Map<
       number,
@@ -179,40 +255,74 @@ export function downgradePattern({
       return node === group;
     };
 
-    const walkAll = (
-      nodes: MyRootNode[],
-      nodeStack: readonly MyRootNode[],
-      serial: boolean,
-    ): void => {
+    const walkAll = ({
+      nodeStack,
+      nodes,
+      passedStartAnchor,
+      serial,
+    }: {
+      nodeStack: readonly MyRootNode[];
+      nodes: MyRootNode[];
+      passedStartAnchor: { value: boolean };
+      serial: boolean;
+    }): void => {
       let justHadLookahead: NonCapturingGroup<MyFeatures> | null = null;
       nodes.forEach((expression) => {
         if (serial) {
           // eslint-disable-next-line no-use-before-define
-          walk(expression, nodeStack, justHadLookahead);
+          walk({
+            immediatelyPrecedingLookahead: justHadLookahead,
+            node: expression,
+            nodeStack,
+            passedStartAnchor,
+          });
           justHadLookahead =
             expression.type === 'group' && expression.behavior === 'lookahead'
               ? expression
               : null;
         } else {
           // eslint-disable-next-line no-use-before-define
-          walk(expression, nodeStack, null);
+          walk({
+            immediatelyPrecedingLookahead: justHadLookahead,
+            node: expression,
+            nodeStack,
+            passedStartAnchor: { ...passedStartAnchor },
+          });
         }
       });
     };
 
-    const walk = (
-      node: MyRootNode,
-      nodeStack: readonly MyRootNode[],
-      immediatelyPreceedingLookahead: NonCapturingGroup<MyFeatures> | null,
-    ): void => {
+    const walk = ({
+      immediatelyPrecedingLookahead,
+      node,
+      nodeStack,
+      passedStartAnchor,
+    }: {
+      immediatelyPrecedingLookahead: NonCapturingGroup<MyFeatures> | null;
+      node: MyRootNode;
+      nodeStack: readonly MyRootNode[];
+      passedStartAnchor: { value: boolean };
+    }): void => {
+      const onConsumingNode = (): void => {
+        if (!passedStartAnchor.value) {
+          needsStartAnchorReplacement = true;
+        }
+      };
+
       switch (node.type) {
-        case 'anchor':
         case 'characterClass':
         case 'characterClassEscape':
         case 'unicodePropertyEscape':
         case 'value':
         case 'dot':
+          onConsumingNode();
           return;
+        case 'anchor': {
+          if (node.kind === 'start') {
+            passedStartAnchor.value = true;
+          }
+          return;
+        }
         case 'group': {
           let groupIndex: number | null = null;
           if (node.behavior === 'normal') {
@@ -220,7 +330,12 @@ export function downgradePattern({
             nextGroupIndex++;
           }
 
-          walkAll(node.body, [...nodeStack, node], true);
+          walkAll({
+            nodeStack: [...nodeStack, node],
+            nodes: node.body,
+            passedStartAnchor,
+            serial: true,
+          });
 
           if (groupIndex !== null && node.behavior === 'normal') {
             groups.set(groupIndex, { group: node, stack: [...nodeStack] });
@@ -228,31 +343,50 @@ export function downgradePattern({
           return;
         }
         case 'disjunction': {
-          walkAll(node.body, [...nodeStack, node], false);
+          walkAll({
+            nodeStack: [...nodeStack, node],
+            nodes: node.body,
+            passedStartAnchor,
+            serial: false,
+          });
           return;
         }
         case 'alternative': {
-          walkAll(node.body, [...nodeStack, node], true);
+          walkAll({
+            nodeStack: [...nodeStack, node],
+            nodes: node.body,
+            passedStartAnchor,
+            serial: true,
+          });
           return;
         }
         case 'quantifier': {
-          if (node.max === undefined) {
-            [...nodeStack].reverse().some((stackNode) => {
-              if (stackNode.type === 'group') {
-                if (lookaheadBehaviours.indexOf(stackNode.behavior) >= 0) {
-                  // this infinite quantifier is contained in a lookahead,
-                  // so doesn't effect outer group size
-                  return true;
+          if (node.max !== 0) {
+            if (node.max === undefined) {
+              [...nodeStack].reverse().some((stackNode) => {
+                if (stackNode.type === 'group') {
+                  if (lookaheadBehaviours.indexOf(stackNode.behavior) >= 0) {
+                    // this infinite quantifier is contained in a lookahead,
+                    // so doesn't effect outer group size
+                    return true;
+                  }
+                  infiniteGroups.add(stackNode);
                 }
-                infiniteGroups.add(stackNode);
-              }
-              return false;
+                return false;
+              });
+            }
+            walkAll({
+              nodeStack: [...nodeStack, node],
+              nodes: node.body,
+              passedStartAnchor:
+                node.min === 0 ? { ...passedStartAnchor } : passedStartAnchor,
+              serial: true,
             });
           }
-          walkAll(node.body, [...nodeStack, node], false);
           return;
         }
         case 'reference': {
+          onConsumingNode();
           const entry = groups.get(node.matchIndex);
           if (entry) {
             const { group, stack } = entry;
@@ -286,9 +420,9 @@ export function downgradePattern({
               // given that lookaheads can't be backtracked into and immediately after the
               // lookahead we match the same that was in the lookahead
               const atomic =
-                !!immediatelyPreceedingLookahead &&
+                !!immediatelyPrecedingLookahead &&
                 lookaheadOnlyContainsGroup(
-                  immediatelyPreceedingLookahead,
+                  immediatelyPrecedingLookahead,
                   group,
                 );
 
@@ -310,7 +444,12 @@ export function downgradePattern({
       }
     };
 
-    walk(ast, [], null);
+    walk({
+      immediatelyPrecedingLookahead: null,
+      node: ast,
+      nodeStack: [],
+      passedStartAnchor: { value: false },
+    });
 
     let newPattern = lastResult.pattern;
     let atomicGroupOffsets: Set<number> = new Set(
@@ -348,11 +487,11 @@ export function downgradePattern({
 
         const shiftAmount =
           replacement.length - (referenceEnd - referenceStart);
-        atomicGroupOffsets = new Set(
-          [...atomicGroupOffsets].map((offset) => {
-            return offset > referenceStart ? offset + shiftAmount : offset;
-          }),
-        );
+        atomicGroupOffsets = shiftOffsets({
+          after: referenceStart,
+          offsets: atomicGroupOffsets,
+          shiftAmount,
+        });
 
         if (atomicOrOptional === 'atomic') {
           atomicGroupOffsets.add(referenceStart);
@@ -373,6 +512,18 @@ export function downgradePattern({
         );
       });
 
+    if (needsStartAnchorReplacement && !alreadyHasStartAnchorReplacement(ast)) {
+      if (needsWrappingInGroup) {
+        newPattern = `(?:${newPattern})`;
+      }
+      newPattern = `[^]*?${newPattern}`;
+      atomicGroupOffsets = shiftOffsets({
+        after: -1,
+        offsets: atomicGroupOffsets,
+        shiftAmount: needsWrappingInGroup ? 8 : 5,
+      });
+    }
+
     return { needToRerun, result: { atomicGroupOffsets, pattern: newPattern } };
   };
 
@@ -384,7 +535,8 @@ export function downgradePattern({
     const { result, needToRerun } = run(lastResult);
     lastResult = result;
     if (!needToRerun) {
-      return result;
+      break;
     }
   }
+  return lastResult;
 }
