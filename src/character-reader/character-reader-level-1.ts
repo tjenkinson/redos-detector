@@ -46,7 +46,7 @@ export type ZeroWidthEntry = Readonly<
 >;
 
 export type CharacterReaderLevel1ValueEntryBase = Readonly<{
-  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   stack: Stack;
   type: typeof characterReaderLevel1TypeEntry;
 }>;
@@ -82,7 +82,7 @@ export type CharacterReaderLevel1Value =
 
 export type CharacterReaderLevel1ReturnValue = Readonly<{
   bounded: boolean;
-  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
 }>;
 
 export type CharacterReaderLevel1 = Reader<
@@ -91,7 +91,7 @@ export type CharacterReaderLevel1 = Reader<
 >;
 /**
  * Returns a `CharacterReaderLevel1` which builds on top of
- * `CharacterReaderLevel0` adds a `precedingZeroWidthEntries` property
+ * `CharacterReaderLevel0` adds a `preceedingZeroWidthEntries` property
  * and makes every result map to a character.
  */
 export function buildCharacterReaderLevel1({
@@ -105,7 +105,7 @@ export function buildCharacterReaderLevel1({
 }): CharacterReaderLevel1 {
   const startThread = function* (
     reader: CharacterReader,
-    precedingZeroWidthEntries: readonly ZeroWidthEntry[],
+    preceedingZeroWidthEntries: readonly ZeroWidthEntry[],
   ): CharacterReaderLevel1 {
     let next: ReaderResult<CharacterReaderValue>;
     while (!(next = reader.next()).done) {
@@ -116,41 +116,41 @@ export function buildCharacterReaderLevel1({
               yield {
                 characterGroups: next.value.characterGroups,
                 node: next.value.node,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
                 stack: next.value.stack,
                 subType: 'groups',
                 type: characterReaderLevel1TypeEntry,
               };
-              precedingZeroWidthEntries = [];
+              preceedingZeroWidthEntries = [];
               break;
             case 'reference': {
               yield {
                 node: next.value.node,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
                 referenceIndex: next.value.referenceIndex,
                 stack: next.value.stack,
                 subType: next.value.subType,
                 type: characterReaderLevel1TypeEntry,
               };
-              precedingZeroWidthEntries = [];
+              preceedingZeroWidthEntries = [];
               break;
             }
             case 'end': {
               return {
                 bounded: next.value.bounded,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
               };
             }
             case 'null': {
-              precedingZeroWidthEntries = [
-                ...precedingZeroWidthEntries,
+              preceedingZeroWidthEntries = [
+                ...preceedingZeroWidthEntries,
                 { offset: next.value.offset, type: 'null' },
               ];
               break;
             }
             case 'start': {
-              precedingZeroWidthEntries = [
-                ...precedingZeroWidthEntries,
+              preceedingZeroWidthEntries = [
+                ...preceedingZeroWidthEntries,
                 { offset: next.value.offset, type: 'start' },
               ];
               break;
@@ -160,10 +160,10 @@ export function buildCharacterReaderLevel1({
         }
         case characterReaderTypeSplit: {
           const value = next.value;
-          const _precedingZeroWidthEntries = precedingZeroWidthEntries;
+          const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
           yield {
             reader: (): CharacterReaderLevel1 =>
-              startThread(value.reader(), _precedingZeroWidthEntries),
+              startThread(value.reader(), _preceedingZeroWidthEntries),
             subType: value.subType,
             type: characterReaderLevel1TypeSplit,
           };
@@ -171,7 +171,7 @@ export function buildCharacterReaderLevel1({
         }
       }
     }
-    return { bounded: false, precedingZeroWidthEntries };
+    return { bounded: false, preceedingZeroWidthEntries };
   };
 
   return startThread(

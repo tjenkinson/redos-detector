@@ -67,7 +67,7 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | Dot
     | UnicodePropertyEscape
     | Value;
-  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   stack: CharacterReaderLevel2Stack;
   type: typeof characterReaderLevel2TypeEntry;
 }>;
@@ -78,7 +78,7 @@ export type CharacterReaderLevel2Value =
 export type CharacterReaderLevel2ReturnValue = Readonly<
   | {
       bounded: boolean;
-      precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+      preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
       type: 'end';
     }
   | { type: 'abort' }
@@ -106,7 +106,7 @@ type InternalReaderValueSplit = Readonly<{
 }>;
 
 type InternalReaderValueEntryBase = Readonly<{
-  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   stack: CharacterReaderLevel2Stack;
   type: typeof internalReaderTypeEntry;
 }>;
@@ -154,7 +154,7 @@ type State = Readonly<{
   characterReader: InternalReader;
   groupContentsStore: GroupContentsStore;
   groupsWithInfiniteSize: ReadonlySet<number>;
-  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierIterationsAtLastGroup: QuantifierIterations;
   referenceCharacterReaderWithReference: Readonly<{
     reader: InternalReader;
@@ -237,7 +237,7 @@ function* getGroupContentsReader({
           behavior === 'negativeLookahead' || behavior === 'negativeLookbehind',
       )
     ) {
-      return { bounded: false, precedingZeroWidthEntries: [] };
+      return { bounded: false, preceedingZeroWidthEntries: [] };
     }
 
     throw new Error(
@@ -250,7 +250,7 @@ function* getGroupContentsReader({
       groupContents.group,
     ) /* reference is inside group being referenced */
   ) {
-    return { bounded: false, precedingZeroWidthEntries: [] };
+    return { bounded: false, preceedingZeroWidthEntries: [] };
   }
 
   if (groupsWithInfiniteSize.has(value.referenceIndex)) {
@@ -263,7 +263,7 @@ function* getGroupContentsReader({
     yield {
       characterGroups: groupEntry.characterGroups,
       node: groupEntry.node,
-      precedingZeroWidthEntries: groupEntry.precedingZeroWidthEntries,
+      preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
       stack: [
         ...groupEntry.stack,
         {
@@ -276,7 +276,7 @@ function* getGroupContentsReader({
       type: internalReaderTypeEntry,
     };
   }
-  return { bounded: false, precedingZeroWidthEntries: [] };
+  return { bounded: false, preceedingZeroWidthEntries: [] };
 }
 
 /**
@@ -298,7 +298,7 @@ export function buildCharacterReaderLevel2({
   const startThread = function* (state: State): CharacterReaderLevel2 {
     outer: for (;;) {
       let {
-        precedingZeroWidthEntries,
+        preceedingZeroWidthEntries,
         groupsWithInfiniteSize,
         groupContentsStore,
         quantifierIterationsAtLastGroup,
@@ -327,9 +327,9 @@ export function buildCharacterReaderLevel2({
             characterReader,
             groupContentsStore,
             groupsWithInfiniteSize,
-            precedingZeroWidthEntries: [
-              ...precedingZeroWidthEntries,
-              ...result.value.precedingZeroWidthEntries,
+            preceedingZeroWidthEntries: [
+              ...preceedingZeroWidthEntries,
+              ...result.value.preceedingZeroWidthEntries,
             ],
             quantifierIterationsAtLastGroup,
             referenceCharacterReaderWithReference: null,
@@ -339,9 +339,9 @@ export function buildCharacterReaderLevel2({
 
         return {
           bounded: result.value.bounded,
-          precedingZeroWidthEntries: [
-            ...precedingZeroWidthEntries,
-            ...result.value.precedingZeroWidthEntries,
+          preceedingZeroWidthEntries: [
+            ...preceedingZeroWidthEntries,
+            ...result.value.preceedingZeroWidthEntries,
           ],
           type: 'end' as const,
         };
@@ -362,14 +362,14 @@ export function buildCharacterReaderLevel2({
           const _quantifierIterationsAtLastGroup =
             quantifierIterationsAtLastGroup;
           const _groupsWithInfiniteSize = groupsWithInfiniteSize;
-          const _precedingZeroWidthEntries = precedingZeroWidthEntries;
+          const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
           yield {
             reader: (): CharacterReaderLevel2 =>
               startThread({
                 characterReader: buildForkableReader(value.reader()),
                 groupContentsStore: _groupContentsStore,
                 groupsWithInfiniteSize: _groupsWithInfiniteSize,
-                precedingZeroWidthEntries: _precedingZeroWidthEntries,
+                preceedingZeroWidthEntries: _preceedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup:
                   _quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference:
@@ -381,9 +381,9 @@ export function buildCharacterReaderLevel2({
           break;
         }
         case internalReaderTypeEntry: {
-          precedingZeroWidthEntries = [
-            ...precedingZeroWidthEntries,
-            ...value.precedingZeroWidthEntries,
+          preceedingZeroWidthEntries = [
+            ...preceedingZeroWidthEntries,
+            ...value.preceedingZeroWidthEntries,
           ];
 
           const quantifierIterations = buildQuantifierIterations(value.stack);
@@ -427,7 +427,7 @@ export function buildCharacterReaderLevel2({
                 characterReader,
                 groupContentsStore,
                 groupsWithInfiniteSize,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference: {
                   reader: groupContentsReader,
@@ -444,7 +444,7 @@ export function buildCharacterReaderLevel2({
                 // This can happen when a quantifier containing a group restarts
                 for (const [index, { group }] of groupContentsStore) {
                   const offsets = [
-                    ...precedingZeroWidthEntries.map(({ offset }) => offset),
+                    ...preceedingZeroWidthEntries.map(({ offset }) => offset),
                     value.node.range[0],
                   ];
                   for (const offset of offsets) {
@@ -515,8 +515,8 @@ export function buildCharacterReaderLevel2({
                     ...contents.contents,
                     {
                       ...value,
-                      precedingZeroWidthEntries:
-                        precedingZeroWidthEntries.filter(
+                      preceedingZeroWidthEntries:
+                        preceedingZeroWidthEntries.filter(
                           ({ offset }) =>
                             // only include entries that are within the group
                             // e.g `^` in (^a) but not `^(a)`
@@ -535,17 +535,17 @@ export function buildCharacterReaderLevel2({
                 groups,
                 lookaheadStack,
                 node: value.node,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
                 stack: value.stack,
                 type: characterReaderLevel2TypeEntry,
               };
-              precedingZeroWidthEntries = [];
+              preceedingZeroWidthEntries = [];
 
               state = {
                 characterReader,
                 groupContentsStore,
                 groupsWithInfiniteSize,
-                precedingZeroWidthEntries,
+                preceedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference,
               };
@@ -565,7 +565,7 @@ export function buildCharacterReaderLevel2({
     ),
     groupContentsStore: new Map(),
     groupsWithInfiniteSize: new Set(),
-    precedingZeroWidthEntries: [],
+    preceedingZeroWidthEntries: [],
     quantifierIterationsAtLastGroup: new Map(),
     referenceCharacterReaderWithReference: null,
   });
