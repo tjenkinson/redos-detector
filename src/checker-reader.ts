@@ -1,3 +1,4 @@
+import { areSetsEqual, setsOverlap } from './sets';
 import {
   AstNode,
   CharacterClass,
@@ -7,33 +8,36 @@ import {
   Value,
 } from 'regjsparser';
 import {
+  BackReferenceStack,
+  CharacterReaderLevel2,
+  CharacterReaderLevel2ReturnValue,
+  characterReaderLevel2TypeEntry,
+  characterReaderLevel2TypeSplit,
+  CharacterReaderLevel2Value,
+} from './character-reader/character-reader-level-2';
+import {
   buildForkableReader,
   ForkableReader,
   Reader,
   ReaderResult,
 } from './reader';
 import {
+  buildQuantifiersInInfinitePortion,
+  buildQuantifierTrail,
+  QuantifierStack,
+} from './nodes/quantifier';
+import {
   CharacterGroups,
   intersectCharacterGroups,
   isEmptyCharacterGroups,
 } from './character-groups';
 import {
-  CharacterReaderLevel2,
-  CharacterReaderLevel2ReturnValue,
-  CharacterReaderLevel2Stack,
-  characterReaderLevel2TypeEntry,
-  characterReaderLevel2TypeSplit,
-  CharacterReaderLevel2Value,
-} from './character-reader/character-reader-level-2';
-import { Entry, InfiniteLoopTracker } from './infinite-loop-tracker';
-import {
   isUnboundedReader,
   isUnboundedReaderTypeStep,
   IsUnboundedReaderValue,
 } from './is-unbounded-reader';
-import { areSetsEqual } from './sets';
-import { buildQuantifiersInInfinitePortion } from './nodes/quantifier';
 import { fork } from 'forkable-iterator';
+import { InfiniteLoopTracker } from './infinite-loop-tracker';
 import { last } from './arrays';
 import { MyFeatures } from './parse';
 import { once } from './once';
@@ -60,15 +64,14 @@ export type CharacterGroupsOrReference = Readonly<
 >;
 
 export type TrailEntrySide = Readonly<{
-  characterGroups: CharacterGroups;
-  contextTrail: string;
+  backreferenceStack: BackReferenceStack;
   node:
     | CharacterClass
     | CharacterClassEscape
     | Dot
     | UnicodePropertyEscape
     | Value;
-  stack: CharacterReaderLevel2Stack;
+  quantifierStack: QuantifierStack;
 }>;
 
 export type TrailEntry = Readonly<{
@@ -90,20 +93,22 @@ export type CheckerReaderValueTrail = Readonly<{
   trail: Trail;
   type: typeof checkerReaderTypeTrail;
 }>;
-export type CheckerReaderValue = CheckerReaderValueTrail;
+export type CheckerReaderValueInfiniteLoop = Readonly<{
+  type: typeof checkerReaderTypeInfiniteLoop;
+}>;
+export type CheckerReaderValue =
+  | CheckerReaderValueInfiniteLoop
+  | CheckerReaderValueTrail;
 
 // eslint-disable-next-line no-use-before-define
 export type CheckerReader = Reader<CheckerReaderValue, CheckerReaderReturn>;
-export type CheckerReaderReturn = Readonly<
-  | { error: null; infinite: boolean }
-  | {
-      error: 'hitMaxSteps' | 'timedOut';
-    }
->;
+export type CheckerReaderReturn = Readonly<{
+  error: 'hitMaxSteps' | 'timedOut' | null;
+}>;
 
-type InfiniteLoopTrackerEntry = Readonly<{
-  contextTrail: string;
+type NodeWithQuantifierTrail = Readonly<{
   node: AstNode<MyFeatures>;
+  quantifierTrail: string;
 }>;
 
 type ReaderWithGetter = Readonly<{
@@ -118,40 +123,16 @@ type ReaderWithGetter = Readonly<{
 }>;
 
 type StackFrame = Readonly<{
-  infiniteLoopTracker: InfiniteLoopTracker<InfiniteLoopTrackerEntry>;
+  infiniteLoopTracker: InfiniteLoopTracker<NodeWithQuantifierTrail>;
   streamReadersWithGetters: ReaderWithGetter[];
   trail: Trail;
 }>;
 
-const areInfiniteLoopTrackerEntriesEqual = (
-  left: InfiniteLoopTrackerEntry,
-  right: InfiniteLoopTrackerEntry,
-): boolean => {
-  return left.node === right.node && left.contextTrail === right.contextTrail;
-};
-
-function buildContextTrail(
-  stack: CharacterReaderLevel2Stack,
-  asteriskInfinite: boolean,
-): string {
-  return stack
-    .map((entry) => {
-      if (entry.type === 'quantifier') {
-        return `q:${entry.quantifier.range[0]}:${
-          asteriskInfinite &&
-          entry.quantifier.max === undefined &&
-          entry.iteration >= entry.quantifier.min
-            ? '*'
-            : `${entry.iteration}`
-        }`;
-      }
-      if (entry.type === 'reference') {
-        return `r:${entry.reference.range[0]}`;
-      }
-    })
-    .filter(Boolean)
-    .join(',');
-}
+const isNodeWithQuantifierTrailEqual = (
+  left: NodeWithQuantifierTrail,
+  right: NodeWithQuantifierTrail,
+): boolean =>
+  left.node === right.node && left.quantifierTrail === right.quantifierTrail;
 
 /**
  * Takes a left and right `CharacterReaderLevel2` and runs them against each other.
@@ -162,11 +143,6 @@ function buildContextTrail(
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const sidesEqualChecker = new SidesEqualChecker();
   const trails = new Set<Trail>();
-  const trailEntriesAtStartOfLoop = new Set<TrailEntry>();
-  const infiniteLoopTrackerEntryToTrailEntry = new Map<
-    Entry<InfiniteLoopTrackerEntry>,
-    TrailEntry
-  >();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
@@ -177,7 +153,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
   const stack: StackFrame[] = [
     {
       infiniteLoopTracker: new InfiniteLoopTracker(
-        areInfiniteLoopTrackerEntriesEqual,
+        isNodeWithQuantifierTrailEqual,
       ),
       streamReadersWithGetters: [
         {
@@ -203,8 +179,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     if (!entry) break;
 
     const { streamReadersWithGetters } = entry;
-    const { infiniteLoopTracker } = entry;
-    let { trail } = entry;
+    let { infiniteLoopTracker, trail } = entry;
 
     const nextValues: ReaderResult<
       CharacterReaderLevel2Value,
@@ -300,37 +275,17 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
-    const intersection = intersectCharacterGroups(
-      leftValue.characterGroups,
-      rightValue.characterGroups,
-    );
-
-    if (isEmptyCharacterGroups(intersection)) {
-      continue;
-    }
-
-    const newEntry: TrailEntry = {
-      intersection,
-      left: {
-        characterGroups: leftValue.characterGroups,
-        contextTrail: buildContextTrail(leftValue.stack, false),
-        node: leftValue.node,
-        stack: leftValue.stack,
-      },
-      right: {
-        characterGroups: rightValue.characterGroups,
-        contextTrail: buildContextTrail(rightValue.stack, false),
-        node: rightValue.node,
-        stack: rightValue.stack,
-      },
-    };
-
-    trail = [...trail, newEntry];
-
     const leftQuantifiersInInfiniteProportion =
-      buildQuantifiersInInfinitePortion(leftValue.stack);
+      buildQuantifiersInInfinitePortion(leftValue.quantifierStack);
+    const rightQuantifiersInInfiniteProportion =
+      buildQuantifiersInInfinitePortion(rightValue.quantifierStack);
 
-    if (leftQuantifiersInInfiniteProportion.size > 0) {
+    if (
+      setsOverlap(
+        leftQuantifiersInInfiniteProportion,
+        rightQuantifiersInInfiniteProportion,
+      )
+    ) {
       const leftAndRightIdentical = trail.every(({ left, right }) =>
         sidesEqualChecker.areSidesEqual(left, right),
       );
@@ -341,32 +296,45 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
     }
 
-    const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
-      left: {
-        contextTrail: buildContextTrail(leftValue.stack, true),
-        node: leftValue.node,
-      },
-      right: {
-        contextTrail: buildContextTrail(rightValue.stack, true),
-        node: rightValue.node,
-      },
-    };
-    infiniteLoopTrackerEntryToTrailEntry.set(
-      infiniteLoopTrackerEntry,
-      newEntry,
-    );
-    infiniteLoopTracker.append(infiniteLoopTrackerEntry);
-
-    const repeatingEntries = infiniteLoopTracker.getRepeatingEntries();
-    if (repeatingEntries) {
-      const entryAtStartOfLoop = infiniteLoopTrackerEntryToTrailEntry.get(
-        repeatingEntries[0],
+    if (
+      leftQuantifiersInInfiniteProportion.size &&
+      rightQuantifiersInInfiniteProportion.size
+    ) {
+      infiniteLoopTracker.append(
+        {
+          node: leftValue.node,
+          quantifierTrail: buildQuantifierTrail(
+            leftValue.quantifierStack,
+            true,
+          ),
+        },
+        {
+          node: rightValue.node,
+          quantifierTrail: buildQuantifierTrail(
+            rightValue.quantifierStack,
+            true,
+          ),
+        },
       );
-      /* istanbul ignore next */
-      if (!entryAtStartOfLoop) {
-        throw new Error('Internal error: missing entry at start of loop');
+    } else {
+      infiniteLoopTracker = new InfiniteLoopTracker(
+        isNodeWithQuantifierTrailEqual,
+      );
+    }
+
+    if (infiniteLoopTracker.isLooping()) {
+      if (leftValue.node === rightValue.node) {
+        yield { type: checkerReaderTypeInfiniteLoop };
       }
-      trailEntriesAtStartOfLoop.add(entryAtStartOfLoop);
+      continue;
+    }
+
+    const intersection = intersectCharacterGroups(
+      leftValue.characterGroups,
+      rightValue.characterGroups,
+    );
+
+    if (isEmptyCharacterGroups(intersection)) {
       continue;
     }
 
@@ -387,12 +355,32 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
+    const newEntry: TrailEntry = {
+      intersection,
+      left: {
+        backreferenceStack: leftValue.backreferenceStack,
+        node: leftValue.node,
+        quantifierStack: leftValue.quantifierStack,
+      },
+      right: {
+        backreferenceStack: rightValue.backreferenceStack,
+        node: rightValue.node,
+        quantifierStack: rightValue.quantifierStack,
+      },
+    };
+
+    trail = [...trail, newEntry];
+
+    let backtrackPossible: boolean;
+
     const sidesEqual = sidesEqualChecker.areSidesEqual(
       newEntry.left,
       newEntry.right,
     );
 
-    if (!sidesEqual) {
+    if (sidesEqual) {
+      backtrackPossible = false;
+    } else {
       let leftAndRightUnbounded: boolean;
       let leftUnbounded: boolean;
       {
@@ -452,45 +440,50 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
       // if both sides are unbounded then it means a backtrack won't occur
       // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
-      // so bail
-      if (leftAndRightUnbounded) {
-        continue;
-      }
+      // so don't emit the trail
+      backtrackPossible = !leftAndRightUnbounded;
+    }
 
-      const shouldEmitTrail = (): boolean => {
-        const alreadyExists = [...trails].some((existingTrail) => {
-          if (existingTrail.length !== trail.length) return false;
+    if (backtrackPossible) {
+      const shouldSendTrail = (): boolean => {
+        if (!trails.has(trail)) {
+          const alreadyExists = [...trails].some((existingTrail) => {
+            if (existingTrail.length !== trail.length) return false;
 
-          return (
-            existingTrail.every(
-              (existingEntry, i) =>
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.left,
-                  trail[i].right,
-                ) &&
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.right,
-                  trail[i].left,
-                ),
-            ) ||
-            existingTrail.every(
-              (existingEntry, i) =>
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.left,
-                  trail[i].left,
-                ) &&
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.right,
-                  trail[i].right,
-                ),
-            )
-          );
-        });
+            return (
+              existingTrail.every(
+                (existingEntry, i) =>
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.left,
+                    trail[i].right,
+                  ) &&
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.right,
+                    trail[i].left,
+                  ),
+              ) ||
+              existingTrail.every(
+                (existingEntry, i) =>
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.left,
+                    trail[i].left,
+                  ) &&
+                  sidesEqualChecker.areSidesEqual(
+                    existingEntry.right,
+                    trail[i].right,
+                  ),
+              )
+            );
+          });
 
-        return !alreadyExists;
+          if (!alreadyExists) {
+            return true;
+          }
+        }
+        return false;
       };
 
-      if (shouldEmitTrail()) {
+      if (shouldSendTrail()) {
         trails.add(trail);
         yield { trail, type: checkerReaderTypeTrail };
       }
@@ -506,26 +499,12 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     });
   }
 
-  let infinite = false;
-  if (trailEntriesAtStartOfLoop.size > 0) {
-    for (const trail of trails) {
-      if (trail.some((entry) => trailEntriesAtStartOfLoop.has(entry))) {
-        infinite = true;
-        break;
-      }
-    }
-  }
-
-  const error =
-    stepCount > input.maxSteps
-      ? ('hitMaxSteps' as const)
-      : timedOut
-      ? ('timedOut' as const)
-      : null;
-
-  return error
-    ? {
-        error,
-      }
-    : { error: null, infinite };
+  return {
+    error:
+      stepCount > input.maxSteps
+        ? ('hitMaxSteps' as const)
+        : timedOut
+        ? ('timedOut' as const)
+        : null,
+  };
 }

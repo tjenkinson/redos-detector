@@ -1,12 +1,13 @@
 import {
   CharacterReader,
   characterReaderTypeSplit,
+  Stack,
 } from '../character-reader/character-reader-level-0';
 import { Group, NonCapturingGroup } from 'regjsparser';
+import { QuantifierStack, StackQuantifierEntry } from './quantifier';
 import { buildArrayReader } from '../reader';
 import { buildEndReader } from './end';
 import { buildSequenceCharacterReader } from './sequence';
-import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 import { joinArray } from '../character-reader/join';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
@@ -15,18 +16,32 @@ export type StackGroupEntry = Readonly<{
   group: Group<MyFeatures>;
   type: 'group';
 }>;
-export type Groups = ReadonlySet<Group<MyFeatures>>;
+export type GroupEntry = Readonly<{
+  quantifierStack: QuantifierStack;
+}>;
+export type Groups = ReadonlyMap<Group<MyFeatures>, GroupEntry>;
+export type GroupsMutable = Map<Group<MyFeatures>, GroupEntry>;
 export type LookaheadStack = readonly NonCapturingGroup<MyFeatures>[];
 
-export function getGroups(stack: CharacterReaderLevel2Stack): Groups {
-  return new Set(
-    stack.flatMap((entry) => (entry.type === 'group' ? [entry.group] : [])),
-  );
+export function getGroups(stack: Stack): Groups {
+  const quantifierStack: StackQuantifierEntry[] = [];
+  const groups: GroupsMutable = new Map();
+  for (const entry of stack) {
+    switch (entry.type) {
+      case 'quantifier': {
+        quantifierStack.push(entry);
+        break;
+      }
+      case 'group': {
+        groups.set(entry.group, { quantifierStack: [...quantifierStack] });
+        break;
+      }
+    }
+  }
+  return groups;
 }
 
-export function getLookaheadStack(
-  stack: CharacterReaderLevel2Stack,
-): LookaheadStack {
+export function getLookaheadStack(stack: Stack): LookaheadStack {
   const lookaheadStack: NonCapturingGroup<MyFeatures>[] = [];
   for (const entry of stack) {
     if (entry.type === 'group') {
