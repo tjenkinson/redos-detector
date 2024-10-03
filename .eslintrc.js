@@ -23,6 +23,14 @@ module.exports = {
     'no-var': ['error'],
     'no-use-before-define': ['error'],
     'no-warning-comments': ['error'],
+    '@typescript-eslint/member-ordering': [
+      'error',
+      {
+        default: {
+          order: 'alphabetically',
+        },
+      },
+    ],
     '@typescript-eslint/no-unused-vars': ['error'],
     '@typescript-eslint/no-unsafe-assignment': ['error'],
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
