@@ -274,19 +274,16 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     const leftValue = leftNextValue.value;
     const rightValue = rightNextValue.value;
 
-    const leftPassedStartAnchor = leftValue.preceedingZeroWidthEntries.some(
+    const leftPassedStartAnchor = leftValue.precedingZeroWidthEntries.some(
       ({ type }) => type === 'start',
     );
-    const rightPassedStartAnchor = rightValue.preceedingZeroWidthEntries.some(
+    const rightPassedStartAnchor = rightValue.precedingZeroWidthEntries.some(
       ({ type }) => type === 'start',
     );
     const somethingPassedStartAnchor =
       leftPassedStartAnchor || rightPassedStartAnchor;
 
-    if (
-      (trail.length > 0 && somethingPassedStartAnchor) ||
-      leftPassedStartAnchor !== rightPassedStartAnchor
-    ) {
+    if (trail.length > 0 && somethingPassedStartAnchor) {
       continue;
     }
 

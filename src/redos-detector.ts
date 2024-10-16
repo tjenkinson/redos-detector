@@ -1,10 +1,13 @@
+import {
+  downgradePattern as downgradePatternFn,
+  isMissingStartAnchor,
+} from './downgrade-pattern';
 import { MyFeatures, parse } from './parse';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
 import { CharacterReaderLevel2Stack } from './character-reader/character-reader-level-2';
 import { collectResults } from './collect-results';
-import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
 
 export { downgradePattern, DowngradePatternConfig } from './downgrade-pattern';
 export * from './to-friendly';
@@ -344,6 +347,11 @@ export function isSafePattern(
   const patternDowngraded = downgradePattern && inputPattern !== pattern;
 
   const ast = parse(pattern, unicode);
+  if (!downgradePattern && isMissingStartAnchor(ast)) {
+    throw new Error(
+      'Pattern is not bounded at the start and needs downgrading. See the `downgradePattern` option.',
+    );
+  }
 
   const result = collectResults({
     atomicGroupOffsets,
