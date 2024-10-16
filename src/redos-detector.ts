@@ -2,10 +2,9 @@ import { MyFeatures, parse } from './parse';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import _version from 'package-json:version';
 import { AstNode } from 'regjsparser';
-import { BackReferenceStack } from './character-reader/character-reader-level-2';
+import { CharacterReaderLevel2Stack } from './character-reader/character-reader-level-2';
 import { collectResults } from './collect-results';
 import { downgradePattern as downgradePatternFn } from './downgrade-pattern';
-import { QuantifierStack } from './nodes/quantifier';
 
 export { downgradePattern, DowngradePatternConfig } from './downgrade-pattern';
 export * from './to-friendly';
@@ -260,25 +259,40 @@ function toRedosDetectorNode(node: AstNode<MyFeatures>): RedosDetectorNode {
 }
 
 function toRedosDetectorBackReferenceStack(
-  backreferenceStack: BackReferenceStack,
+  stack: CharacterReaderLevel2Stack,
 ): RedosDetectorBackReferenceStack {
-  return backreferenceStack.map((reference) => {
-    return {
-      index: reference.matchIndex,
-      node: toRedosDetectorNode(reference),
-    };
-  });
+  return stack
+    .flatMap((stackEntry) =>
+      stackEntry.type === 'reference' ? [stackEntry.reference] : [],
+    )
+    .reverse()
+    .map((reference) => {
+      return {
+        index: reference.matchIndex,
+        node: toRedosDetectorNode(reference),
+      };
+    });
 }
 
 function toRedosDetectorQuantifierIterations(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): RedosDetectorQuantifierIterations {
-  return stack.map(({ quantifier, iteration }) => {
-    return {
-      iteration,
-      node: toRedosDetectorNode(quantifier),
-    };
-  });
+  const reversedStack = [...stack].reverse();
+  const referenceStackIndex = reversedStack.findIndex(
+    ({ type }) => type === 'reference',
+  );
+  const noneReferenceStackPortion = reversedStack
+    .slice(0, referenceStackIndex >= 0 ? referenceStackIndex : stack.length)
+    .reverse();
+
+  return noneReferenceStackPortion
+    .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
+    .map(({ quantifier, iteration }) => {
+      return {
+        iteration,
+        node: toRedosDetectorNode(quantifier),
+      };
+    });
 }
 
 /**
@@ -354,26 +368,24 @@ export function isSafePattern(
         }),
     pattern,
     patternDowngraded,
-    trails: result.trails.map((trail) => {
+    trails: result.trails.map(({ trail }) => {
       const safeRegexTrail: RedosDetectorTrail = {
         trail: trail.map(({ left, right }) => {
           const entry: RedosDetectorTrailEntry = {
             a: {
               backreferenceStack: toRedosDetectorBackReferenceStack(
-                right.backreferenceStack,
+                right.stack,
               ),
               node: toRedosDetectorNode(right.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                right.quantifierStack,
+                right.stack,
               ),
             },
             b: {
-              backreferenceStack: toRedosDetectorBackReferenceStack(
-                left.backreferenceStack,
-              ),
+              backreferenceStack: toRedosDetectorBackReferenceStack(left.stack),
               node: toRedosDetectorNode(left.node),
               quantifierIterations: toRedosDetectorQuantifierIterations(
-                left.quantifierStack,
+                left.stack,
               ),
             },
           };

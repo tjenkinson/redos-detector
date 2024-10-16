@@ -1,64 +1,46 @@
 import {
   buildCharacterReader,
   CharacterReader,
-  Stack,
 } from '../character-reader/character-reader-level-0';
 import { join, joinArray } from '../character-reader/join';
 import { buildNullCharacterReader } from './null';
+import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 import { map } from '../character-reader/map';
 import { MyFeatures } from '../parse';
 import { Quantifier } from 'regjsparser';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
 export type StackQuantifierEntry = Readonly<{
-  inInfinitePortion: boolean;
   iteration: number;
   quantifier: Quantifier<MyFeatures>;
   type: 'quantifier';
 }>;
-export type QuantifierStack = readonly StackQuantifierEntry[];
 export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
 
-export function getQuantifierStack(stack: Stack): QuantifierStack {
-  const quantifierStack: StackQuantifierEntry[] = [];
-  for (const entry of stack) {
-    if (entry.type === 'quantifier') {
-      quantifierStack.push(entry);
-    }
-  }
-  return quantifierStack;
-}
-
 export function buildQuantifiersInInfinitePortion(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): QuantifiersInInfinitePortion {
   return new Set(
     stack
-      .filter(({ inInfinitePortion }) => inInfinitePortion)
+      .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
+      .filter(
+        ({ iteration, quantifier }) =>
+          iteration >= 1 &&
+          iteration >= quantifier.min &&
+          quantifier.max === undefined,
+      )
       .map(({ quantifier }) => quantifier),
   );
 }
 
 export function buildQuantifierIterations(
-  stack: QuantifierStack,
+  stack: CharacterReaderLevel2Stack,
 ): QuantifierIterations {
   const res: Map<Quantifier<MyFeatures>, number> = new Map();
-  stack.forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
+  stack
+    .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
+    .forEach(({ iteration, quantifier }) => res.set(quantifier, iteration));
   return res;
-}
-
-// "<node offset>:<iteration number or * if in infinite portion>,..."
-export function buildQuantifierTrail(
-  stack: QuantifierStack,
-  asteriskInfinite: boolean,
-): string {
-  return stack
-    .map(({ quantifier, inInfinitePortion, iteration }) => {
-      return `${quantifier.range[0]}:${
-        asteriskInfinite && inInfinitePortion ? '*' : `${iteration}`
-      }`;
-    })
-    .join(',');
 }
 
 export function buildQuantifierCharacterReader({
@@ -101,12 +83,10 @@ export function buildQuantifierCharacterReader({
                 }),
             ]),
             (value) => {
-              const inInfinitePortion = i >= min && i >= 1 && max === Infinity;
               return {
                 ...value,
                 stack: [
                   {
-                    inInfinitePortion,
                     iteration: i,
                     quantifier: node,
                     type: 'quantifier',

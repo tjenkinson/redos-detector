@@ -10,9 +10,7 @@ import {
 import { buildForkableReader, Reader, ReaderResult } from '../reader';
 import {
   buildQuantifierIterations,
-  getQuantifierStack,
   QuantifierIterations,
-  QuantifierStack,
 } from '../nodes/quantifier';
 import {
   CapturingGroup,
@@ -25,7 +23,6 @@ import {
 } from 'regjsparser';
 import {
   CharacterReaderValueSplitSubType,
-  Stack,
   StackEntry,
 } from './character-reader-level-0';
 import {
@@ -49,6 +46,10 @@ export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
   'characterReaderLevel2TypeEntry',
 );
 
+export type CharacterReaderLevel2StackEntry = StackEntry | StackReferenceEntry;
+export type CharacterReaderLevel2Stack =
+  readonly CharacterReaderLevel2StackEntry[];
+
 export type CharacterReaderLevel2ValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel2;
@@ -56,9 +57,7 @@ export type CharacterReaderLevel2ValueSplit = Readonly<{
   type: typeof characterReaderLevel2TypeSplit;
 }>;
 
-export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel2ValueEntry = Readonly<{
-  backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
   lookaheadStack: LookaheadStack;
@@ -69,7 +68,7 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | UnicodePropertyEscape
     | Value;
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  quantifierStack: QuantifierStack;
+  stack: CharacterReaderLevel2Stack;
   type: typeof characterReaderLevel2TypeEntry;
 }>;
 
@@ -89,19 +88,8 @@ export type CharacterReaderLevel2 = Reader<
   CharacterReaderLevel2ReturnValue
 >;
 
-type InternalStackEntry = StackEntry | StackReferenceEntry;
-type InternalStack = readonly InternalStackEntry[];
-
-function internalStackToLevel1Stack(internalStack: InternalStack): Stack {
-  const stack: StackEntry[] = [];
-  for (const entry of internalStack) {
-    if (entry.type !== 'reference') stack.push(entry);
-  }
-  return stack;
-}
-
-// `InternalReader` is the same as `CharacteReaderLevel1`, except that the `stack` is `InternalStack`
-// which can represent references
+// `InternalReader` is the same as `CharacterReaderLevel1`, except that the `stack` is `CharacterReaderLevel2Stack`
+// which can include references
 const internalReaderTypeSplit: unique symbol = Symbol(
   'internalReaderTypeSplit',
 );
@@ -119,7 +107,7 @@ type InternalReaderValueSplit = Readonly<{
 
 type InternalReaderValueEntryBase = Readonly<{
   preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  stack: InternalStack;
+  stack: CharacterReaderLevel2Stack;
   type: typeof internalReaderTypeEntry;
 }>;
 
@@ -277,11 +265,11 @@ function* getGroupContentsReader({
       node: groupEntry.node,
       preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
       stack: [
+        ...groupEntry.stack,
         {
           reference: value.node,
           type: `reference`,
         },
-        ...groupEntry.stack.filter(({ type }) => type === `reference`),
         ...value.stack,
       ],
       subType: 'groups',
@@ -398,16 +386,10 @@ export function buildCharacterReaderLevel2({
             ...value.preceedingZeroWidthEntries,
           ];
 
-          const quantifierStack = getQuantifierStack(
-            internalStackToLevel1Stack(value.stack),
-          );
-          const quantifierIterations =
-            buildQuantifierIterations(quantifierStack);
-          const lookaheadStack = getLookaheadStack(
-            internalStackToLevel1Stack(value.stack),
-          );
+          const quantifierIterations = buildQuantifierIterations(value.stack);
+          const lookaheadStack = getLookaheadStack(value.stack);
 
-          const groups = getGroups(internalStackToLevel1Stack(value.stack));
+          const groups = getGroups(value.stack);
 
           switch (value.subType) {
             case 'reference': {
@@ -475,7 +457,17 @@ export function buildCharacterReaderLevel2({
               }
 
               let groupInfiniteSize = false;
-              for (const stackEntry of [...value.stack].reverse()) {
+              const reversedStack = [...value.stack].reverse();
+              const referenceStackIndex = reversedStack.findIndex(
+                ({ type }) => type === 'reference',
+              );
+              const noneReferenceStackPortion = reversedStack.slice(
+                0,
+                referenceStackIndex >= 0
+                  ? referenceStackIndex
+                  : value.stack.length,
+              );
+              for (const stackEntry of noneReferenceStackPortion) {
                 if (
                   stackEntry.type === 'quantifier' &&
                   stackEntry.quantifier.max === undefined
@@ -539,19 +531,12 @@ export function buildCharacterReaderLevel2({
               quantifierIterationsAtLastGroup = quantifierIterations;
 
               yield {
-                backreferenceStack: value.stack
-                  .flatMap((stackEntry) =>
-                    stackEntry.type === 'reference'
-                      ? [stackEntry.reference]
-                      : [],
-                  )
-                  .reverse(),
                 characterGroups: value.characterGroups,
                 groups,
                 lookaheadStack,
                 node: value.node,
                 preceedingZeroWidthEntries,
-                quantifierStack,
+                stack: value.stack,
                 type: characterReaderLevel2TypeEntry,
               };
               preceedingZeroWidthEntries = [];
