@@ -1,46 +1,52 @@
 import { once } from './once';
 
-type TreeItem = {
-  children: Map<unknown, TreeItem>;
-  value: unknown;
-};
-
-const rootSymbol = Symbol('root');
+/**
+ * Note the decoded item must contain nodes, which only ever appear once,
+ * and always appear in the same position.
+ */
 export class Tree<T> {
-  private root: Map<unknown, TreeItem> = new Map();
-  private results: Map<TreeItem, T> = new Map();
+  // all nodes in the tree
+  private nodes: Set<unknown> = new Set();
+  private results: Map<unknown /* leaf node */, T> = new Map();
   private _items: () => readonly T[] = () => [];
 
-  constructor(private decode: (value: T) => readonly unknown[]) {}
+  constructor(
+    /* Decode `value` into the list of nodes */
+    private decode: (value: T) => readonly unknown[],
+  ) {}
 
   public add(input: T): void {
     const values = this.decode(input);
     if (values.length === 0) return;
 
-    const { results } = this;
-    let current: TreeItem = {
-      children: this.root,
-      value: rootSymbol,
+    const { results, nodes } = this;
+
+    const insert = (newValues: readonly unknown[]): void => {
+      for (let i = 0; i < newValues.length; i++) {
+        const value = newValues[i];
+        nodes.add(value);
+      }
     };
 
-    // note initially used `.entries()` but this was much slower
-    const numValues = values.length;
-    for (let i = 0; i < numValues; i++) {
+    for (let i = values.length - 1; i >= 0; i--) {
       const value = values[i];
-      const last = i === numValues - 1;
-      const existing = current.children.get(value);
-      if (existing) {
-        current = existing;
-        if (!last) {
-          results.delete(existing);
+
+      if (nodes.has(value)) {
+        if (i === values.length - 1) {
+          // this is just a subset of an item already in the tree
+          return;
         }
-      } else {
-        const newChild: TreeItem = { children: new Map(), value };
-        current.children.set(value, newChild);
-        current = newChild;
-        if (last) {
-          results.set(newChild, input);
-        }
+        results.delete(value);
+        insert(values.slice(i + 1));
+        results.set(values[values.length - 1], input);
+        break;
+      }
+
+      if (i === 0) {
+        // new item
+        insert(values);
+        results.set(values[values.length - 1], input);
+        break;
       }
     }
 
