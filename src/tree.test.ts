@@ -5,6 +5,8 @@ describe('tree', () => {
     const a = Symbol('a');
     const b = Symbol('b');
     const c = Symbol('c');
+    const d = Symbol('d');
+    const e = Symbol('e');
     const tree = new Tree<unknown[]>((x) => x);
     expect(tree.items).toStrictEqual([]);
 
@@ -20,11 +22,17 @@ describe('tree', () => {
     tree.add([b]);
     expect(tree.items).toStrictEqual([[a], [b]]);
 
-    tree.add([a, b]);
-    expect(tree.items).toStrictEqual([[b], [a, b]]);
-
     tree.add([a, c]);
-    expect(tree.items).toStrictEqual([[b], [a, b], [a, c]]);
+    expect(tree.items).toStrictEqual([[b], [a, c]]);
+
+    tree.add([a, d]);
+    expect(tree.items).toStrictEqual([[b], [a, c], [a, d]]);
+
+    tree.add([a, d, e]);
+    expect(tree.items).toStrictEqual([[b], [a, c], [a, d, e]]);
+
+    tree.add([a, d]);
+    expect(tree.items).toStrictEqual([[b], [a, c], [a, d, e]]);
   });
 
   it('works with decoder', () => {
@@ -40,12 +48,8 @@ describe('tree', () => {
     tree.add(v1);
     expect(tree.items).toStrictEqual([v1]);
 
-    const v2 = { v: [b] };
-    tree.add(v2);
-    expect(tree.items).toStrictEqual([v1, v2]);
-
     const v3 = { v: [a, b] };
     tree.add(v3);
-    expect(tree.items).toStrictEqual([v2, v3]);
+    expect(tree.items).toStrictEqual([v3]);
   });
 });
