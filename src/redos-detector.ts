@@ -376,7 +376,7 @@ export function isSafePattern(
         }),
     pattern,
     patternDowngraded,
-    trails: result.trails.map(({ trail }) => {
+    trails: result.trails.map((trail) => {
       const safeRegexTrail: RedosDetectorTrail = {
         trail: trail.map(({ left, right }) => {
           const entry: RedosDetectorTrailEntry = {
