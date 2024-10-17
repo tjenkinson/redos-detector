@@ -10,9 +10,7 @@ import {
 import { buildForkableReader, Reader, ReaderResult } from '../reader';
 import {
   buildQuantifierIterations,
-  getQuantifierStack,
   QuantifierIterations,
-  QuantifierStack,
 } from '../nodes/quantifier';
 import {
   CapturingGroup,
@@ -25,7 +23,6 @@ import {
 } from 'regjsparser';
 import {
   CharacterReaderValueSplitSubType,
-  Stack,
   StackEntry,
 } from './character-reader-level-0';
 import {
@@ -49,6 +46,10 @@ export const characterReaderLevel2TypeEntry: unique symbol = Symbol(
   'characterReaderLevel2TypeEntry',
 );
 
+export type CharacterReaderLevel2StackEntry = StackEntry | StackReferenceEntry;
+export type CharacterReaderLevel2Stack =
+  readonly CharacterReaderLevel2StackEntry[];
+
 export type CharacterReaderLevel2ValueSplit = Readonly<{
   // eslint-disable-next-line no-use-before-define
   reader: () => CharacterReaderLevel2;
@@ -56,9 +57,7 @@ export type CharacterReaderLevel2ValueSplit = Readonly<{
   type: typeof characterReaderLevel2TypeSplit;
 }>;
 
-export type BackReferenceStack = readonly Reference[];
 export type CharacterReaderLevel2ValueEntry = Readonly<{
-  backreferenceStack: BackReferenceStack;
   characterGroups: CharacterGroups;
   groups: Groups;
   lookaheadStack: LookaheadStack;
@@ -68,8 +67,8 @@ export type CharacterReaderLevel2ValueEntry = Readonly<{
     | Dot
     | UnicodePropertyEscape
     | Value;
-  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  quantifierStack: QuantifierStack;
+  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  stack: CharacterReaderLevel2Stack;
   type: typeof characterReaderLevel2TypeEntry;
 }>;
 
@@ -79,7 +78,7 @@ export type CharacterReaderLevel2Value =
 export type CharacterReaderLevel2ReturnValue = Readonly<
   | {
       bounded: boolean;
-      preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
+      precedingZeroWidthEntries: readonly ZeroWidthEntry[];
       type: 'end';
     }
   | { type: 'abort' }
@@ -89,19 +88,8 @@ export type CharacterReaderLevel2 = Reader<
   CharacterReaderLevel2ReturnValue
 >;
 
-type InternalStackEntry = StackEntry | StackReferenceEntry;
-type InternalStack = readonly InternalStackEntry[];
-
-function internalStackToLevel1Stack(internalStack: InternalStack): Stack {
-  const stack: StackEntry[] = [];
-  for (const entry of internalStack) {
-    if (entry.type !== 'reference') stack.push(entry);
-  }
-  return stack;
-}
-
-// `InternalReader` is the same as `CharacteReaderLevel1`, except that the `stack` is `InternalStack`
-// which can represent references
+// `InternalReader` is the same as `CharacterReaderLevel1`, except that the `stack` is `CharacterReaderLevel2Stack`
+// which can include references
 const internalReaderTypeSplit: unique symbol = Symbol(
   'internalReaderTypeSplit',
 );
@@ -118,8 +106,8 @@ type InternalReaderValueSplit = Readonly<{
 }>;
 
 type InternalReaderValueEntryBase = Readonly<{
-  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
-  stack: InternalStack;
+  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  stack: CharacterReaderLevel2Stack;
   type: typeof internalReaderTypeEntry;
 }>;
 
@@ -166,7 +154,7 @@ type State = Readonly<{
   characterReader: InternalReader;
   groupContentsStore: GroupContentsStore;
   groupsWithInfiniteSize: ReadonlySet<number>;
-  preceedingZeroWidthEntries: readonly ZeroWidthEntry[];
+  precedingZeroWidthEntries: readonly ZeroWidthEntry[];
   quantifierIterationsAtLastGroup: QuantifierIterations;
   referenceCharacterReaderWithReference: Readonly<{
     reader: InternalReader;
@@ -249,7 +237,7 @@ function* getGroupContentsReader({
           behavior === 'negativeLookahead' || behavior === 'negativeLookbehind',
       )
     ) {
-      return { bounded: false, preceedingZeroWidthEntries: [] };
+      return { bounded: false, precedingZeroWidthEntries: [] };
     }
 
     throw new Error(
@@ -262,7 +250,7 @@ function* getGroupContentsReader({
       groupContents.group,
     ) /* reference is inside group being referenced */
   ) {
-    return { bounded: false, preceedingZeroWidthEntries: [] };
+    return { bounded: false, precedingZeroWidthEntries: [] };
   }
 
   if (groupsWithInfiniteSize.has(value.referenceIndex)) {
@@ -275,20 +263,20 @@ function* getGroupContentsReader({
     yield {
       characterGroups: groupEntry.characterGroups,
       node: groupEntry.node,
-      preceedingZeroWidthEntries: groupEntry.preceedingZeroWidthEntries,
+      precedingZeroWidthEntries: groupEntry.precedingZeroWidthEntries,
       stack: [
+        ...groupEntry.stack,
         {
           reference: value.node,
           type: `reference`,
         },
-        ...groupEntry.stack.filter(({ type }) => type === `reference`),
         ...value.stack,
       ],
       subType: 'groups',
       type: internalReaderTypeEntry,
     };
   }
-  return { bounded: false, preceedingZeroWidthEntries: [] };
+  return { bounded: false, precedingZeroWidthEntries: [] };
 }
 
 /**
@@ -310,7 +298,7 @@ export function buildCharacterReaderLevel2({
   const startThread = function* (state: State): CharacterReaderLevel2 {
     outer: for (;;) {
       let {
-        preceedingZeroWidthEntries,
+        precedingZeroWidthEntries,
         groupsWithInfiniteSize,
         groupContentsStore,
         quantifierIterationsAtLastGroup,
@@ -339,9 +327,9 @@ export function buildCharacterReaderLevel2({
             characterReader,
             groupContentsStore,
             groupsWithInfiniteSize,
-            preceedingZeroWidthEntries: [
-              ...preceedingZeroWidthEntries,
-              ...result.value.preceedingZeroWidthEntries,
+            precedingZeroWidthEntries: [
+              ...precedingZeroWidthEntries,
+              ...result.value.precedingZeroWidthEntries,
             ],
             quantifierIterationsAtLastGroup,
             referenceCharacterReaderWithReference: null,
@@ -351,9 +339,9 @@ export function buildCharacterReaderLevel2({
 
         return {
           bounded: result.value.bounded,
-          preceedingZeroWidthEntries: [
-            ...preceedingZeroWidthEntries,
-            ...result.value.preceedingZeroWidthEntries,
+          precedingZeroWidthEntries: [
+            ...precedingZeroWidthEntries,
+            ...result.value.precedingZeroWidthEntries,
           ],
           type: 'end' as const,
         };
@@ -374,14 +362,14 @@ export function buildCharacterReaderLevel2({
           const _quantifierIterationsAtLastGroup =
             quantifierIterationsAtLastGroup;
           const _groupsWithInfiniteSize = groupsWithInfiniteSize;
-          const _preceedingZeroWidthEntries = preceedingZeroWidthEntries;
+          const _precedingZeroWidthEntries = precedingZeroWidthEntries;
           yield {
             reader: (): CharacterReaderLevel2 =>
               startThread({
                 characterReader: buildForkableReader(value.reader()),
                 groupContentsStore: _groupContentsStore,
                 groupsWithInfiniteSize: _groupsWithInfiniteSize,
-                preceedingZeroWidthEntries: _preceedingZeroWidthEntries,
+                precedingZeroWidthEntries: _precedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup:
                   _quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference:
@@ -393,21 +381,15 @@ export function buildCharacterReaderLevel2({
           break;
         }
         case internalReaderTypeEntry: {
-          preceedingZeroWidthEntries = [
-            ...preceedingZeroWidthEntries,
-            ...value.preceedingZeroWidthEntries,
+          precedingZeroWidthEntries = [
+            ...precedingZeroWidthEntries,
+            ...value.precedingZeroWidthEntries,
           ];
 
-          const quantifierStack = getQuantifierStack(
-            internalStackToLevel1Stack(value.stack),
-          );
-          const quantifierIterations =
-            buildQuantifierIterations(quantifierStack);
-          const lookaheadStack = getLookaheadStack(
-            internalStackToLevel1Stack(value.stack),
-          );
+          const quantifierIterations = buildQuantifierIterations(value.stack);
+          const lookaheadStack = getLookaheadStack(value.stack);
 
-          const groups = getGroups(internalStackToLevel1Stack(value.stack));
+          const groups = getGroups(value.stack);
 
           switch (value.subType) {
             case 'reference': {
@@ -445,7 +427,7 @@ export function buildCharacterReaderLevel2({
                 characterReader,
                 groupContentsStore,
                 groupsWithInfiniteSize,
-                preceedingZeroWidthEntries,
+                precedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference: {
                   reader: groupContentsReader,
@@ -462,7 +444,7 @@ export function buildCharacterReaderLevel2({
                 // This can happen when a quantifier containing a group restarts
                 for (const [index, { group }] of groupContentsStore) {
                   const offsets = [
-                    ...preceedingZeroWidthEntries.map(({ offset }) => offset),
+                    ...precedingZeroWidthEntries.map(({ offset }) => offset),
                     value.node.range[0],
                   ];
                   for (const offset of offsets) {
@@ -475,7 +457,17 @@ export function buildCharacterReaderLevel2({
               }
 
               let groupInfiniteSize = false;
-              for (const stackEntry of [...value.stack].reverse()) {
+              const reversedStack = [...value.stack].reverse();
+              const referenceStackIndex = reversedStack.findIndex(
+                ({ type }) => type === 'reference',
+              );
+              const noneReferenceStackPortion = reversedStack.slice(
+                0,
+                referenceStackIndex >= 0
+                  ? referenceStackIndex
+                  : value.stack.length,
+              );
+              for (const stackEntry of noneReferenceStackPortion) {
                 if (
                   stackEntry.type === 'quantifier' &&
                   stackEntry.quantifier.max === undefined
@@ -523,8 +515,8 @@ export function buildCharacterReaderLevel2({
                     ...contents.contents,
                     {
                       ...value,
-                      preceedingZeroWidthEntries:
-                        preceedingZeroWidthEntries.filter(
+                      precedingZeroWidthEntries:
+                        precedingZeroWidthEntries.filter(
                           ({ offset }) =>
                             // only include entries that are within the group
                             // e.g `^` in (^a) but not `^(a)`
@@ -539,28 +531,21 @@ export function buildCharacterReaderLevel2({
               quantifierIterationsAtLastGroup = quantifierIterations;
 
               yield {
-                backreferenceStack: value.stack
-                  .flatMap((stackEntry) =>
-                    stackEntry.type === 'reference'
-                      ? [stackEntry.reference]
-                      : [],
-                  )
-                  .reverse(),
                 characterGroups: value.characterGroups,
                 groups,
                 lookaheadStack,
                 node: value.node,
-                preceedingZeroWidthEntries,
-                quantifierStack,
+                precedingZeroWidthEntries,
+                stack: value.stack,
                 type: characterReaderLevel2TypeEntry,
               };
-              preceedingZeroWidthEntries = [];
+              precedingZeroWidthEntries = [];
 
               state = {
                 characterReader,
                 groupContentsStore,
                 groupsWithInfiniteSize,
-                preceedingZeroWidthEntries,
+                precedingZeroWidthEntries,
                 quantifierIterationsAtLastGroup,
                 referenceCharacterReaderWithReference,
               };
@@ -580,7 +565,7 @@ export function buildCharacterReaderLevel2({
     ),
     groupContentsStore: new Map(),
     groupsWithInfiniteSize: new Set(),
-    preceedingZeroWidthEntries: [],
+    precedingZeroWidthEntries: [],
     quantifierIterationsAtLastGroup: new Map(),
     referenceCharacterReaderWithReference: null,
   });
