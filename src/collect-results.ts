@@ -19,6 +19,7 @@ import { RedosDetectorError } from './redos-detector';
 import { ResultCache } from './result-cache';
 import { Tree } from './tree';
 
+const workLimit = 25_000;
 const isEmptyCache: ResultCache<boolean, CharacterGroups> = new ResultCache();
 
 function getLongestMatch(
@@ -49,8 +50,11 @@ function getLongestMatch(
 }
 
 class EnhancedTrail {
+  public readonly length: number;
   private readonly inputStringSchema: readonly CharacterGroups[];
-  private readonly tree = new Tree<readonly TrailEntrySide[]>((x) => x);
+  private readonly tree = new Tree<readonly TrailEntrySide[]>((trail) =>
+    trail.map(({ hash }) => hash),
+  );
 
   public get matches(): readonly (readonly TrailEntrySide[])[] {
     return this.tree.items;
@@ -58,15 +62,11 @@ class EnhancedTrail {
 
   constructor(public readonly trail: Trail) {
     this.inputStringSchema = trail.map(({ intersection }) => intersection);
+    this.length = trail.length;
     this.onNewTrail(this);
   }
 
-  public onNewTrail(otherTrail: EnhancedTrail): number /* cost */ {
-    if (otherTrail.trail.length > this.inputStringSchema.length) {
-      // this one will just be an extension of one we already saw
-      return 0;
-    }
-
+  public onNewTrail(otherTrail: EnhancedTrail): void {
     const leftSide: TrailEntrySide[] = [];
     const rightSide: TrailEntrySide[] = [];
     for (const entry of otherTrail.trail) {
@@ -75,26 +75,24 @@ class EnhancedTrail {
     }
 
     const leftMatch = getLongestMatch(this.inputStringSchema, leftSide);
-    if (leftMatch.length > 0) this.tree.add(leftMatch);
+    if (leftMatch.length === this.length) this.tree.add(leftMatch);
 
     const rightMatch = getLongestMatch(this.inputStringSchema, rightSide);
-    if (rightMatch.length > 0) this.tree.add(rightMatch);
-
-    return otherTrail.trail.length;
+    if (rightMatch.length === this.length) this.tree.add(rightMatch);
   }
 }
 
 export type CollectResultsResult = Readonly<{
   error: RedosDetectorError | null;
   trails: readonly Trail[];
-  worstCaseBacktrackCount: number;
+  score: number;
 }>;
 
 export type CollectResultsInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
   caseInsensitive: boolean;
   dotAll: boolean;
-  maxBacktracks: number;
+  maxScore: number;
   maxSteps: number;
   multiLine: boolean;
   node: MyRootNode;
@@ -104,7 +102,7 @@ export type CollectResultsInput = Readonly<{
 export function collectResults({
   atomicGroupOffsets,
   node,
-  maxBacktracks,
+  maxScore,
   maxSteps,
   multiLine,
   timeout,
@@ -130,7 +128,7 @@ export function collectResults({
   });
 
   const trailsTree: Tree<EnhancedTrail> = new Tree(({ trail }) => trail);
-  let worstCaseBacktrackCount = 0;
+  let score = 1;
   let work = 0;
   let next: ReaderResult<CheckerReaderValue, CheckerReaderReturn>;
 
@@ -139,31 +137,36 @@ export function collectResults({
       case checkerReaderTypeTrail: {
         const trail = new EnhancedTrail(next.value.trail);
 
-        const updateWorstBacktrackCount = ({
-          matches,
-        }: EnhancedTrail): void => {
+        const updateScore = ({ matches }: EnhancedTrail): void => {
           const { length } = matches;
-          if (length - 1 > worstCaseBacktrackCount) {
-            worstCaseBacktrackCount = length - 1;
+          if (length > score) {
+            score = length;
           }
         };
 
-        if (work < 50_000) {
+        if (work < workLimit) {
           for (const existingTrail of trailsTree.items) {
-            work += trail.onNewTrail(existingTrail);
-            work += existingTrail.onNewTrail(trail);
-            updateWorstBacktrackCount(existingTrail);
+            if (existingTrail.length === trail.length) {
+              work += trail.length;
+              if (work >= workLimit) break;
+
+              trail.onNewTrail(existingTrail);
+              existingTrail.onNewTrail(trail);
+              updateScore(existingTrail);
+            }
           }
-          updateWorstBacktrackCount(trail);
-        } else {
+          updateScore(trail);
+        }
+
+        if (work >= workLimit) {
           // it's too costly to continue calculating an accurate count, so fall back to assuming the input string that matches the largest
           // group of trails would also match every new trail
-          worstCaseBacktrackCount += 1;
+          score += 1;
         }
 
         trailsTree.add(trail);
 
-        if (worstCaseBacktrackCount > maxBacktracks) {
+        if (score > maxScore) {
           break outer;
         }
         break;
@@ -174,20 +177,20 @@ export function collectResults({
   let error: RedosDetectorError | null = null;
   if (next.done) {
     if (next.value.error) {
-      worstCaseBacktrackCount = Infinity;
+      score = Infinity;
       error = next.value.error;
     } else if (next.value.infinite) {
-      worstCaseBacktrackCount = Infinity;
-      error = 'hitMaxBacktracks';
+      score = Infinity;
+      error = 'hitMaxScore';
     }
   } else {
-    worstCaseBacktrackCount = Infinity;
-    error = 'hitMaxBacktracks';
+    score = Infinity;
+    error = 'hitMaxScore';
   }
 
   return {
     error,
+    score,
     trails: trailsTree.items.map(({ trail }) => trail),
-    worstCaseBacktrackCount,
   };
 }

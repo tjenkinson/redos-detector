@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import {
-  defaultMaxBacktracks,
+  defaultMaxScore,
   defaultMaxSteps,
   isSafePattern,
   toFriendly,
@@ -34,12 +34,7 @@ program
   .option('--unicode', 'enable unicode mode', false)
   .option('--dotAll', 'enable dot-all mode', false)
   .option('--multiLine', 'enable multiline mode', false)
-  .option(
-    '--maxBacktracks <number>',
-    'max number of backtracks to allow',
-    toInt,
-    defaultMaxBacktracks,
-  )
+  .option('--maxScore <number>', 'max score to allow', toInt, defaultMaxScore)
   .option(
     '--resultsLimit <number>',
     'the maximum number of results to print, ignored with --json',
@@ -71,7 +66,7 @@ program
         alwaysIncludeTrails,
         disableDowngrade,
         json,
-        maxBacktracks,
+        maxScore,
         maxSteps,
         resultsLimit,
         timeout,
@@ -85,7 +80,7 @@ program
         disableDowngrade: boolean;
         dotAll: boolean;
         json: boolean;
-        maxBacktracks: number;
+        maxScore: number;
         maxSteps: number;
         multiLine: boolean;
         resultsLimit: number;
@@ -98,7 +93,7 @@ program
           caseInsensitive,
           dotAll,
           downgradePattern: !disableDowngrade,
-          maxBacktracks: coerceInfinity(maxBacktracks),
+          maxScore: coerceInfinity(maxScore),
           maxSteps: coerceInfinity(maxSteps),
           multiLine,
           timeout: coerceInfinity(timeout),

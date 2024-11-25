@@ -179,7 +179,8 @@ describe('RedosDetector', () => {
         [/^(a){0}bc?\1c?$/, false],
         [/^(?:(a)|\1?a?)$/, false],
         [/^(?:b|(a)b\1?a?$)/, false],
-        [/^(?:(a)|(c|\1?a?)$)/, false],
+        [/^(?:(a)|(c|\1?a?)$)/, true],
+        [/^(?:(a)|(c|\1?a?)$)$/, false],
         [/^(?:c|d|((a)b\2?a?)$)/, false],
         [/^(?:c|d|((a)b\2?a?){0}$)/, true],
         [/^(c|d|(a)b\2?a?){0}$/, true],
@@ -248,37 +249,54 @@ describe('RedosDetector', () => {
         [/^a+(?=(b))\1a+$/, true],
         [/^a+(?=(b)?)\1a+v/, false],
         [/^(?=a+(?=a+))$/, true],
-        [/^(?=a+(?=a+)a+)$/, false],
+        [/^(?=a+(?=a+)a+)$/, true],
+        [/^(?=a+(?=a+)a+)a+$/, true],
+        [/^(?=a+(?=a+$)a+)$/, true],
+        [/^(?=a+(?=a+$)a+b)$/, false],
+        [/^(?=a+(?=a+)a+$)$/, false],
         [/^a+(?=(a))$/, true],
         [/^a+(?=(a))\1+$/, false],
         [/^a+(?=(a{0}))\1+$/, true],
         [/^(?=(b))a+\1a+$/, true],
         [/^(?=(b)?)a+\1a+$/, false],
         [/^a+(?=a+)$/, true],
-        [/^a+(?=a+a+)$/, false],
-        [/^a(?=a+a+)$/, false],
+        [/^a+(?=a+a+)$/, true],
+        [/^a+(?=a+a+b)$/, false],
+        [/^a(?=a+a+)$/, true],
+        [/^a(?=a+a+b)$/, false],
         [/^(b)(?=a+\1a+)$/, true],
         [/^(?=(b))a+\1a+$/, true],
         [/^(?=(b)?)a+\1a+$/, false],
         [/^a?(?=a?)$/, true],
         [/^a(?=b{1,2})b$/, true],
         [/^a(b)(?=b{1,2})\1$/, true],
-        [/^(?=(aa){1,2}(a\2){1,2})$/, false],
-        [/^(?=(a){1,2}(a\2){1,2})$/, false],
+        [/^(?=(aa){1,2}(a\2){1,2})$/, true],
+        [/^(?=(aa){1,2}(a\2){1,2}b)$/, false],
+        [/^(?=(a){1,2}(a\2){1,2})$/, true],
+        [/^(?=(a){1,2}(a\2){1,2}b)$/, false],
         [/^a(?=((?=(b+\1+))))$/, true],
         [/^a(?=(b(?=(b+\1+))))$/, true],
-        [/^a(?=(b)(?=(b+\1+)))$/, false],
-        [/^(?=(a(?=(b+\1b+))))$/, false],
-        [/^(?=((?=(b+\1b+))))$/, false],
-        [/^a(?=(b)(?=(b+\1+)))$/, false],
-        [/^a(?!a+a+)$/, false],
-        [/^a(?<=a+a+)$/, false],
+        [/^a(?=(b)(?=(b+\1+)))$/, true],
+        [/^a(?=(b)(?=(b+\1+b)))$/, false],
+        [/^a(?=(b)(?=(b+\1{2,})))$/, false],
+        [/^(?=(a(?=(b+\1b+))))$/, true],
+        [/^(?=(a(?=(b+\1b+c))))$/, false],
+        [/^(?=((?=(b+\1b+))))$/, true],
+        [/^(?=((?=(b+\1b+c))))$/, false],
+        [/^a(?=(b)(?=(b+\1+)))$/, true],
+        [/^a(?=(b)(?=(b+\1+c)))$/, false],
+        [/^a(?!a+a+)$/, true],
+        [/^a(?!a+a+b)$/, false],
+        [/^a(?<=a+a+)$/, true],
+        [/^a(?<=a+a+b)$/, false],
         [/^(b)(?<=a+\1a+)$/, true],
-        [/^(?<=a+\1a+)(b)$/, false],
+        [/^(?<=a+\1a+)(b)$/, true],
+        [/^(?<=a+\1a+b)(b)$/, false],
         [/^(?<=(b))a+\1a+$/, true],
         [/^(?<=(b)?)a+\1a+$/, false],
         [/^(?<=(a))(a\1)?(aa)?$/, false],
-        [/^a(?<!a+a+)$/, false],
+        [/^a(?<!a+a+)$/, true],
+        [/^a(?<!a+a+b)$/, false],
         [/^a(?<=a+)a+$/, true],
         [/^(a+\b)+$/, false],
         [/^(a+\B)+$/, false],
@@ -410,6 +428,15 @@ describe('RedosDetector', () => {
         [/^($)\1/, true],
         [/^(a)\1?\1?$/, false],
         [/^(^a)\1?\1?$/, true],
+        [/^a*a*/, true],
+        [/^a*a+/, true],
+        [/^a+a+/, true],
+        [/^a?a?(?=(a){0})$/, false],
+        [/^(a|a|a|a)/, true],
+        [/^a.*$/, true],
+        [/^a.{0,1}b$/, false],
+        [/^a.{0,2}b$/, false],
+        [/^a.{0,}b$/, false],
 
         // atomic group workaround detected
         [/^(?=(a{0,1}))\1a?$/, true],
@@ -468,9 +495,26 @@ describe('RedosDetector', () => {
         [/^a?a?[\n\r\u2028-\u2029]{2}$/m, false],
 
         // no start anchor
-        [/a/, false, new Set(['missingAnchor'])],
+        [/a/, true, new Set(['missingAnchor'])],
+        [/a*a*/, true, new Set(['missingAnchor'])],
+        [/(a|a)/, true, new Set(['missingAnchor'])],
+        [/(?=a+a+)$/, true, new Set(['missingAnchor'])],
+        [/(?=a+a+$)$/, false, new Set(['missingAnchor'])],
         [/ab/, false, new Set(['missingAnchor'])],
-        [/(a+)+/, false, new Set(['missingAnchor'])],
+        [/a*a+/, false, new Set(['missingAnchor'])],
+        [/a*a{2,}/, false, new Set(['missingAnchor'])],
+        [/a*aa/, false, new Set(['missingAnchor'])],
+        [/(a+)+/, true, new Set(['missingAnchor'])],
+        [/(a+)+$/, false, new Set(['missingAnchor'])],
+        [/(a+)+a/, false, new Set(['missingAnchor'])],
+        [/(a|aa)/, false, new Set(['missingAnchor'])],
+
+        // GH issues
+        // https://github.com/tjenkinson/redos-detector/issues/621
+        [/\s+/, true, new Set(['missingAnchor'])],
+        // https://github.com/tjenkinson/redos-detector/issues/606
+        [/(a+)+/, true, new Set(['missingAnchor'])],
+        [/(a+)+$/, false, new Set(['missingAnchor'])],
       ];
 
       cases.forEach(([regex, expectNoBacktracks, flags = new Set()]) => {
@@ -479,10 +523,10 @@ describe('RedosDetector', () => {
 
         it(source, () => {
           const result = isSafe(regex, {
-            maxBacktracks: Infinity,
+            maxScore: Infinity,
             maxSteps: 5000,
           });
-          const { error, trails, safe, worstCaseBacktrackCount } = result;
+          const { error, trails, safe, score } = result;
 
           if (expectNoBacktracks) {
             expect(error).toBe(null);
@@ -491,12 +535,12 @@ describe('RedosDetector', () => {
 
           expect(trails.length === 0).toBe(expectNoBacktracks);
           if (expectNoBacktracks) {
-            expect(worstCaseBacktrackCount).toStrictEqual({
+            expect(score).toStrictEqual({
               infinite: false,
-              value: 0,
+              value: 1,
             });
           } else {
-            expect(worstCaseBacktrackCount).toMatchSnapshot();
+            expect(score).toMatchSnapshot();
           }
           expect(safe).toBe(!error);
 
@@ -543,17 +587,17 @@ describe('RedosDetector', () => {
       });
     });
 
-    it('respects the `maxBacktracks`', () => {
+    it('respects the `maxScore`', () => {
       expect(
         isSafe(/^a?a?$/, {
-          maxBacktracks: 1,
+          maxScore: 2,
         }).error,
       ).toBe(null);
       expect(
         isSafe(/^a?a?$/, {
-          maxBacktracks: 0,
+          maxScore: 1,
         }).error,
-      ).toBe('hitMaxBacktracks');
+      ).toBe('hitMaxScore');
     });
 
     it('respects the timeout', () => {
@@ -578,12 +622,12 @@ describe('RedosDetector', () => {
       expect(res).toMatchSnapshot();
     });
 
-    it('throws if `maxBacktracks` not positive or 0', () => {
+    it('throws if `maxScore` not positive or 0', () => {
       expect(() =>
         isSafe(/a/, {
-          maxBacktracks: -1,
+          maxScore: -1,
         }),
-      ).toThrowError('`maxBacktracks` must be a positive number or 0.');
+      ).toThrowError('`maxScore` must be a positive number or 0.');
     });
 
     it('throws if `timeout` not positive', () => {

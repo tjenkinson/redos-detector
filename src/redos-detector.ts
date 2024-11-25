@@ -100,7 +100,7 @@ export type IsSafeConfig = {
    * If worst case count of possible backtracks is above this number,
    * the regex will be considered unsafe.
    */
-  readonly maxBacktracks?: number;
+  readonly maxScore?: number;
   /**
    * The maximum number of steps to make. If this limit is hit `error`
    * will be `hitMaxSteps`.
@@ -148,14 +148,9 @@ export type IsSafeConfig = {
     }
 );
 
-export type RedosDetectorError =
-  | 'hitMaxBacktracks'
-  | 'hitMaxSteps'
-  | 'timedOut';
+export type RedosDetectorError = 'hitMaxScore' | 'hitMaxSteps' | 'timedOut';
 
-export type BacktrackCount =
-  | { infinite: false; value: number }
-  | { infinite: true };
+export type Score = { infinite: false; value: number } | { infinite: true };
 
 export type RedosDetectorResult = {
   /**
@@ -176,14 +171,23 @@ export type RedosDetectorResult = {
    */
   readonly trails: RedosDetectorTrail[];
   /**
-   * The worst case number of backtracks that could occur on an input string.
+   * The score.
    *
-   * Note it's possible for this to be higher than the true number.
+   * How is this calculated?
+   * - All the different paths an input string could take through the provided pattern are calculated.
+   * - Then for each candidate path found above, starting from just the first character, up to the complete path,
+   *   all the other paths that could also match a string that matches the candidate path are found.
+   * - The score is the highest number found above. The higher the score, the more backtracks an engine will
+   *   potentially need to take if the input string doesn't match the pattern.
+   * - If the score is `1` this means no backtracks can occur and for every possible input string the pattern
+   *   could only match one way.
+   * - If there are too many different paths it can be too expensive to calculate an accurate score,
+   *   so it falls back incrementing every time a new path is found.
    *
    * If it's infinite the `infinite` property will be `true`, otherwise the number
    * will be on `value`.
    */
-  readonly worstCaseBacktrackCount: BacktrackCount;
+  readonly score: Score;
 } & (
   | {
       /**
@@ -192,7 +196,7 @@ export type RedosDetectorResult = {
       readonly error: null;
       /**
        * `true` means the regex pattern is not susceptible to ReDoS attacks
-       * based on the configured `maxBacktracks` option.
+       * based on the configured `maxScore` option.
        */
       readonly safe: true;
     }
@@ -232,7 +236,7 @@ export type IsSafePatternConfig = IsSafeConfig & {
 };
 
 export const defaultTimeout = Infinity;
-export const defaultMaxBacktracks = 200;
+export const defaultMaxScore = 200;
 export const defaultMaxSteps = 20000;
 export const defaultMultiLine = false;
 export const defaultUnicode = false;
@@ -307,7 +311,7 @@ export function isSafePattern(
   inputPattern: string,
   {
     atomicGroupOffsets: atomicGroupOffsetsInput,
-    maxBacktracks = defaultMaxBacktracks,
+    maxScore = defaultMaxScore,
     maxSteps = defaultMaxSteps,
     multiLine = defaultMultiLine,
     timeout = defaultTimeout,
@@ -329,8 +333,8 @@ export function isSafePattern(
   if (timeout <= 0) {
     throw new Error('`timeout` must be a positive number.');
   }
-  if (maxBacktracks < 0) {
-    throw new Error('`maxBacktracks` must be a positive number or 0.');
+  if (maxScore < 0) {
+    throw new Error('`maxScore` must be a positive number or 0.');
   }
   if (maxSteps <= 0) {
     throw new Error('`maxSteps` must be a positive number.');
@@ -357,7 +361,7 @@ export function isSafePattern(
     atomicGroupOffsets,
     caseInsensitive,
     dotAll,
-    maxBacktracks,
+    maxScore,
     maxSteps,
     multiLine,
     node: ast,
@@ -376,6 +380,10 @@ export function isSafePattern(
         }),
     pattern,
     patternDowngraded,
+    score:
+      result.score === Infinity
+        ? { infinite: true }
+        : { infinite: false, value: result.score },
     trails: result.trails.map((trail) => {
       const safeRegexTrail: RedosDetectorTrail = {
         trail: trail.map(({ left, right }) => {
@@ -402,10 +410,6 @@ export function isSafePattern(
       };
       return safeRegexTrail;
     }),
-    worstCaseBacktrackCount:
-      result.worstCaseBacktrackCount === Infinity
-        ? { infinite: true }
-        : { infinite: false, value: result.worstCaseBacktrackCount },
   };
 }
 

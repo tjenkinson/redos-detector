@@ -1,17 +1,16 @@
 import {
-  AstNode,
+  buildForkableReader,
+  ForkableReader,
+  Reader,
+  ReaderResult,
+} from './reader';
+import {
   CharacterClass,
   CharacterClassEscape,
   Dot,
   UnicodePropertyEscape,
   Value,
 } from 'regjsparser';
-import {
-  buildForkableReader,
-  ForkableReader,
-  Reader,
-  ReaderResult,
-} from './reader';
 import {
   CharacterGroups,
   intersectCharacterGroups,
@@ -35,9 +34,7 @@ import { areSetsEqual } from './sets';
 import { buildQuantifiersInInfinitePortion } from './nodes/quantifier';
 import { fork } from 'forkable-iterator';
 import { last } from './arrays';
-import { MyFeatures } from './parse';
 import { once } from './once';
-import { SidesEqualChecker } from './sides-equal-checker';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -62,6 +59,7 @@ export type CharacterGroupsOrReference = Readonly<
 export type TrailEntrySide = Readonly<{
   characterGroups: CharacterGroups;
   contextTrail: string;
+  hash: string;
   node:
     | CharacterClass
     | CharacterClassEscape
@@ -101,11 +99,6 @@ export type CheckerReaderReturn = Readonly<
     }
 >;
 
-type InfiniteLoopTrackerEntry = Readonly<{
-  contextTrail: string;
-  node: AstNode<MyFeatures>;
-}>;
-
 type ReaderWithGetter = Readonly<{
   get: () => ReaderResult<
     CharacterReaderLevel2Value,
@@ -118,16 +111,16 @@ type ReaderWithGetter = Readonly<{
 }>;
 
 type StackFrame = Readonly<{
-  infiniteLoopTracker: InfiniteLoopTracker<InfiniteLoopTrackerEntry>;
+  infiniteLoopTracker: InfiniteLoopTracker<string>;
   streamReadersWithGetters: ReaderWithGetter[];
   trail: Trail;
 }>;
 
 const areInfiniteLoopTrackerEntriesEqual = (
-  left: InfiniteLoopTrackerEntry,
-  right: InfiniteLoopTrackerEntry,
+  left: string,
+  right: string,
 ): boolean => {
-  return left.node === right.node && left.contextTrail === right.contextTrail;
+  return left === right;
 };
 
 function buildContextTrail(
@@ -160,16 +153,16 @@ function buildContextTrail(
  * trail up to that point.
  */
 export function* buildCheckerReader(input: CheckerInput): CheckerReader {
-  const sidesEqualChecker = new SidesEqualChecker();
   const trails = new Set<Trail>();
   const trailEntriesAtStartOfLoop = new Set<TrailEntry>();
   const infiniteLoopTrackerEntryToTrailEntry = new Map<
-    Entry<InfiniteLoopTrackerEntry>,
+    Entry<string>,
     TrailEntry
   >();
   let stepCount = 0;
   const latestEndTime = Date.now() + input.timeout;
   let timedOut = false;
+  let infinite = false;
 
   const initialLeftStreamReader = buildForkableReader(input.leftStreamReader);
   const initialRightStreamReader = buildForkableReader(input.rightStreamReader);
@@ -306,17 +299,21 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
+    const leftContextTrail = buildContextTrail(leftValue.stack, false);
+    const rightContextTrail = buildContextTrail(rightValue.stack, false);
     const newEntry: TrailEntry = {
       intersection,
       left: {
         characterGroups: leftValue.characterGroups,
-        contextTrail: buildContextTrail(leftValue.stack, false),
+        contextTrail: leftContextTrail,
+        hash: [leftValue.node.range[0], leftContextTrail].join(':'),
         node: leftValue.node,
         stack: leftValue.stack,
       },
       right: {
         characterGroups: rightValue.characterGroups,
-        contextTrail: buildContextTrail(rightValue.stack, false),
+        contextTrail: rightContextTrail,
+        hash: [rightValue.node.range[0], rightContextTrail].join(':'),
         node: rightValue.node,
         stack: rightValue.stack,
       },
@@ -328,8 +325,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       buildQuantifiersInInfinitePortion(leftValue.stack);
 
     if (leftQuantifiersInInfiniteProportion.size > 0) {
-      const leftAndRightIdentical = trail.every(({ left, right }) =>
-        sidesEqualChecker.areSidesEqual(left, right),
+      const leftAndRightIdentical = trail.every(
+        ({ left, right }) => left.hash === right.hash,
       );
       if (leftAndRightIdentical) {
         // left and right have been identical to each other, and we are now entering an infinite
@@ -338,15 +335,15 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       }
     }
 
-    const infiniteLoopTrackerEntry: Entry<InfiniteLoopTrackerEntry> = {
-      left: {
-        contextTrail: buildContextTrail(leftValue.stack, true),
-        node: leftValue.node,
-      },
-      right: {
-        contextTrail: buildContextTrail(rightValue.stack, true),
-        node: rightValue.node,
-      },
+    const infiniteLoopTrackerEntry: Entry<string> = {
+      left: [
+        leftValue.node.range[0],
+        buildContextTrail(leftValue.stack, true),
+      ].join(':'),
+      right: [
+        rightValue.node.range[0],
+        buildContextTrail(leftValue.stack, true),
+      ].join(':'),
     };
     infiniteLoopTrackerEntryToTrailEntry.set(
       infiniteLoopTrackerEntry,
@@ -384,14 +381,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
-    const sidesEqual = sidesEqualChecker.areSidesEqual(
-      newEntry.left,
-      newEntry.right,
-    );
-
+    const sidesEqual = newEntry.left.hash === newEntry.right.hash;
     if (!sidesEqual) {
-      let leftAndRightUnbounded: boolean;
-      let leftUnbounded: boolean;
       {
         const leftUnboundedReader = isUnboundedReader({
           multiLine: input.multiLine,
@@ -415,12 +406,11 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           }
         }
 
-        leftUnbounded = leftUnboundedCheckReaderNext.value;
+        const leftUnbounded = leftUnboundedCheckReaderNext.value;
+        if (leftUnbounded) continue;
       }
 
-      if (!leftUnbounded) {
-        leftAndRightUnbounded = false;
-      } else {
+      {
         const rightUnboundedReader = isUnboundedReader({
           multiLine: input.multiLine,
           reader: fork(streamReadersWithGetters[1].reader),
@@ -443,15 +433,9 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
             }
           }
         }
-        const rightUnbounded = rightUnboundedCheckReaderNext.value;
-        leftAndRightUnbounded = rightUnbounded;
-      }
 
-      // if both sides are unbounded then it means a backtrack won't occur
-      // from one side to the other if an invalid character is hit (e.g. `^a*a*`),
-      // so bail
-      if (leftAndRightUnbounded) {
-        continue;
+        const rightUnbounded = rightUnboundedCheckReaderNext.value;
+        if (rightUnbounded) continue;
       }
 
       const shouldEmitTrail = (): boolean => {
@@ -461,25 +445,13 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           return (
             existingTrail.every(
               (existingEntry, i) =>
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.left,
-                  trail[i].right,
-                ) &&
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.right,
-                  trail[i].left,
-                ),
+                existingEntry.left.hash === trail[i].right.hash &&
+                existingEntry.right.hash === trail[i].left.hash,
             ) ||
             existingTrail.every(
               (existingEntry, i) =>
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.left,
-                  trail[i].left,
-                ) &&
-                sidesEqualChecker.areSidesEqual(
-                  existingEntry.right,
-                  trail[i].right,
-                ),
+                existingEntry.left.hash === trail[i].left.hash &&
+                existingEntry.right.hash === trail[i].right.hash,
             )
           );
         });
@@ -503,7 +475,6 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     });
   }
 
-  let infinite = false;
   if (trailEntriesAtStartOfLoop.size > 0) {
     for (const trail of trails) {
       if (trail.some((entry) => trailEntriesAtStartOfLoop.has(entry))) {

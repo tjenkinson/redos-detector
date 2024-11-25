@@ -83,15 +83,17 @@ export function* isUnboundedReader({
       switch (next.value.type) {
         case characterReaderLevel2TypeSplit: {
           const value = next.value;
-          const splitReader = value.reader();
           stack.push({
             get: once(() => frame.reader.next()),
             reader: frame.reader,
           });
-          stack.push({
-            get: once(() => splitReader.next()),
-            reader: splitReader,
-          });
+          if (value.subType === null) {
+            const splitReader = value.reader();
+            stack.push({
+              get: once(() => splitReader.next()),
+              reader: splitReader,
+            });
+          }
           break;
         }
         case characterReaderLevel2TypeEntry: {
