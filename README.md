@@ -1,77 +1,39 @@
 # redos-detector
 
-A CLI and library which tests with certainty if a regex pattern is safe from ReDoS attacks. Supported in the browser, Node and Deno.
+A CLI and library which tests helps score how vulnerable a regex pattern is to ReDoS attacks. Supported in the browser, Node and Deno.
 
-By default it considers a pattern unsafe if there are potentially more than 200 backtracks possible.
+## What does it do?
 
-There are some cases where it may report a pattern as unsafe when in reality it's safe, but it should never report a pattern as safe when it is not.
+- It calculates all the different paths an input string could take through the provided pattern.
+- Then for each candidate path found above, starting from just the first character, up to the complete path, it finds all the other paths that could also match a string that matches the candidate path.
+- The score is the highest number found above. The higher the score, the more backtracks an engine will potentially need to take if the input string doesn't match the pattern.
+- If the score is `1` this means no backtracks can occur and for every possible input string the pattern could only match one way.
+- If there are too many different paths it can be too expensive to calculate an accurate score, so it falls back incrementing every time a new path is found.
 
 Note that this tool checks patterns that are expected to run using an engine that implements the [ECMA-262](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/) (JS) standard. If your pattern will be run in a different engine please be aware the result given here could be incorrect due to [differences in engine behaviour](docs/differences-in-engines.md).
+
+### Example
+
+With `^(.|a)(.|b)$` there are 6 candidate paths:
+
+1. `.`
+2. `a`
+3. `..`
+4. `.b`
+5. `a.`
+6. `ab`
+
+Path 1 and 2 will be put into a group because an input string of `a` would match both. This would have a candidate score of 2.
+
+Paths 3, 4, 5 and 6 will also be put into a group because an input string of `ab` would match them all. Therefore this group would have a candidate score of 4.
+
+Therefore the score that's reported would be 4.
+
+Note in reality with the input `ab!` it would backtrack 5 times (3 for `ab`, and then 2 for `a`), but the returned score is just the highest for a given prefix of the input string. This is because we don't know the maximum length the input string could be. E.g. with `^.a*.$` the total number of backtracks will be higher the more `a`'s there are.
 
 ## Demo
 
 [https://redosdetector.com/](https://redosdetector.com/) [[Source](https://github.com/tjenkinson/redos-detector-demo)]
-
-## Examples
-
-### Good
-
-```ts
-isSafe(/^([a-c]*)d([a-c]*)$/).safe === true;
-```
-
-[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D*%29d%28%5Ba-c%5D*%29%24)
-
-because for any given input string this can only match in one way, or not match.
-
-### Bad
-
-```ts
-isSafe(/^([a-b]*)([a-c]*)$/).safe === false;
-```
-
-[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-b%5D*%29%28%5Ba-c%5D*%29%24)
-
-because the input `a` could match in both places. The input `ax` could result in both being tried.
-
-The CLI would output the following for this:
-
-```
-Regex is not safe. There could be infinite backtracks.
-
-The following trails show how the same input can be matched multiple ways.
-2: `[a-b]` | 10: `[a-c]`
-========================
- 2: `[a-b]` | 10: `[a-c]`
-10: `[a-c]` | 10: `[a-c]`
-=========================
- 2: `[a-b]` | 10: `[a-c]`
-10: `[a-c]` | 10: `[a-c]`
-10: `[a-c]` | 10: `[a-c]`
-=========================
-2: `[a-b]` | 10: `[a-c]`
-2: `[a-b]` | 10: `[a-c]`
-========================
-
-Hit maximum number of backtracks so there may be more results than shown here.
-Note there may be more results than shown here as some infinite loops are detected and removed.
-```
-
-The first result means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
-
-_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pattern like `^(?=([a-b]*))\1([a-c]*)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D*%29%29%5C1%28%5Ba-c%5D*%29%24))._
-
-```ts
-isSafe(/^(a|a)+$/).safe === false;
-```
-
-[Demo](https://redosdetector.com/?pattern=%5E%28a%7Ca%29%2B%24)
-
-is bad because in the group `a` could match on both sides. The input `aaaaaax` could result in many combinations being tried.
-
-## How does it work?
-
-This tool will generate all the combinations of input strings that would match the pattern, and will output any input string that could match the pattern in multiple ways.
 
 ## Usage
 
@@ -88,11 +50,11 @@ The following is the structure of the result you will get from both `isSafe`, `i
 ```ts
 type Root = {
   safe: boolean;
-  error: null | 'hitMaxBacktracks' | 'hitMaxSteps' | 'timedOut';
+  error: null | 'hitMaxScore' | 'hitMaxSteps' | 'timedOut';
   trails: Trail[];
   patternDowngraded: boolean;
   pattern: string;
-  worstCaseBacktrackCount:
+  score:
     | {
         infinite: true;
       }
@@ -156,7 +118,7 @@ The following options exist for both the library and CLI:
 - `unicode`: Enable unicode mode. _(Default: `false`)_
 - `dotAll`: Enable dot-all mode, which allows `.` to match new lines. _(Default: `false`)_
 - `multiLine`: Enable multi-line mode, which changes `^` and `$` to match the start or end of any line within the string. _(Default: `false`)_
-- `maxBacktracks`: If worst case count of possible backtracks is above this number, the regex will be considered unsafe. _(Default: `200`)_
+- `maxScore`: If the score goes above this number, the regex will be considered unsafe. _(Default: `200`)_
 - `maxSteps`: The maximum number of steps to make. If this limit is hit `error` will be `hitMaxSteps`. You probably don't need to change this. _(Default: `20000`)_
 - `timeout`: The maximum amount of time (ms) to spend processing. Once this time is passed the trails found so far will be returned, and the `error` will be `timeout`. _(Default: `Infinity`)_
 - `downgradePattern`: Automatically downgrade the pattern if it's not supported as is. If this happens `patternDowngraded` will be `true` and `pattern` will contain the downgraded version. An exception may be thrown if the pattern needed to be downgraded and it wasn't. _(Default: `true`)_
@@ -166,7 +128,7 @@ _Note it's possible for there to be a infinite number of results, so you should 
 ### CLI
 
 ```sh
-$ npx redos-detector check "<regex pattern>" (--caseInsensitive) (--unicode) (--dotAll) (--multiLine) (--maxBacktracks <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
+$ npx redos-detector check "<regex pattern>" (--caseInsensitive) (--unicode) (--dotAll) (--multiLine) (--maxScore <number>) (--maxSteps <number>) (--timeout <number>) (--alwaysIncludeTrails) (--disableDowngrade) (--resultsLimit <number>) (--json)
 ```
 
 to run on the fly or
@@ -191,9 +153,58 @@ $ npm install redos-detector
 
 The following functions are provided:
 
-- `isSafe(regexp: RegExp, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). The `i` and `u` flags are supported.
-- `isSafePattern(pattern: string, options?: { maxBacktracks?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean, dotAll?: boolean, multiLine?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
+- `isSafe(regexp: RegExp, options?: { maxScore?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean })`: This takes a [`RegExp`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp). The `i` and `u` flags are supported.
+- `isSafePattern(pattern: string, options?: { maxScore?: number, maxSteps?: number, timeout?: number, downgradePattern?: boolean, caseInsensitive?: boolean, unicode?: boolean, dotAll?: boolean, multiLine?: boolean })`: This takes just the pattern as a string. E.g. `a*`.
 - `downgradePattern(input: { pattern: string, unicode: boolean }`: This downgrades the provided pattern to one which is supported. You won't need to use this unless you set the `downgradePattern` option to `false`.
+
+## Further Examples
+
+### Good
+
+```ts
+isSafe(/^([a-c]*)d([a-c]*)$/).safe === true;
+```
+
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-c%5D*%29d%28%5Ba-c%5D*%29%24)
+
+because for any given input string this can only match in one way, or not match.
+
+### Bad
+
+```ts
+isSafe(/^([a-b]*)([a-c]*)$/).safe === false;
+```
+
+[Demo](https://redosdetector.com/?pattern=%5E%28%5Ba-b%5D*%29%28%5Ba-c%5D*%29%24)
+
+because the input `a` could match in both places. The input `ax` could result in both being tried.
+
+The CLI would output the following for this:
+
+```
+Regex is not safe. There could be infinite backtracks.
+
+The following trails show how the same input can be matched multiple ways.
+ 2: `[a-b]` | 10: `[a-c]`
+10: `[a-c]` | 10: `[a-c]`
+=========================
+ 2: `[a-b]` |  2: `[a-b]`
+ 2: `[a-b]` | 10: `[a-c]`
+10: `[a-c]` | 10: `[a-c]`
+=========================
+```
+
+The first result means you could have a match where given the same input string, `[a-c]` takes a character (at position 10), or `[a-b]` takes a character (at position 2).
+
+_Note this could be made good again by making the first group atomic. [Atomic groups](https://www.regular-expressions.info/atomic.html) are not supported directly right now, but can be inferred using a pattern like `^(?=([a-b]*))\1([a-c]*)$` ([Demo](https://redosdetector.com/?pattern=%5E%28%3F%3D%28%5Ba-b%5D*%29%29%5C1%28%5Ba-c%5D*%29%24))._
+
+```ts
+isSafe(/^(a|a)+$/).safe === false;
+```
+
+[Demo](https://redosdetector.com/?pattern=%5E%28a%7Ca%29%2B%24)
+
+is bad because in the group `a` could match on both sides. The input `aaaaaa!` could result in many combinations being tried.
 
 ## Useful Resources
 
