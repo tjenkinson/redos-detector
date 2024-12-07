@@ -2,6 +2,8 @@
 
 A CLI and library which tests helps score how vulnerable a regex pattern is to ReDoS attacks. Supported in the browser, Node and Deno.
 
+Note you should make sure that the input string has a sensible length limit, as the amount of work needed to process the input may increase with the length of the string.
+
 ## What does it do?
 
 - It calculates all the different paths an input string could take through the provided pattern.
@@ -214,3 +216,4 @@ Here are some great resources, which I found super helpful when building this.
 - **[https://regexper.com/](https://regexper.com/)**: Tool for visualising a regex pattern as a chart.
 - **[https://regex101.com/](https://regex101.com/)**: Tool for testing a pattern with syntax highlighting and useful information.
 - **[https://github.com/jviereck/regjsparser](https://github.com/jviereck/regjsparser)**: Parser used by this project.
+- **[Counting in Regexes Considered Harmful: Exposing ReDoS Vulnerability of Nonbacktracking Matchers](https://www.usenix.org/conference/usenixsecurity22/presentation/turonova)**: A paper which demonstrates how simple unbounded patterns can be expensive.
