@@ -1,52 +1,46 @@
 import { once } from './once';
 
-/**
- * Note the decoded item must contain nodes, which only ever appear once,
- * and always appear in the same position.
- */
+type TreeItem = {
+  children: Map<unknown, TreeItem>;
+  value: unknown;
+};
+
+const rootSymbol = Symbol('root');
 export class Tree<T> {
-  // all nodes in the tree
-  private nodes: Set<unknown> = new Set();
-  private results: Map<unknown /* leaf node */, T> = new Map();
+  private root: Map<unknown, TreeItem> = new Map();
+  private results: Map<TreeItem, T> = new Map();
   private _items: () => readonly T[] = () => [];
 
-  constructor(
-    /* Decode `value` into the list of nodes */
-    private decode: (value: T) => readonly unknown[],
-  ) {}
+  constructor(private decode: (value: T) => readonly unknown[]) {}
 
   public add(input: T): void {
     const values = this.decode(input);
     if (values.length === 0) return;
 
-    const { results, nodes } = this;
-
-    const insert = (newValues: readonly unknown[]): void => {
-      for (let i = 0; i < newValues.length; i++) {
-        const value = newValues[i];
-        nodes.add(value);
-      }
+    const { results } = this;
+    let current: TreeItem = {
+      children: this.root,
+      value: rootSymbol,
     };
 
-    for (let i = values.length - 1; i >= 0; i--) {
+    // note initially used `.entries()` but this was much slower
+    const numValues = values.length;
+    for (let i = 0; i < numValues; i++) {
       const value = values[i];
-
-      if (nodes.has(value)) {
-        if (i === values.length - 1) {
-          // this is just a subset of an item already in the tree
-          return;
+      const last = i === numValues - 1;
+      const existing = current.children.get(value);
+      if (existing) {
+        current = existing;
+        if (!last) {
+          results.delete(existing);
         }
-        results.delete(value);
-        insert(values.slice(i + 1));
-        results.set(values[values.length - 1], input);
-        break;
-      }
-
-      if (i === 0) {
-        // new item
-        insert(values);
-        results.set(values[values.length - 1], input);
-        break;
+      } else {
+        const newChild: TreeItem = { children: new Map(), value };
+        current.children.set(value, newChild);
+        current = newChild;
+        if (last) {
+          results.set(newChild, input);
+        }
       }
     }
 

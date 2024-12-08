@@ -4,6 +4,8 @@ import {
   RedosDetectorTrailEntrySide,
 } from './redos-detector';
 
+const truncateLength = 100;
+
 export type ToFriendlyConfig = {
   alwaysIncludeTrails?: boolean;
   resultsLimit?: number;
@@ -21,7 +23,7 @@ function getBreadcrumbs(side: RedosDetectorTrailEntrySide): string {
 /**
  * Takes a result and converts it to a text representation.
  *
- * Do not try and parse this string programatically. It may change
+ * Do not try and parse this string programmatically. It may change
  * between any version.
  */
 export function toFriendly(
@@ -34,24 +36,12 @@ export function toFriendly(
   if (resultsLimit < 0) {
     throw new Error('`resultsLimit` must be > 0.');
   }
-  const backtrackCountString =
-    result.worstCaseBacktrackCount.infinite ||
-    result.worstCaseBacktrackCount.value > 0
-      ? `There could be ${
-          !result.worstCaseBacktrackCount.infinite ? 'at most ' : ''
-        }${
-          result.worstCaseBacktrackCount.infinite
-            ? 'infinite backtracks'
-            : result.worstCaseBacktrackCount.value === 1
-            ? '1 backtrack'
-            : `${result.worstCaseBacktrackCount.value} backtracks`
-        }.`
-      : null;
+  const scoreString = result.score.infinite
+    ? 'There could be infinite backtracks.'
+    : `Score: ${result.score.value}`;
 
   if (result.safe && !alwaysIncludeTrails) {
-    return `Regex is safe.${
-      backtrackCountString ? ` ${backtrackCountString}` : ''
-    }`;
+    return `Regex is safe. ${scoreString}`;
   }
 
   const outputLines: string[] = [];
@@ -78,7 +68,7 @@ export function toFriendly(
     const resultBlocks = result.trails
       .slice(0, resultsLimit)
       .map(({ trail }) => {
-        const rowContents = trail.map(({ a, b }) => {
+        const rowContents = trail.slice(0, truncateLength).map(({ a, b }) => {
           return [
             getBreadcrumbs(a),
             `\`${a.node.source}\``,
@@ -102,6 +92,9 @@ export function toFriendly(
             maxCol2Length,
           )} | ${col3.padStart(maxCol3Length)}: ${col4}`;
         });
+        if (trail.length > truncateLength) {
+          rows.push('…');
+        }
 
         const maxRowLength = Math.max(...rows.map((row) => row.length));
 
@@ -111,8 +104,8 @@ export function toFriendly(
       });
 
     const errorToMessage: Record<RedosDetectorError, string> = {
-      hitMaxBacktracks:
-        'Hit maximum number of backtracks so there may be more results than shown here.',
+      hitMaxScore:
+        'Hit the max score so there may be more results than shown here.',
       hitMaxSteps:
         'Hit maximum number of steps so there may be more results than shown here.',
       timedOut: 'Timed out so there may be more results than shown here.',
@@ -120,9 +113,7 @@ export function toFriendly(
 
     outputLines.push(
       ...[
-        `Regex is ${!result.safe ? 'not ' : ''}safe.${
-          backtrackCountString ? ` ${backtrackCountString}` : ''
-        }`,
+        `Regex is ${!result.safe ? 'not ' : ''}safe. ${scoreString}`,
         ...(resultsLimit > 0
           ? [
               '',
@@ -132,7 +123,6 @@ export function toFriendly(
               ...resultBlocks,
               '',
               ...(result.error ? [errorToMessage[result.error]] : []),
-              `Note there may be more results than shown here as some infinite loops are detected and removed.`,
               ...(result.trails.length > resultsLimit
                 ? ['There are more results than this but hit results limit.']
                 : []),
