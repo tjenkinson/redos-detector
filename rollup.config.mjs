@@ -76,7 +76,7 @@ export default [
         format: 'umd',
       },
       {
-        file: 'dist/redos-detector.es.js',
+        file: 'dist/redos-detector.mjs',
         format: 'es',
       },
     ],
