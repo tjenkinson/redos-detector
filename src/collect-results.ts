@@ -32,9 +32,6 @@ class EnhancedTrail {
     return this.tree.items;
   }
 
-  private isEmptyCache: ResultCache<boolean, CharacterGroups> =
-    new ResultCache();
-
   private getLongestMatch(
     inputStringSchema: readonly CharacterGroups[],
     trailSides: readonly TrailEntrySide[],
@@ -68,7 +65,10 @@ class EnhancedTrail {
       : trailSides.slice(0, noMatchOffset);
   }
 
-  constructor(public readonly trail: Trail) {
+  constructor(
+    public readonly trail: Trail,
+    private readonly isEmptyCache: ResultCache<boolean, CharacterGroups>,
+  ) {
     this.inputStringSchema = trail.map(({ intersection }) => intersection);
     this.length = trail.length;
     this.onNewTrail(this);
@@ -117,6 +117,7 @@ export function collectResults({
   caseInsensitive,
   dotAll,
 }: CollectResultsInput): CollectResultsResult {
+  const isEmptyCache: ResultCache<boolean, CharacterGroups> = new ResultCache();
   const nodeExtra = buildNodeExtra(node);
   const input = {
     caseInsensitive,
@@ -143,7 +144,7 @@ export function collectResults({
   outer: while (!(next = reader.next()).done) {
     switch (next.value.type) {
       case checkerReaderTypeTrail: {
-        const trail = new EnhancedTrail(next.value.trail);
+        const trail = new EnhancedTrail(next.value.trail, isEmptyCache);
 
         const updateScore = ({ matches }: EnhancedTrail): void => {
           const { length } = matches;
