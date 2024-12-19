@@ -5,7 +5,7 @@
   "bin": {
     "redos-detector": "bin.js"
   },
-  "module": "dist/redos-detector.es.js",
+  "module": "dist/redos-detector.mjs",
   "types": "dist/redos-detector.d.ts",
   "files": [
     "dist",
