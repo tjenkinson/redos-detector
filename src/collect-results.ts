@@ -20,34 +20,6 @@ import { ResultCache } from './result-cache';
 import { Tree } from './tree';
 
 const workLimit = 25_000;
-const isEmptyCache: ResultCache<boolean, CharacterGroups> = new ResultCache();
-
-function getLongestMatch(
-  inputStringSchema: readonly CharacterGroups[],
-  trailSides: readonly TrailEntrySide[],
-): readonly TrailEntrySide[] {
-  /* istanbul ignore next */
-  if (trailSides.length > inputStringSchema.length) {
-    throw new Error(
-      'Internal error: trail should be <= than input string schema',
-    );
-  }
-  const noMatchOffset = trailSides.findIndex((side, i) => {
-    const res = isEmptyCache.getResult(
-      side.characterGroups,
-      inputStringSchema[i],
-    );
-    if (res !== undefined) return res;
-
-    const isEmpty = isEmptyCharacterGroups(
-      intersectCharacterGroups(side.characterGroups, inputStringSchema[i]),
-    );
-    isEmptyCache.addResult(side.characterGroups, inputStringSchema[i], isEmpty);
-    return isEmpty;
-  });
-
-  return noMatchOffset === -1 ? trailSides : trailSides.slice(0, noMatchOffset);
-}
 
 class EnhancedTrail {
   public readonly length: number;
@@ -58,6 +30,42 @@ class EnhancedTrail {
 
   public get matches(): readonly (readonly TrailEntrySide[])[] {
     return this.tree.items;
+  }
+
+  private isEmptyCache: ResultCache<boolean, CharacterGroups> =
+    new ResultCache();
+
+  private getLongestMatch(
+    inputStringSchema: readonly CharacterGroups[],
+    trailSides: readonly TrailEntrySide[],
+  ): readonly TrailEntrySide[] {
+    /* istanbul ignore next */
+    if (trailSides.length > inputStringSchema.length) {
+      throw new Error(
+        'Internal error: trail should be <= than input string schema',
+      );
+    }
+    const noMatchOffset = trailSides.findIndex((side, i) => {
+      const res = this.isEmptyCache.getResult(
+        side.characterGroups,
+        inputStringSchema[i],
+      );
+      if (res !== undefined) return res;
+
+      const isEmpty = isEmptyCharacterGroups(
+        intersectCharacterGroups(side.characterGroups, inputStringSchema[i]),
+      );
+      this.isEmptyCache.addResult(
+        side.characterGroups,
+        inputStringSchema[i],
+        isEmpty,
+      );
+      return isEmpty;
+    });
+
+    return noMatchOffset === -1
+      ? trailSides
+      : trailSides.slice(0, noMatchOffset);
   }
 
   constructor(public readonly trail: Trail) {
@@ -74,10 +82,10 @@ class EnhancedTrail {
       rightSide.push(entry.right);
     }
 
-    const leftMatch = getLongestMatch(this.inputStringSchema, leftSide);
+    const leftMatch = this.getLongestMatch(this.inputStringSchema, leftSide);
     if (leftMatch.length === this.length) this.tree.add(leftMatch);
 
-    const rightMatch = getLongestMatch(this.inputStringSchema, rightSide);
+    const rightMatch = this.getLongestMatch(this.inputStringSchema, rightSide);
     if (rightMatch.length === this.length) this.tree.add(rightMatch);
   }
 }
