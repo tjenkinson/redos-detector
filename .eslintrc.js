@@ -38,4 +38,13 @@ module.exports = {
     '@typescript-eslint/no-unused-expressions': ['error'],
     'redos-detector/no-unsafe-regex': ['error'],
   },
+  overrides: [
+    {
+      // seems to be a memory leak when `isSafePattern` is called synchronously a lot of times :|
+      files: ['*.test.ts'],
+      rules: {
+        'redos-detector/no-unsafe-regex': 'off',
+      },
+    },
+  ],
 };
