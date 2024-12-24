@@ -41,6 +41,9 @@
     "url": "https://github.com/tjenkinson/redos-detector/issues"
   },
   "homepage": "https://github.com/tjenkinson/redos-detector#readme",
+  "dependencies": {
+    "regjsparser": "0.12.0"
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "25.0.8",
     "@rollup/plugin-node-resolve": "15.3.1",
@@ -59,7 +62,6 @@
     "lint-staged": "15.2.11",
     "micromatch": "4.0.8",
     "prettier": "3.4.2",
-    "regjsparser": "0.12.0",
     "rollup": "4.28.1",
     "ts-jest": "29.2.5",
     "tslib": "2.8.1",
