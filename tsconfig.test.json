@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "target": "ESNext",
     "types": ["jest", "node"]
   },
   "exclude": ["node_modules"]

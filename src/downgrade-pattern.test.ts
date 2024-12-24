@@ -555,6 +555,7 @@ describe('DowngradePattern', () => {
             // eslint-disable-next-line @typescript-eslint/naming-convention
             '\\1': 51,
           },
+          // @ts-expect-error backreference group not exist
           result: s(/^(?:a)b{1}c+d{1,2}e+(?:f)(?:k|l).(?:m(?:n))o+?[a\d]\1$/),
         },
       );
@@ -571,6 +572,7 @@ describe('DowngradePattern', () => {
             '\\4': 43,
           },
           /* eslint-enable @typescript-eslint/naming-convention */
+          // @ts-expect-error backreference group not exist
           result: s(/(?:)(?:)(?:)(?:)a(?:\1)c(?:d|\2|f)(?:\3)(?:\4)+/),
         },
       );

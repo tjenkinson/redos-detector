@@ -144,6 +144,7 @@ describe('RedosDetector', () => {
         [/^((a{1,2})\1)$/, true],
         [/^((a+)\1)$/, true],
         [/^((a+)a+)$/, false],
+        // @ts-expect-error backreference group not exist
         [/^a+\99$/, true],
         [/^(a+)b\1$/, true],
         [/^(a+)b\1+a+$/, false],
@@ -348,6 +349,7 @@ describe('RedosDetector', () => {
         [/^👍+\udc4d+$/, false, new Set(['ignoreSnapshot'])],
         [/^👍+👍+$/u, false],
         [/^\u{1f44d}+\u{1f44d}+$/u, false],
+        // @ts-expect-error Unicode escape sequences are only available when the Unicode (u) flag or the Unicode Sets (v) flag is set.
         [/^\u{1f44d}+\u{1f44d}+$/, true],
         [/^a+\u{61}+$/u, false],
         [/^\p{L}+a+$/u, false],
