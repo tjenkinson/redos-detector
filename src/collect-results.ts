@@ -132,6 +132,7 @@ export function collectResults({
     leftStreamReader,
     maxSteps,
     multiLine,
+    nodeExtra,
     rightStreamReader,
     timeout,
   });

@@ -6,7 +6,9 @@ import { join, joinArray } from '../character-reader/join';
 import { buildNullCharacterReader } from './null';
 import { CharacterReaderLevel2Stack } from '../character-reader/character-reader-level-2';
 import { map } from '../character-reader/map';
+import { mustGet } from '../map';
 import { MyFeatures } from '../parse';
+import { NodeExtra } from '../node-extra';
 import { Quantifier } from 'regjsparser';
 
 export type QuantifierIterations = ReadonlyMap<Quantifier<MyFeatures>, number>;
@@ -19,15 +21,30 @@ export type QuantifiersInInfinitePortion = ReadonlySet<Quantifier<MyFeatures>>;
 
 export function buildQuantifiersInInfinitePortion(
   stack: CharacterReaderLevel2Stack,
+  nodeExtra: NodeExtra,
 ): QuantifiersInInfinitePortion {
+  const exhaustive = stack.some((entry) => {
+    if (entry.type !== 'group' || entry.group.behavior !== 'normal') {
+      return false;
+    }
+
+    const index = mustGet(nodeExtra.capturingGroupToIndex, entry.group);
+    const hasReference = nodeExtra.reachableReferences.some(
+      (reference) => reference.matchIndex === index,
+    );
+    return hasReference;
+  });
+
+  // if we are part of a group that is referenced then we need to include all iterations
+  // because that could have an effect later where the reference is
+  if (exhaustive) return new Set();
+
   return new Set(
     stack
       .flatMap((entry) => (entry.type === 'quantifier' ? [entry] : []))
       .filter(
         ({ iteration, quantifier }) =>
-          iteration >= 1 &&
-          iteration >= quantifier.min &&
-          quantifier.max === undefined,
+          iteration >= 1 && iteration >= quantifier.min,
       )
       .map(({ quantifier }) => quantifier),
   );

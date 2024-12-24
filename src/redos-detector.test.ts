@@ -1,4 +1,4 @@
-/* eslint-disable no-control-regex, no-useless-backreference, redos-detector/no-unsafe-regex */
+/* eslint-disable no-control-regex, no-useless-backreference */
 import {
   downgradePattern,
   isSafe,
@@ -18,8 +18,11 @@ describe('RedosDetector', () => {
 
   describe('isSafe', () => {
     describe('cases', () => {
-      type Case = [RegExp, boolean];
-      type CaseWithFlags = [...Case, Set<'ignoreSnapshot' | 'missingAnchor'>];
+      type Case = [RegExp, boolean | number];
+      type CaseWithFlags = [
+        ...Case,
+        Set<'ignoreSnapshot' | 'missingAnchor' | 'infinite'>,
+      ];
 
       const cases: (Case | CaseWithFlags)[] = [
         [/^()/, true],
@@ -511,15 +514,36 @@ describe('RedosDetector', () => {
         [/(a+)+a/, false, new Set(['missingAnchor'])],
         [/(a|aa)/, false, new Set(['missingAnchor'])],
 
+        // group containing quantifier referenced later, so all quantifier iterations emitted
+        [/^(a{0,3}bc)x\1*(aaabc)*$/, false, new Set(['infinite'])],
+        [/^((a{0,3})bc)x\1*(aaabc)*$/, false, new Set(['infinite'])],
+
         // GH issues
         // https://github.com/tjenkinson/redos-detector/issues/621
         [/\s+/, true, new Set(['missingAnchor'])],
         // https://github.com/tjenkinson/redos-detector/issues/606
         [/(a+)+/, true, new Set(['missingAnchor'])],
         [/(a+)+$/, false, new Set(['missingAnchor'])],
+        // https://github.com/tjenkinson/redos-detector/issues/650
+        [
+          /^(?:-(?:[a-z][a-z\d]{4,7}|\d[a-z\d]{3,7}))*(?:_[^x](?:_[a-z\d]{2}(_[a-z\d]{3,8})*)+)?$/,
+          2,
+        ],
+        [
+          /^(?:-(?:[a-z][a-z\d]{4,7}|\d[a-z\d]{3,7}))*(?:_[^x](?:_[a-z\d]{2}(_[a-z\d]{3,8}){0,5})+)?$/,
+          2,
+        ],
+        [
+          /^(?:-(?:[a-z][a-z\d]{4,7}|\d[a-z\d]{3,7}))*(?:_[^x](?:_[a-z\d]{2}(_[a-z\d]{3,8}){0,2})+)?$/,
+          2,
+        ],
+        [
+          /^(?:-(?:[a-z][a-z\d]{4,7}|\d[a-z\d]{3,7}))*(?:_[^x](?:_[a-z\d]{2}(_[a-z\d]{3,8}){0,2}){1,5})?$/,
+          2,
+        ],
       ];
 
-      cases.forEach(([regex, expectNoBacktracks, flags = new Set()]) => {
+      cases.forEach(([regex, expectNoBacktracksOrScore, flags = new Set()]) => {
         const source =
           typeof regex === 'string' ? regex : `/${regex.source}/${regex.flags}`;
 
@@ -530,20 +554,31 @@ describe('RedosDetector', () => {
           });
           const { error, trails, safe, score } = result;
 
-          if (expectNoBacktracks) {
+          if (expectNoBacktracksOrScore === true) {
             expect(error).toBe(null);
           }
           expect(error).toMatchSnapshot();
 
-          expect(trails.length === 0).toBe(expectNoBacktracks);
-          if (expectNoBacktracks) {
+          expect(trails.length === 0).toBe(expectNoBacktracksOrScore === true);
+          if (expectNoBacktracksOrScore === true) {
             expect(score).toStrictEqual({
               infinite: false,
               value: 1,
             });
+          } else if (typeof expectNoBacktracksOrScore === 'number') {
+            expect(score).toStrictEqual({
+              infinite: false,
+              value: expectNoBacktracksOrScore,
+            });
           } else {
             expect(score).toMatchSnapshot();
           }
+          if (flags.has('infinite')) {
+            expect(score).toStrictEqual({
+              infinite: true,
+            });
+          }
+
           expect(safe).toBe(!error);
 
           if (!flags.has('ignoreSnapshot')) {
