@@ -432,8 +432,8 @@ export function downgradePattern({
                 atomicOrOptional: atomic
                   ? 'atomic'
                   : optional
-                  ? 'optional'
-                  : null,
+                    ? 'optional'
+                    : null,
                 group,
                 reference: node,
               });

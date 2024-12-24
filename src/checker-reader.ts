@@ -488,8 +488,8 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     stepCount > input.maxSteps
       ? ('hitMaxSteps' as const)
       : timedOut
-      ? ('timedOut' as const)
-      : null;
+        ? ('timedOut' as const)
+        : null;
 
   return error
     ? {
