@@ -34,6 +34,7 @@ import { areSetsEqual } from './sets';
 import { buildQuantifiersInInfinitePortion } from './nodes/quantifier';
 import { fork } from 'forkable-iterator';
 import { last } from './arrays';
+import { NodeExtra } from './node-extra';
 import { once } from './once';
 
 export type CheckerInput = Readonly<{
@@ -43,6 +44,7 @@ export type CheckerInput = Readonly<{
   multiLine: boolean;
   rightStreamReader: CharacterReaderLevel2;
   timeout: number;
+  nodeExtra: NodeExtra;
 }>;
 
 export type CharacterGroupsOrReference = Readonly<
@@ -322,7 +324,7 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
     trail = [...trail, newEntry];
 
     const leftQuantifiersInInfiniteProportion =
-      buildQuantifiersInInfinitePortion(leftValue.stack);
+      buildQuantifiersInInfinitePortion(leftValue.stack, input.nodeExtra);
 
     if (leftQuantifiersInInfiniteProportion.size > 0) {
       const leftAndRightIdentical = trail.every(

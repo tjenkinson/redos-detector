@@ -13,6 +13,7 @@ export type NodeExtra = Readonly<{
     CapturingGroup<MyFeatures> | Reference<MyFeatures>,
     readonly NonCapturingGroup<MyFeatures>[]
   >;
+  reachableReferences: readonly Reference<MyFeatures>[];
 }>;
 
 const lookaheadBehaviours: readonly string[] = [
@@ -29,10 +30,12 @@ export function buildNodeExtra(regexp: MyRootNode): NodeExtra {
     CapturingGroup<MyFeatures> | Reference<MyFeatures>,
     readonly NonCapturingGroup<MyFeatures>[]
   >();
+  const reachableReferences: Reference<MyFeatures>[] = [];
 
   const visit = (
     node: AstNode<MyFeatures>,
     lookaheadStack: readonly NonCapturingGroup<MyFeatures>[],
+    reachable: boolean,
   ): void => {
     switch (node.type) {
       case 'anchor':
@@ -45,11 +48,14 @@ export function buildNodeExtra(regexp: MyRootNode): NodeExtra {
         return;
       case 'reference': {
         nodeToLookaheadStack.set(node, lookaheadStack);
+        if (reachable) reachableReferences.push(node);
         break;
       }
       case 'alternative':
       case 'disjunction': {
-        node.body.forEach((expression) => visit(expression, lookaheadStack));
+        node.body.forEach((expression) =>
+          visit(expression, lookaheadStack, reachable),
+        );
         return;
       }
       case 'group': {
@@ -68,21 +74,26 @@ export function buildNodeExtra(regexp: MyRootNode): NodeExtra {
           newLookaheadStack.push(node);
         }
 
-        node.body.forEach((expression) => visit(expression, newLookaheadStack));
+        node.body.forEach((expression) =>
+          visit(expression, newLookaheadStack, reachable),
+        );
         return;
       }
       case 'quantifier': {
-        node.body.forEach((expression) => visit(expression, lookaheadStack));
+        node.body.forEach((expression) =>
+          visit(expression, lookaheadStack, reachable && node.max !== 0),
+        );
         return;
       }
     }
   };
 
-  visit(regexp, []);
+  visit(regexp, [], true);
 
   return {
     capturingGroupToIndex,
     indexToCapturingGroup,
     nodeToLookaheadStack,
+    reachableReferences,
   };
 }
