@@ -499,6 +499,28 @@ describe('RedosDetector', () => {
         [/^a?a?[\n\r\u2028-\u2029]{2}/m, true],
         [/^a?a?[\n\r\u2028-\u2029]{2}$/m, false],
 
+        // unicode character class escapes
+        [/^\p{Lowercase_Letter}?\p{Lowercase_Letter}?$/u, false],
+        [/^\P{Lowercase_Letter}?\P{Lowercase_Letter}?$/u, false],
+        [/^\p{Lowercase_Letter}?\P{Lowercase_Letter}?$/u, true],
+        [/^\P{Lowercase_Letter}?\p{Lowercase_Letter}?$/u, true],
+        [/^\P{Lowercase_Letter}?\p{Lowercase_Letter}?a?$/u, false],
+        [/^[\p{Lowercase_Letter}]?[\p{Lowercase_Letter}]?$/u, false],
+        [/^[\P{Lowercase_Letter}]?[\P{Lowercase_Letter}]?$/u, false],
+        [/^[\p{Lowercase_Letter}]?[\P{Lowercase_Letter}]?$/u, true],
+        [/^[\P{Lowercase_Letter}]?[\p{Lowercase_Letter}]?$/u, true],
+        [/^[\p{Lowercase_Letter}]?[^\p{Lowercase_Letter}]?$/u, true],
+        [/^[\P{Lowercase_Letter}]?[^\P{Lowercase_Letter}]?$/u, true],
+        [
+          /^[\p{Lowercase_Letter}]?[\P{Lowercase_Letter}\p{Lowercase_Letter}]?$/u,
+          false,
+        ],
+        [
+          /^[\p{Lowercase_Letter}]?[\p{Lowercase_Letter}\P{Lowercase_Letter}]?$/u,
+          false,
+        ],
+        [/^\P{Lowercase_Letter}?a?$/u, false],
+
         // no start anchor
         [/a/, true, new Set(['missingAnchor'])],
         [/a*a*/, true, new Set(['missingAnchor'])],

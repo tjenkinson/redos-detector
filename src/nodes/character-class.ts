@@ -11,7 +11,7 @@ import { buildArrayReader } from '../reader';
 import { buildCodePointRanges } from '../code-point';
 import { CharacterClass } from 'regjsparser';
 import { codePointFromValue } from './value';
-import { MutableCharacterGroups } from '../character-groups';
+import { OurRange } from '../our-range';
 
 export function buildCharacterClassCharacterReader({
   caseInsensitive,
@@ -20,25 +20,22 @@ export function buildCharacterClassCharacterReader({
   caseInsensitive: boolean;
   node: CharacterClass;
 }): CharacterReader {
-  const characterGroups: MutableCharacterGroups = {
-    dot: false,
-    negated: !!node.negative,
-    ranges: [],
-    unicodePropertyEscapes: new Set(),
-  };
+  const ranges: OurRange[] = [];
+  const unicodePropertyEscapes: Map<string, boolean> = new Map();
+  let matchesEverything = false;
 
-  for (const expression of node.body) {
+  outer: for (const expression of node.body) {
     switch (expression.type) {
       case 'value': {
         const codePoint = codePointFromValue({
           caseInsensitive,
           value: expression,
         });
-        characterGroups.ranges.push([codePoint, codePoint]);
+        ranges.push([codePoint, codePoint]);
         break;
       }
       case 'characterClassRange': {
-        characterGroups.ranges.push(
+        ranges.push(
           ...buildCodePointRanges({
             caseInsensitive,
             highCodePoint: expression.max.codePoint,
@@ -49,12 +46,19 @@ export function buildCharacterClassCharacterReader({
       }
       case 'characterClassEscape': {
         const value = expression.value as CharacterClassEscapeValue;
-        const ranges = characterClassEscapeToRange(value);
-        characterGroups.ranges.push(...ranges);
+        ranges.push(...characterClassEscapeToRange(value));
         break;
       }
       case 'unicodePropertyEscape': {
-        characterGroups.unicodePropertyEscapes.add(expression.value);
+        const resolvedNegative = expression.negative !== node.negative;
+        if (
+          unicodePropertyEscapes.get(expression.value) === !resolvedNegative
+        ) {
+          matchesEverything = true;
+          break outer;
+        }
+
+        unicodePropertyEscapes.set(expression.value, resolvedNegative);
         break;
       }
     }
@@ -62,7 +66,13 @@ export function buildCharacterClassCharacterReader({
 
   return buildArrayReader<CharacterReaderValueGroups>([
     {
-      characterGroups,
+      characterGroups: matchesEverything
+        ? { ranges: [], rangesNegated: true, unicodePropertyEscapes: new Map() }
+        : {
+            ranges,
+            rangesNegated: node.negative,
+            unicodePropertyEscapes,
+          },
       node,
       stack: [],
       subType: 'groups',

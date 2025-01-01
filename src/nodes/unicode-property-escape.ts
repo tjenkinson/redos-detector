@@ -12,9 +12,9 @@ export function buildUnicodePropertyEscapeCharacterReader(
   return buildArrayReader<CharacterReaderValueGroups>([
     {
       characterGroups: {
-        negated: node.negative,
         ranges: [],
-        unicodePropertyEscapes: new Set([node.value]),
+        rangesNegated: false,
+        unicodePropertyEscapes: new Map([[node.value, node.negative]]),
       },
       node,
       stack: [],

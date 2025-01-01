@@ -65,9 +65,9 @@ export function* buildCharacterClassEscapeReader(
   const ranges = characterClassEscapeToRange(value);
   yield {
     characterGroups: {
-      negated: false,
       ranges,
-      unicodePropertyEscapes: new Set(),
+      rangesNegated: false,
+      unicodePropertyEscapes: new Map(),
     },
     node,
     stack: [],
