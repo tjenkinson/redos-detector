@@ -35,7 +35,6 @@ type StackFrame = Readonly<{
 }>;
 
 const notNewLine: CharacterGroups = {
-  negated: true,
   ranges:
     // [\n\r\u2028-\u2029]
     [
@@ -43,7 +42,8 @@ const notNewLine: CharacterGroups = {
       [13, 13],
       [8232, 8233],
     ],
-  unicodePropertyEscapes: new Set(),
+  rangesNegated: true,
+  unicodePropertyEscapes: new Map(),
 };
 
 /*

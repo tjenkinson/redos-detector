@@ -1,17 +1,9 @@
 import { intersectRanges, OurRange, subtractRanges } from './our-range';
-import { mergeSets, subtractSets } from './sets';
-
-export type MutableCharacterGroups = {
-  dot: boolean;
-  negated: boolean;
-  ranges: OurRange[];
-  unicodePropertyEscapes: Set<string>;
-};
 
 export type CharacterGroups = Readonly<{
-  negated: boolean;
+  rangesNegated: boolean;
   ranges: readonly OurRange[];
-  unicodePropertyEscapes: ReadonlySet<string>;
+  unicodePropertyEscapes: ReadonlyMap<string, boolean /* negated */>;
 }>;
 
 /**
@@ -19,7 +11,9 @@ export type CharacterGroups = Readonly<{
  */
 export function isEmptyCharacterGroups(group: CharacterGroups): boolean {
   return (
-    !group.negated && !group.ranges.length && !group.unicodePropertyEscapes.size
+    !group.rangesNegated &&
+    !group.ranges.length &&
+    !group.unicodePropertyEscapes.size
   );
 }
 
@@ -28,11 +22,10 @@ export function intersectCharacterGroups(
   b: CharacterGroups,
 ): CharacterGroups {
   let newRanges: OurRange[];
-  let newUnicodePropertyEscapes: ReadonlySet<string>;
   let newNegated: boolean;
 
-  if (!a.negated) {
-    if (!b.negated) {
+  if (!a.rangesNegated) {
+    if (!b.rangesNegated) {
       newNegated = false;
       newRanges = [];
       a.ranges.forEach((aRange) => {
@@ -41,10 +34,6 @@ export function intersectCharacterGroups(
           if (intersection) newRanges.push(intersection);
         });
       });
-      newUnicodePropertyEscapes = mergeSets(
-        a.unicodePropertyEscapes,
-        b.unicodePropertyEscapes,
-      );
     } else {
       newNegated = false;
       newRanges = [...a.ranges];
@@ -55,15 +44,9 @@ export function intersectCharacterGroups(
         });
         newRanges = narrowed;
       });
-      // assume all escapes in a are not cancelled in b
-      // except exact matches
-      newUnicodePropertyEscapes = subtractSets(
-        a.unicodePropertyEscapes,
-        b.unicodePropertyEscapes,
-      );
     }
   } else {
-    if (!b.negated) {
+    if (!b.rangesNegated) {
       newNegated = false;
       newRanges = [...b.ranges];
       a.ranges.forEach((aRange) => {
@@ -73,25 +56,37 @@ export function intersectCharacterGroups(
         });
         newRanges = narrowed;
       });
-      // assume all escapes in b were covered in the not-a
-      // except exact matches
-      newUnicodePropertyEscapes = subtractSets(
-        b.unicodePropertyEscapes,
-        a.unicodePropertyEscapes,
-      );
     } else {
       newNegated = true;
       newRanges = [...a.ranges, ...b.ranges];
-      newUnicodePropertyEscapes = mergeSets(
-        a.unicodePropertyEscapes,
-        b.unicodePropertyEscapes,
-      );
+    }
+  }
+
+  const allUnicodePropertyEscapes = new Set([
+    ...a.unicodePropertyEscapes.keys(),
+    ...b.unicodePropertyEscapes.keys(),
+  ]);
+
+  const newUnicodePropertyEscapes: Map<string, boolean> = new Map();
+  for (const unicodePropertyEscape of allUnicodePropertyEscapes) {
+    const aEscape = a.unicodePropertyEscapes.get(unicodePropertyEscape) ?? null;
+    const bEscape = b.unicodePropertyEscapes.get(unicodePropertyEscape) ?? null;
+
+    // assume that all characters that match an escape (or inverse of escape) remain, unless
+    // they are intersected with the negative
+    // `isEmptyCharacterGroups` will never be `true` whilst there is an escape
+    if (aEscape !== null && bEscape === null) {
+      newUnicodePropertyEscapes.set(unicodePropertyEscape, aEscape);
+    } else if (aEscape === null && bEscape !== null) {
+      newUnicodePropertyEscapes.set(unicodePropertyEscape, bEscape);
+    } else if (aEscape !== null && bEscape !== null && aEscape === bEscape) {
+      newUnicodePropertyEscapes.set(unicodePropertyEscape, aEscape);
     }
   }
 
   return {
-    negated: newNegated,
     ranges: newRanges,
+    rangesNegated: newNegated,
     unicodePropertyEscapes: newUnicodePropertyEscapes,
   };
 }

@@ -30,9 +30,9 @@ export function buildValueCharacterReader({
   return buildArrayReader<CharacterReaderValueGroups>([
     {
       characterGroups: {
-        negated: false,
         ranges: [[codePoint, codePoint]],
-        unicodePropertyEscapes: new Set(),
+        rangesNegated: false,
+        unicodePropertyEscapes: new Map(),
       },
       node,
       stack: [],
