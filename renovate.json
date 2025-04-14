@@ -1,12 +1,14 @@
 {
-  "extends": ["config:base"],
+  "extends": ["config:recommended"],
   "labels": ["dependencies", "skip-change-log"],
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "prCreation": "immediate",
   "minimumReleaseAge": "7 days",
   "internalChecksFilter": "strict",
-  "vulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
   "rangeStrategy": "bump",
   "packageRules": [
     {
