@@ -52,7 +52,11 @@ export function toFriendly(
 
   if (!result.trails.length) {
     const parts: string[] = [];
-    parts.push(result.safe ? 'Regex is safe.' : 'Regex may not be safe.');
+    parts.push(
+      result.safe
+        ? `Regex is safe. ${scoreString}`
+        : `Regex may not be safe. ${scoreString}`,
+    );
 
     if (result.error === 'timedOut') {
       parts.push(`Timed out.`);
