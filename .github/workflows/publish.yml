@@ -36,10 +36,13 @@ jobs:
           npm run build
         env:
           CI: true
+
+      # Publishing with OICD needs >= 11.5.1
+      - name: Update npm to v11
+        run: npm install -g npm@11
+
       - name: publish
         run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
           npm publish --provenance
         env:
           CI: true
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
