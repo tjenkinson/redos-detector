@@ -23,6 +23,7 @@ import {
   characterReaderLevel2TypeEntry,
   characterReaderLevel2TypeSplit,
   CharacterReaderLevel2Value,
+  CharacterReaderLevel2ValueEntry,
 } from './character-reader/character-reader-level-2';
 import { Entry, InfiniteLoopTracker } from './infinite-loop-tracker';
 import {
@@ -36,6 +37,7 @@ import { fork } from 'forkable-iterator';
 import { last } from './arrays';
 import { NodeExtra } from './node-extra';
 import { once } from './once';
+import { ZeroWidthEntry } from './character-reader/character-reader-level-1';
 
 export type CheckerInput = Readonly<{
   atomicGroupOffsets: ReadonlySet<number>;
@@ -58,7 +60,11 @@ export type CharacterGroupsOrReference = Readonly<
     }
 >;
 
+export type TrailEntryZeroWidth = { entry: ZeroWidthEntry; hash: string };
+
 export type TrailEntrySide = Readonly<{
+  // groups that were entered when the trail has not diverged yet, and are still inside
+  atomicGroupsEnteredTogether: ReadonlySet<string>;
   characterGroups: CharacterGroups;
   contextTrail: string;
   hash: string;
@@ -75,6 +81,7 @@ export type TrailEntry = Readonly<{
   intersection: CharacterGroups;
   left: TrailEntrySide;
   right: TrailEntrySide;
+  diverged: boolean;
 }>;
 
 export type Trail = readonly TrailEntry[];
@@ -118,12 +125,12 @@ type StackFrame = Readonly<{
   trail: Trail;
 }>;
 
-const areInfiniteLoopTrackerEntriesEqual = (
+function areInfiniteLoopTrackerEntriesEqual(
   left: string,
   right: string,
-): boolean => {
+): boolean {
   return left === right;
-};
+}
 
 function buildContextTrail(
   stack: CharacterReaderLevel2Stack,
@@ -131,21 +138,70 @@ function buildContextTrail(
 ): string {
   return stack
     .map((entry) => {
-      if (entry.type === 'quantifier') {
-        return `q:${entry.quantifier.range[0]}:${
-          asteriskInfinite &&
-          entry.quantifier.max === undefined &&
-          entry.iteration >= entry.quantifier.min
-            ? '*'
-            : `${entry.iteration}`
-        }`;
-      }
-      if (entry.type === 'reference') {
-        return `r:${entry.reference.range[0]}`;
+      switch (entry.type) {
+        case 'quantifier': {
+          return `q:${entry.quantifier.range[0]}:${
+            asteriskInfinite &&
+            entry.quantifier.max === undefined &&
+            entry.iteration >= entry.quantifier.min
+              ? '*'
+              : `${entry.iteration}`
+          }`;
+        }
+        case 'reference': {
+          return `r:${entry.reference.range[0]}`;
+        }
+        case 'group': {
+          return `g:${entry.group.range[0]}`;
+        }
       }
     })
     .filter(Boolean)
     .join(',');
+}
+
+function atomicGroupHashesFromStack(
+  stack: CharacterReaderLevel2Stack,
+  atomicGroupOffsets: ReadonlySet<number>,
+): ReadonlySet<string> {
+  const res: Set<string> = new Set();
+
+  for (let i = 0; i < stack.length; i++) {
+    const stackEntry = stack[i];
+    if (
+      stackEntry.type === 'group' &&
+      atomicGroupOffsets.has(stackEntry.group.range[0])
+    ) {
+      res.add(buildContextTrail(stack.slice(0, i + 1), false));
+    }
+  }
+
+  return res;
+}
+
+function buildZeroWidthHash(zeroWidthEntry: ZeroWidthEntry): string {
+  return [
+    zeroWidthEntry.type,
+    zeroWidthEntry.offset,
+    buildContextTrail(zeroWidthEntry.stack, false),
+  ].join(':');
+}
+
+function getStackSequence(
+  value: CharacterReaderLevel2ValueEntry,
+  hash: string,
+): readonly { hash: string; stack: CharacterReaderLevel2Stack }[] {
+  return [
+    ...value.precedingZeroWidthEntries.map((a) => ({
+      hash: ['zw', buildZeroWidthHash(a)].join(':'),
+      stack: a.stack,
+    })),
+    { hash: ['s', hash].join(':'), stack: value.stack },
+  ];
+}
+
+function areSidesEqual(a: TrailEntrySide, b: TrailEntrySide): boolean {
+  return a.hash === b.hash;
 }
 
 /**
@@ -303,22 +359,99 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
 
     const leftContextTrail = buildContextTrail(leftValue.stack, false);
     const rightContextTrail = buildContextTrail(rightValue.stack, false);
+
+    const newEntryLeftHash = [leftValue.node.range[0], leftContextTrail].join(
+      ':',
+    );
+    const newEntryRightHash = [
+      rightValue.node.range[0],
+      rightContextTrail,
+    ].join(':');
+
+    const lastTrailEntry = last(trail);
+
+    const atomicGroupsEnteredTogetherLeft: Set<string> = new Set(
+      lastTrailEntry?.left.atomicGroupsEnteredTogether,
+    );
+    const atomicGroupsEnteredTogetherRight: Set<string> = new Set(
+      lastTrailEntry?.right.atomicGroupsEnteredTogether,
+    );
+
+    let diverged = !!lastTrailEntry?.diverged;
+
+    if (!diverged) {
+      const leftStackSequence = getStackSequence(leftValue, newEntryLeftHash);
+      const rightStackSequence = getStackSequence(
+        rightValue,
+        newEntryRightHash,
+      );
+
+      for (
+        let i = 0;
+        // if they are different lengths the last hashes should never match because will be comparing a zero width with normal entry
+        i < Math.min(leftStackSequence.length, rightStackSequence.length);
+        i++
+      ) {
+        const leftStack = leftStackSequence[i];
+        const rightStack = rightStackSequence[i];
+        if (leftStack.hash !== rightStack.hash) {
+          diverged = true;
+          break;
+        }
+
+        const atomicGroupsNow = atomicGroupHashesFromStack(
+          leftStack.stack,
+          input.atomicGroupOffsets,
+        );
+        for (const group of atomicGroupsNow) {
+          atomicGroupsEnteredTogetherLeft.add(group);
+          atomicGroupsEnteredTogetherRight.add(group);
+        }
+      }
+    }
+
+    const atomicGroupsNowLeft = atomicGroupHashesFromStack(
+      leftValue.stack,
+      input.atomicGroupOffsets,
+    );
+    for (const group of atomicGroupsEnteredTogetherLeft) {
+      if (!atomicGroupsNowLeft.has(group)) {
+        atomicGroupsEnteredTogetherLeft.delete(group);
+      }
+    }
+    const atomicGroupsNowRight = atomicGroupHashesFromStack(
+      rightValue.stack,
+      input.atomicGroupOffsets,
+    );
+    for (const group of atomicGroupsEnteredTogetherRight) {
+      if (!atomicGroupsNowRight.has(group)) {
+        atomicGroupsEnteredTogetherRight.delete(group);
+      }
+    }
+
+    const newEntryLeft: TrailEntrySide = {
+      atomicGroupsEnteredTogether: atomicGroupsEnteredTogetherLeft,
+      characterGroups: leftValue.characterGroups,
+      contextTrail: leftContextTrail,
+      hash: newEntryLeftHash,
+      node: leftValue.node,
+      stack: leftValue.stack,
+    };
+
+    const newEntryRight: TrailEntrySide = {
+      atomicGroupsEnteredTogether: atomicGroupsEnteredTogetherRight,
+      characterGroups: rightValue.characterGroups,
+      contextTrail: rightContextTrail,
+      hash: newEntryRightHash,
+      node: rightValue.node,
+      stack: rightValue.stack,
+    };
+
     const newEntry: TrailEntry = {
+      diverged,
       intersection,
-      left: {
-        characterGroups: leftValue.characterGroups,
-        contextTrail: leftContextTrail,
-        hash: [leftValue.node.range[0], leftContextTrail].join(':'),
-        node: leftValue.node,
-        stack: leftValue.stack,
-      },
-      right: {
-        characterGroups: rightValue.characterGroups,
-        contextTrail: rightContextTrail,
-        hash: [rightValue.node.range[0], rightContextTrail].join(':'),
-        node: rightValue.node,
-        stack: rightValue.stack,
-      },
+      left: newEntryLeft,
+      right: newEntryRight,
     };
 
     trail = [...trail, newEntry];
@@ -327,9 +460,10 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       buildQuantifiersInInfinitePortion(leftValue.stack, input.nodeExtra);
 
     if (leftQuantifiersInInfiniteProportion.size > 0) {
-      const leftAndRightIdentical = trail.every(
-        ({ left, right }) => left.hash === right.hash,
+      const leftAndRightIdentical = trail.every(({ left, right }) =>
+        areSidesEqual(left, right),
       );
+
       if (leftAndRightIdentical) {
         // left and right have been identical to each other, and we are now entering an infinite
         // portion, so bail
@@ -366,24 +500,16 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
       continue;
     }
 
-    const leftAtomicGroups = new Set(
-      [...leftValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0]),
-      ),
-    );
-    const rightAtomicGroups = new Set(
-      [...rightValue.groups.keys()].filter((group) =>
-        input.atomicGroupOffsets.has(group.range[0]),
-      ),
-    );
-    if (!areSetsEqual(leftAtomicGroups, rightAtomicGroups)) {
-      // if we are not entering/leaving an atomic group in sync
-      // then bail, as atomic groups can't give something up to be
-      // consumed somewhere else
-      continue;
+    if (
+      !areSetsEqual(
+        newEntry.left.atomicGroupsEnteredTogether,
+        newEntry.right.atomicGroupsEnteredTogether,
+      )
+    ) {
+      continue outer;
     }
 
-    const sidesEqual = newEntry.left.hash === newEntry.right.hash;
+    const sidesEqual = areSidesEqual(newEntry.left, newEntry.right);
     if (!sidesEqual) {
       {
         const leftUnboundedReader = isUnboundedReader({
@@ -447,13 +573,13 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
           return (
             existingTrail.every(
               (existingEntry, i) =>
-                existingEntry.left.hash === trail[i].right.hash &&
-                existingEntry.right.hash === trail[i].left.hash,
+                areSidesEqual(existingEntry.left, trail[i].left) &&
+                areSidesEqual(existingEntry.right, trail[i].right),
             ) ||
             existingTrail.every(
               (existingEntry, i) =>
-                existingEntry.left.hash === trail[i].left.hash &&
-                existingEntry.right.hash === trail[i].right.hash,
+                areSidesEqual(existingEntry.left, trail[i].right) &&
+                areSidesEqual(existingEntry.right, trail[i].left),
             )
           );
         });
@@ -493,9 +619,5 @@ export function* buildCheckerReader(input: CheckerInput): CheckerReader {
         ? ('timedOut' as const)
         : null;
 
-  return error
-    ? {
-        error,
-      }
-    : { error: null, infinite };
+  return error ? { error } : { error: null, infinite };
 }
