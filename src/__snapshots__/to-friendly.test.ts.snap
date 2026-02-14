@@ -130,9 +130,9 @@ Hit maximum number of steps so there may be more results than shown here.
 There are more results than this but hit results limit."
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. Reached steps limit. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. There could be infinite backtracks. Reached steps limit. The pattern may have too many variations."`;
 
-exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. There could be infinite backtracks. Timed out. The pattern may have too many variations."`;
 
 exports[`toFriendly with alwaysIncludeTrails=false returns the correct string when not safe but no trails 3`] = `
 "Regex is not safe. Score: 0
@@ -287,9 +287,9 @@ Hit maximum number of steps so there may be more results than shown here.
 There are more results than this but hit results limit."
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. Reached steps limit. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 1`] = `"Regex may not be safe. There could be infinite backtracks. Reached steps limit. The pattern may have too many variations."`;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. Timed out. The pattern may have too many variations."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 2`] = `"Regex may not be safe. There could be infinite backtracks. Timed out. The pattern may have too many variations."`;
 
 exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when not safe but no trails 3`] = `
 "Regex is not safe. Score: 0
@@ -308,7 +308,7 @@ The following trails show how the same input can be matched multiple ways.
 Hit maximum number of steps so there may be more results than shown here."
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 1`] = `"Regex is safe."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 1`] = `"Regex is safe. Score: 1"`;
 
 exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 2`] = `
 "Regex is safe. Score: 2
@@ -326,4 +326,4 @@ The following trails show how the same input can be matched multiple ways.
 "
 `;
 
-exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 3`] = `"Regex is safe."`;
+exports[`toFriendly with alwaysIncludeTrails=true returns the correct string when safe 3`] = `"Regex is safe. There could be infinite backtracks."`;
