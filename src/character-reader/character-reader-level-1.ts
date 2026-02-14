@@ -37,10 +37,12 @@ export type CharacterReaderLevel1ValueSplit = Readonly<{
 export type ZeroWidthEntry = Readonly<
   | {
       offset: number;
+      stack: Stack;
       type: 'null';
     }
   | {
       offset: number;
+      stack: Stack;
       type: 'start';
     }
 >;
@@ -144,14 +146,22 @@ export function buildCharacterReaderLevel1({
             case 'null': {
               precedingZeroWidthEntries = [
                 ...precedingZeroWidthEntries,
-                { offset: next.value.offset, type: 'null' },
+                {
+                  offset: next.value.offset,
+                  stack: next.value.stack,
+                  type: 'null',
+                },
               ];
               break;
             }
             case 'start': {
               precedingZeroWidthEntries = [
                 ...precedingZeroWidthEntries,
-                { offset: next.value.offset, type: 'start' },
+                {
+                  offset: next.value.offset,
+                  stack: next.value.stack,
+                  type: 'start',
+                },
               ];
               break;
             }
