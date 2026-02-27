@@ -384,32 +384,35 @@ export function isSafePattern(
       result.score === Infinity
         ? { infinite: true }
         : { infinite: false, value: result.score },
-    trails: result.trails.map((trail) => {
-      const safeRegexTrail: RedosDetectorTrail = {
-        trail: trail.map(({ left, right }) => {
-          const entry: RedosDetectorTrailEntry = {
-            a: {
-              backreferenceStack: toRedosDetectorBackReferenceStack(
-                right.stack,
-              ),
-              node: toRedosDetectorNode(right.node),
-              quantifierIterations: toRedosDetectorQuantifierIterations(
-                right.stack,
-              ),
-            },
-            b: {
-              backreferenceStack: toRedosDetectorBackReferenceStack(left.stack),
-              node: toRedosDetectorNode(left.node),
-              quantifierIterations: toRedosDetectorQuantifierIterations(
-                left.stack,
-              ),
-            },
-          };
-          return entry;
-        }),
-      };
-      return safeRegexTrail;
-    }),
+    trails:
+      maxScore === 1
+        ? [] // Skip expensive transformation when maxScore === 1
+        : result.trails.map((trail) => {
+            const safeRegexTrail: RedosDetectorTrail = {
+              trail: trail.map(({ left, right }) => {
+                const entry: RedosDetectorTrailEntry = {
+                  a: {
+                    backreferenceStack: toRedosDetectorBackReferenceStack(
+                      right.stack,
+                    ),
+                    node: toRedosDetectorNode(right.node),
+                    quantifierIterations: toRedosDetectorQuantifierIterations(
+                      right.stack,
+                    ),
+                  },
+                  b: {
+                    backreferenceStack: toRedosDetectorBackReferenceStack(left.stack),
+                    node: toRedosDetectorNode(left.node),
+                    quantifierIterations: toRedosDetectorQuantifierIterations(
+                      left.stack,
+                    ),
+                  },
+                };
+                return entry;
+              }),
+            };
+            return safeRegexTrail;
+          }),
   };
 }
 
