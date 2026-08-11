@@ -7,6 +7,7 @@ export function parse(pattern: string, unicode: boolean): MyRootNode {
   const ast = libParse(pattern, unicode ? 'u' : '', {
     lookbehind: true,
     unicodePropertyEscape: true,
+    namedGroups: true,
   });
   return ast;
 }
