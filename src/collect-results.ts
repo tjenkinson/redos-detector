@@ -163,6 +163,8 @@ export function collectResults({
               trail.onNewTrail(existingTrail);
               existingTrail.onNewTrail(trail);
               updateScore(existingTrail);
+              // Early exit check after score update
+              if (score > maxScore) break outer;
             }
           }
           updateScore(trail);
